@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -137,6 +138,7 @@ label{font-weight:bold;font-size:14px}
 let accessToken = localStorage.getItem("accessToken");
 let galleryImages = [];
 let galleryIndex = 0;
+let landlordPhotoObjectUrls = [];
 
 if (!accessToken) {
     window.location.href = "/";
@@ -334,9 +336,48 @@ document.getElementById("propertyForm").addEventListener("submit", async event =
     }
 });
 
+async function loadProtectedLandlordPhotos(container) {
+    const images = Array.from(container.querySelectorAll("img[data-landlord-photo]"));
+
+    await Promise.all(images.map(async img => {
+        try {
+            const roomId = Number(img.dataset.roomId);
+            const photoId = Number(img.dataset.photoId);
+            const response = await fetch(
+                `/agents/landlord-properties/${roomId}/photos/${photoId}`,
+                {headers: {"Authorization": "Bearer " + accessToken}}
+            );
+
+            if (!response.ok) {
+                throw new Error("Could not load this property photograph.");
+            }
+
+            const objectUrl = URL.createObjectURL(await response.blob());
+            landlordPhotoObjectUrls.push(objectUrl);
+            img.dataset.objectUrl = objectUrl;
+            img.src = objectUrl;
+
+            img.addEventListener("click", () => {
+                const card = img.closest(".card");
+                const cardImages = Array.from(
+                    card.querySelectorAll("img[data-landlord-photo][data-object-url]")
+                );
+                const urls = cardImages.map(item => item.dataset.objectUrl);
+                openGallery(urls, cardImages.indexOf(img));
+            });
+        } catch (error) {
+            img.alt = "Property photograph unavailable";
+            img.style.display = "none";
+        }
+    }));
+}
+
 async function loadAvailableRooms() {
     const container = document.getElementById("availableRooms");
-    container.textContent = "Loading properties...";
+    container.textContent = "Loading verified landlord properties...";
+
+    landlordPhotoObjectUrls.forEach(url => URL.revokeObjectURL(url));
+    landlordPhotoObjectUrls = [];
 
     try {
         const params = new URLSearchParams({
@@ -351,7 +392,7 @@ async function loadAvailableRooms() {
         if (maxPrice) params.set("max_price", maxPrice);
 
         const [data, myRoomsResponse] = await Promise.all([
-            apiRequest("/rooms?" + params.toString()),
+            apiRequest("/agents/landlord-properties?" + params.toString()),
             apiRequest("/agents/me/rooms")
         ]);
 
@@ -368,15 +409,15 @@ async function loadAvailableRooms() {
         );
 
         if (!rooms.length) {
-            container.innerHTML = "<p>No available properties found.</p>";
+            container.innerHTML = "<p>No available verified landlord properties found.</p>";
             return;
         }
 
         container.innerHTML = rooms.map(room => {
             const requestStatus = authorizationByRoom.get(Number(room.id));
+            const photos = Array.isArray(room.photos) ? room.photos : [];
 
             let requestButton = "";
-
             if (requestStatus === "pending") {
                 requestButton = `<button disabled class="secondary">Requested</button>`;
             } else if (requestStatus === "approved") {
@@ -392,12 +433,30 @@ async function loadAvailableRooms() {
                     <h4>${escapeHTML(room.location)}</h4>
                     <p><b>Room:</b> ${escapeHTML(room.room_type || "Not specified")}</p>
                     <p><b>Rent:</b> ${money(room.price)}</p>
+                    <p><b>Landlord:</b> ${escapeHTML(room.landlord_name || "Verified landlord")}</p>
+                    <p><b>Landlord phone:</b> ${room.landlord_phone
+                        ? `<a href="tel:${escapeHTML(room.landlord_phone)}">${escapeHTML(room.landlord_phone)}</a>`
+                        : "Not provided"}</p>
                     <p><b>Ownership status:</b> ${statusBadge(room.ownership_status)}</p>
-                    <p class="muted">Only properties with approved ownership can receive advertising requests.</p>
+                    <div class="photos">
+                        ${photos.map(photo => `
+                            <img
+                                src=""
+                                alt="Loading property photograph..."
+                                data-landlord-photo="true"
+                                data-room-id="${Number(room.id)}"
+                                data-photo-id="${Number(photo.id)}"
+                            >
+                        `).join("")}
+                    </div>
+                    ${photos.length ? "" : `<p class="muted">No property photographs were uploaded.</p>`}
+                    <p class="muted">These photographs and contact details are available to signed-in Agents for verified properties.</p>
                     ${requestButton}
                 </div>
             `;
         }).join("");
+
+        await loadProtectedLandlordPhotos(container);
 
     } catch (error) {
         container.textContent = error.message;
@@ -407,6 +466,7 @@ async function loadAvailableRooms() {
 async function requestPermission(roomId, button) {
     const note = prompt("Add a message to the Landlord (optional):") || "";
 
+    // Change the button immediately while the request is being submitted.
     if (button) {
         button.disabled = true;
         button.textContent = "Sending...";
@@ -422,6 +482,7 @@ async function requestPermission(roomId, button) {
             })
         });
 
+        // Keep the requested state visible and prevent duplicate submissions.
         if (button) {
             button.textContent = "Requested";
             button.disabled = true;
@@ -436,13 +497,14 @@ async function requestPermission(roomId, button) {
         ]);
 
     } catch (error) {
+        // Allow another attempt if the request was not submitted.
         if (button) {
             button.disabled = false;
             button.textContent = "Request Advertising Permission";
         }
-
         showMessage(error.message, true);
 
+        // If the server says a request already exists, reload its real status.
         await loadAvailableRooms();
         await loadRooms();
     }
@@ -455,6 +517,8 @@ async function loadRooms() {
     try {
         const response = await apiRequest("/agents/me/rooms");
 
+        // IMPORTANT FIX:
+        // The backend returns {"rooms": [...]}, not a plain array.
         const rooms = Array.isArray(response)
             ? response
             : (Array.isArray(response.rooms) ? response.rooms : []);

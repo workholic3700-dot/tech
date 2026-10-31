@@ -1,13 +1,11 @@
+
 <!DOCTYPE html>
-
-
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="referrer" content="same-origin">
   <title>RumCHUO | Landlord Dashboard</title>
-
 
   <style>
     :root {
@@ -235,6 +233,116 @@
 
     th { color: var(--muted); background: #f8fafc; }
 
+    /* PROPERTY PHOTO GALLERY */
+
+    .photo-gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .photo-item {
+      width: 145px;
+      max-width: 100%;
+    }
+
+    .photo-thumbnail {
+      display: block;
+      width: 145px;
+      height: 115px;
+      max-width: 100%;
+      padding: 0;
+      overflow: hidden;
+      background: #e8eef5;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .photo-thumbnail img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .photo-thumbnail:hover {
+      border-color: var(--green);
+      filter: none;
+    }
+
+    .photo-name {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+      overflow-wrap: anywhere;
+    }
+
+    .photo-error {
+      width: 145px;
+      min-height: 90px;
+      padding: 12px;
+      background: #fef0ee;
+      color: #912018;
+      border-radius: 8px;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    /* ENLARGED PHOTO VIEWER */
+
+    .photo-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(5, 15, 30, .92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 25px;
+    }
+
+    .photo-modal-content {
+      position: relative;
+      width: min(1000px, 100%);
+      max-height: 95vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .photo-modal img {
+      display: block;
+      max-width: 100%;
+      max-height: 78vh;
+      object-fit: contain;
+      border-radius: 8px;
+      background: white;
+    }
+
+    .photo-modal-caption {
+      color: white;
+      font-size: 14px;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .photo-modal-close {
+      position: absolute;
+      top: -42px;
+      right: 0;
+      background: white;
+      color: var(--navy);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      font-size: 23px;
+      line-height: 36px;
+    }
+
     footer {
       text-align: center;
       color: var(--muted);
@@ -250,15 +358,19 @@
     @media (max-width: 450px) {
       .stats { grid-template-columns: 1fr; }
       .panel { padding: 15px; }
+
+      .photo-item,
+      .photo-thumbnail,
+      .photo-error {
+        width: 125px;
+      }
+
+      .photo-thumbnail { height: 100px; }
     }
   </style>
-
-
 </head>
 
-
 <body>
-
 
 <header>
   <div>
@@ -266,219 +378,225 @@
     <p>Manage your properties, Agent permissions and rental reports</p>
   </div>
 
-
-<button id="logoutButton" class="light hidden" type="button">Log out</button>
-
+  <button id="logoutButton" class="light hidden" type="button">Log out</button>
 </header>
 
-
 <main>
-
 
   <section id="loginPanel" class="panel login-panel">
     <h2>Landlord sign in</h2>
     <p class="muted">Sign in using your RumCHUO landlord account.</p>
 
+    <form id="loginForm">
+      <label for="email">Email address</label>
+      <input id="email" type="email" required autocomplete="username">
 
-<form id="loginForm">
-<label for="email">Email address</label>
-<input id="email" type="email" required autocomplete="username">
+      <label for="password">Password</label>
+      <input id="password" type="password" required autocomplete="current-password">
 
-<label for="password">Password</label>
-<input id="password" type="password" required autocomplete="current-password">
+      <button id="loginButton" type="submit" style="width:100%;margin-top:18px">
+        Sign in
+      </button>
+    </form>
 
-<button id="loginButton" type="submit" style="width:100%;margin-top:18px">
-Sign in
-</button>
-</form>
-
-<div id="loginMessage" role="status" aria-live="polite"></div>
-
+    <div id="loginMessage" role="status" aria-live="polite"></div>
   </section>
-
 
   <section id="dashboardPanel" class="hidden">
 
+    <section class="panel">
+      <h2>Landlord overview</h2>
+      <p id="welcome" class="muted"></p>
 
-<section class="panel">
-<h2>Landlord overview</h2>
-<p id="welcome" class="muted"></p>
+      <div class="toolbar">
+        <button id="refreshButton" type="button">Refresh dashboard</button>
+      </div>
 
-<div class="toolbar">
-<button id="refreshButton" type="button">Refresh dashboard</button>
-</div>
+      <div id="globalMessage" role="status" aria-live="polite"></div>
 
-<div id="globalMessage" role="status" aria-live="polite"></div>
+      <div class="stats">
+        <div class="stat">
+          <span>My properties</span>
+          <strong id="totalRooms">—</strong>
+        </div>
 
-<div class="stats">
-<div class="stat">
-<span>My properties</span>
-<strong id="totalRooms">—</strong>
-</div>
+        <div class="stat">
+          <span>Ownership applications</span>
+          <strong id="totalApplications">—</strong>
+        </div>
 
-<div class="stat">
-<span>Ownership applications</span>
-<strong id="totalApplications">—</strong>
-</div>
+        <div class="stat">
+          <span>Pending Agent requests</span>
+          <strong id="pendingRequests">—</strong>
+        </div>
+      </div>
+    </section>
 
-<div class="stat">
-<span>Pending Agent requests</span>
-<strong id="pendingRequests">—</strong>
-</div>
-</div>
-</section>
+    <nav class="tabs" aria-label="Landlord sections">
+      <button class="active" data-section="roomsSection" type="button">My properties</button>
+      <button data-section="submitSection" type="button">Submit property</button>
+      <button data-section="claimSection" type="button">Claim existing room</button>
+      <button data-section="applicationsSection" type="button">Ownership applications</button>
+      <button data-section="agentsSection" type="button">Agent requests</button>
+      <button data-section="reportsSection" type="button">Rental reports</button>
+    </nav>
 
-<nav class="tabs" aria-label="Landlord sections">
-<button class="active" data-section="roomsSection" type="button">My properties</button>
-<button data-section="submitSection" type="button">Submit property</button>
-<button data-section="claimSection" type="button">Claim existing room</button>
-<button data-section="applicationsSection" type="button">Ownership applications</button>
-<button data-section="agentsSection" type="button">Agent requests</button>
-<button data-section="reportsSection" type="button">Rental reports</button>
-</nav>
+    <!-- MY PROPERTIES -->
+    <section id="roomsSection" class="panel dashboard-section">
+      <h2>My properties</h2>
+      <p class="muted">Properties assigned to your landlord account.</p>
 
-<!-- MY PROPERTIES -->
-<section id="roomsSection" class="panel dashboard-section">
-<h2>My properties</h2>
-<p class="muted">Properties assigned to your landlord account.</p>
+      <div class="toolbar">
+        <button id="refreshRoomsButton" type="button">Refresh properties</button>
+      </div>
 
-<div class="toolbar">
-<button id="refreshRoomsButton" type="button">Refresh properties</button>
-</div>
+      <div id="roomsMessage" role="status" aria-live="polite"></div>
+      <div id="roomsArea"></div>
+    </section>
 
-<div id="roomsMessage" role="status" aria-live="polite"></div>
-<div id="roomsArea"></div>
-</section>
+    <!-- SUBMIT PROPERTY -->
+    <section id="submitSection" class="panel dashboard-section hidden">
+      <h2>Submit a new property</h2>
 
-<!-- SUBMIT PROPERTY -->
-<section id="submitSection" class="panel dashboard-section hidden">
-<h2>Submit a new property</h2>
+      <div class="notice">
+        Submit accurate property details and actual photographs of the property.
+        Your submission will be reviewed by an administrator before the property
+        is approved.
+      </div>
 
-<div class="notice">
-Submit accurate property details and actual photographs of the property.
-Your submission will be reviewed by an administrator before the property
-is approved.
-</div>
+      <form id="propertyForm">
+        <div class="form-grid">
+          <div>
+            <label for="propertyLocation">Property location</label>
+            <input id="propertyLocation" required placeholder="Example: Kimara, Dar es Salaam">
+          </div>
 
-<form id="propertyForm">
-<div class="form-grid">
-<div>
-<label for="propertyLocation">Property location</label>
-<input id="propertyLocation" required placeholder="Example: Kimara, Dar es Salaam">
-</div>
+          <div>
+            <label for="propertyPrice">Monthly rent (TZS)</label>
+            <input id="propertyPrice" type="number" min="1" step="1" required>
+          </div>
 
-<div>
-<label for="propertyPrice">Monthly rent (TZS)</label>
-<input id="propertyPrice" type="number" min="1" step="1" required>
-</div>
+          <div>
+            <label for="propertyPhone">Landlord phone number</label>
+            <input id="propertyPhone" type="tel" required placeholder="Example: 0765696771">
+          </div>
 
-<div>
-<label for="propertyPhone">Landlord phone number</label>
-<input id="propertyPhone" type="tel" required placeholder="Example: 0765696771">
-</div>
+          <div>
+            <label for="propertyType">Room type</label>
+            <select id="propertyType" required>
+              <option value="">Select room type</option>
+              <option value="shared">Shared</option>
+              <option value="single">Single</option>
+              <option value="self_contained">Self-contained</option>
+            </select>
+          </div>
 
-<div>
-<label for="propertyType">Room type</label>
-<select id="propertyType" required>
-<option value="">Select room type</option>
-<option value="shared">Shared</option>
-<option value="single">Single</option>
-<option value="self_contained">Self-contained</option>
-</select>
-</div>
+          <div class="full">
+            <label>
+              <input id="propertyAvailable" type="checkbox" checked>
+              Property is currently available
+            </label>
+          </div>
 
-<div class="full">
-<label>
-<input id="propertyAvailable" type="checkbox" checked>
-Property is currently available
-</label>
-</div>
+          <div class="full">
+            <label for="propertyPhotos">Property photographs</label>
+            <input id="propertyPhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple required>
+            <small class="muted">Upload up to 6 actual property photographs. Maximum 5 MB per photo.</small>
+          </div>
+        </div>
 
-<div class="full">
-<label for="propertyPhotos">Property photographs</label>
-<input id="propertyPhotos" type="file" accept="image/*" multiple required>
-<small class="muted">Upload up to 6 actual property photographs. Maximum 5 MB per photo.</small>
-</div>
-</div>
+        <div id="propertyFormMessage" role="status" aria-live="polite"></div>
 
-<div id="propertyFormMessage" role="status" aria-live="polite"></div>
+        <button id="submitPropertyButton" type="submit">Submit property for verification</button>
+      </form>
+    </section>
 
-<button id="submitPropertyButton" type="submit">Submit property for verification</button>
-</form>
-</section>
+    <!-- CLAIM EXISTING ROOM -->
+    <section id="claimSection" class="panel dashboard-section hidden">
+      <h2>Claim an existing room</h2>
 
-<!-- CLAIM EXISTING ROOM -->
-<section id="claimSection" class="panel dashboard-section hidden">
-<h2>Claim an existing room</h2>
+      <p class="muted">
+        If a property already exists on RumCHUO but is not assigned to you,
+        you can submit an ownership claim for administrator review.
+      </p>
 
-<p class="muted">
-If a property already exists on RumCHUO but is not assigned to you,
-you can submit an ownership claim for administrator review.
-</p>
+      <div class="toolbar">
+        <button id="refreshClaimableButton" type="button">Find claimable rooms</button>
+      </div>
 
-<div class="toolbar">
-<button id="refreshClaimableButton" type="button">Find claimable rooms</button>
-</div>
+      <div id="claimableMessage" role="status" aria-live="polite"></div>
+      <div id="claimableRooms"></div>
+    </section>
 
-<div id="claimableMessage" role="status" aria-live="polite"></div>
-<div id="claimableRooms"></div>
-</section>
+    <!-- OWNERSHIP APPLICATIONS -->
+    <section id="applicationsSection" class="panel dashboard-section hidden">
+      <h2>My ownership applications</h2>
 
-<!-- OWNERSHIP APPLICATIONS -->
-<section id="applicationsSection" class="panel dashboard-section hidden">
-<h2>My ownership applications</h2>
+      <div class="toolbar">
+        <button id="refreshApplicationsButton" type="button">Refresh applications</button>
+      </div>
 
-<div class="toolbar">
-<button id="refreshApplicationsButton" type="button">Refresh applications</button>
-</div>
+      <p class="muted">
+        View the photographs you submitted with each ownership application.
+        Select any photograph to enlarge it.
+      </p>
 
-<div id="applicationsArea"></div>
-</section>
+      <div id="applicationsArea"></div>
+    </section>
 
-<!-- AGENT REQUESTS -->
-<section id="agentsSection" class="panel dashboard-section hidden">
-<h2>Agent advertising permission requests</h2>
+    <!-- AGENT REQUESTS -->
+    <section id="agentsSection" class="panel dashboard-section hidden">
+      <h2>Agent advertising permission requests</h2>
 
-<p class="muted">
-Review requests from Agents who want permission to advertise your approved properties.
-</p>
+      <p class="muted">
+        Review requests from Agents who want permission to advertise your approved properties.
+      </p>
 
-<div class="toolbar">
-<button id="refreshAgentsButton" type="button">Refresh Agent requests</button>
-</div>
+      <div class="toolbar">
+        <button id="refreshAgentsButton" type="button">Refresh Agent requests</button>
+      </div>
 
-<div id="agentsArea"></div>
-</section>
+      <div id="agentsArea"></div>
+    </section>
 
-<!-- RENTAL REPORTS -->
-<section id="reportsSection" class="panel dashboard-section hidden">
-<h2>Rental reports</h2>
+    <!-- RENTAL REPORTS -->
+    <section id="reportsSection" class="panel dashboard-section hidden">
+      <h2>Rental reports</h2>
 
-<p class="muted">
-Review rental reports submitted by Agents and confirm reports when the rental information is correct.
-</p>
+      <p class="muted">
+        Review rental reports submitted by Agents and confirm reports when the rental information is correct.
+      </p>
 
-<div class="toolbar">
-<button id="refreshReportsButton" type="button">Refresh rental reports</button>
-</div>
+      <div class="toolbar">
+        <button id="refreshReportsButton" type="button">Refresh rental reports</button>
+      </div>
 
-<div id="reportsArea"></div>
-</section>
+      <div id="reportsArea"></div>
+    </section>
 
   </section>
 
-
 </main>
-
 
 <footer>RumCHUO Landlord Portal</footer>
 
+<!-- ENLARGED PHOTO VIEWER -->
+<div id="photoModal" class="photo-modal hidden" role="dialog" aria-modal="true" aria-label="Property photograph viewer">
+  <div class="photo-modal-content">
+    <button id="closePhotoModal" class="photo-modal-close" type="button" aria-label="Close photograph viewer">×</button>
+    <img id="enlargedPhoto" alt="Enlarged property photograph">
+    <div id="photoModalCaption" class="photo-modal-caption"></div>
+  </div>
+</div>
 
 <script>
 "use strict";
 
 (() => {
   let accessToken = null;
+
+  // Temporary URLs created for authenticated property photographs.
+  const photoObjectUrls = new Set();
 
   const $ = (id) => document.getElementById(id);
 
@@ -581,6 +699,43 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     area.replaceChildren(p);
   }
 
+  // -------------------------------------------------------
+  // PROPERTY PHOTO URL CLEANUP
+  // -------------------------------------------------------
+
+  function clearPhotoObjectUrls() {
+    photoObjectUrls.forEach((url) => {
+      URL.revokeObjectURL(url);
+    });
+
+    photoObjectUrls.clear();
+  }
+
+  function closePhotoViewer() {
+    $("photoModal").classList.add("hidden");
+    $("enlargedPhoto").removeAttribute("src");
+    $("photoModalCaption").textContent = "";
+  }
+
+  function openPhotoViewer(url, filename) {
+    $("enlargedPhoto").src = url;
+    $("photoModalCaption").textContent = filename || "Property photograph";
+    $("photoModal").classList.remove("hidden");
+  }
+
+  $("closePhotoModal").addEventListener("click", closePhotoViewer);
+
+  $("photoModal").addEventListener("click", (event) => {
+    if (event.target === $("photoModal")) {
+      closePhotoViewer();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closePhotoViewer();
+    }
+  });
 
   // -------------------------------------------------------
   // API
@@ -628,6 +783,114 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     return data;
   }
 
+  // -------------------------------------------------------
+  // SECURE PROPERTY PHOTO LOADING
+  // -------------------------------------------------------
+
+  async function loadApplicationPhoto(applicationId, photo, container) {
+    const item = document.createElement("div");
+    item.className = "photo-item";
+
+    const filename = String(
+      getValue(photo, ["original_name", "filename", "name"], "Property photograph")
+    );
+
+    const photoId = getValue(photo, ["id", "photo_id"]);
+
+    if (photoId === null || photoId === undefined) {
+      const error = document.createElement("div");
+      error.className = "photo-error";
+      error.textContent = "Photograph ID is missing.";
+      item.appendChild(error);
+      container.appendChild(item);
+      return;
+    }
+
+    const loading = document.createElement("div");
+    loading.className = "photo-error";
+    loading.textContent = "Loading photograph…";
+    item.appendChild(loading);
+    container.appendChild(item);
+
+    try {
+      if (!accessToken) {
+        throw new Error("Please sign in again.");
+      }
+
+      const url =
+        "/landlord/me/ownership-applications/" +
+        encodeURIComponent(applicationId) +
+        "/photos/" +
+        encodeURIComponent(photoId);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": "Bearer " + accessToken
+        },
+        cache: "no-store"
+      });
+
+      if (response.status === 401) {
+        logout("Your session has expired. Please sign in again.");
+        throw new Error("Your session has expired.");
+      }
+
+      if (!response.ok) {
+        let message = "Could not load this photograph.";
+
+        try {
+          const errorData = await response.json();
+          message = errorData.detail || message;
+        } catch (_) {}
+
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+
+      if (!blob.type.startsWith("image/")) {
+        throw new Error("The server did not return a valid image.");
+      }
+
+      const objectUrl = URL.createObjectURL(blob);
+      photoObjectUrls.add(objectUrl);
+
+      const thumbnailButton = document.createElement("button");
+      thumbnailButton.type = "button";
+      thumbnailButton.className = "photo-thumbnail";
+      thumbnailButton.title = "Click to enlarge " + filename;
+      thumbnailButton.setAttribute("aria-label", "Enlarge " + filename);
+
+      const image = document.createElement("img");
+      image.src = objectUrl;
+      image.alt = filename;
+      image.loading = "lazy";
+
+      thumbnailButton.appendChild(image);
+
+      thumbnailButton.addEventListener("click", () => {
+        openPhotoViewer(objectUrl, filename);
+      });
+
+      const name = document.createElement("span");
+      name.className = "photo-name";
+      name.textContent = filename;
+
+      item.replaceChildren(thumbnailButton, name);
+
+    } catch (error) {
+      if (error.message === "Your session has expired.") {
+        return;
+      }
+
+      const errorBox = document.createElement("div");
+      errorBox.className = "photo-error";
+      errorBox.textContent = error.message || "Photograph could not be loaded.";
+
+      item.replaceChildren(errorBox);
+    }
+  }
 
   // -------------------------------------------------------
   // LOGIN
@@ -688,7 +951,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     }
   });
 
-
   // -------------------------------------------------------
   // NAVIGATION
   // -------------------------------------------------------
@@ -708,7 +970,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
       $(button.dataset.section).classList.remove("hidden");
     });
   });
-
 
   // -------------------------------------------------------
   // MY ROOMS
@@ -764,7 +1025,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     area.replaceChildren(table);
   }
 
-
   // -------------------------------------------------------
   // SUBMIT NEW PROPERTY
   // -------------------------------------------------------
@@ -786,8 +1046,10 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     }
 
     for (const photo of photos) {
-      if (!photo.type.startsWith("image/")) {
-        showMessage($("propertyFormMessage"), "Only image files are allowed.", "error");
+      if (
+        !["image/jpeg", "image/png", "image/webp"].includes(photo.type)
+      ) {
+        showMessage($("propertyFormMessage"), "Only JPEG, PNG and WebP images are allowed.", "error");
         return;
       }
 
@@ -838,7 +1100,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     }
   });
 
-
   // -------------------------------------------------------
   // CLAIM EXISTING ROOM
   // -------------------------------------------------------
@@ -854,6 +1115,8 @@ Review rental reports submitted by Agents and confirm reports when the rental in
       emptyMessage(area, "There are currently no claimable rooms.");
       return;
     }
+
+    area.replaceChildren();
 
     rooms.forEach((room) => {
       const card = document.createElement("article");
@@ -895,7 +1158,7 @@ Review rental reports submitted by Agents and confirm reports when the rental in
 
       const photoInput = document.createElement("input");
       photoInput.type = "file";
-      photoInput.accept = "image/*";
+      photoInput.accept = "image/jpeg,image/png,image/webp";
       photoInput.multiple = true;
       photoInput.required = true;
 
@@ -925,8 +1188,11 @@ Review rental reports submitted by Agents and confirm reports when the rental in
         }
 
         for (const photo of photos) {
-          if (!photo.type.startsWith("image/") || photo.size > 5 * 1024 * 1024) {
-            showMessage(message, "Each file must be an image no larger than 5 MB.", "error");
+          if (
+            !["image/jpeg", "image/png", "image/webp"].includes(photo.type) ||
+            photo.size > 5 * 1024 * 1024
+          ) {
+            showMessage(message, "Each file must be a JPEG, PNG or WebP image no larger than 5 MB.", "error");
             return;
           }
         }
@@ -972,74 +1238,108 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     });
   }
 
-
   // -------------------------------------------------------
-  // OWNERSHIP APPLICATIONS
+  // OWNERSHIP APPLICATIONS AND PHOTO GALLERY
   // -------------------------------------------------------
 
   async function loadApplications() {
     const area = $("applicationsArea");
+
+    // Remove old temporary image URLs before refreshing the gallery.
+    closePhotoViewer();
+    clearPhotoObjectUrls();
+
     area.textContent = "Loading your applications…";
 
-    const data = await api("/landlord/me/ownership-applications");
-    const applications = getList(data, ["applications", "ownership_applications"]);
+    try {
+      const data = await api("/landlord/me/ownership-applications");
+      const applications = getList(data, ["applications", "ownership_applications"]);
 
-    $("totalApplications").textContent = applications.length;
+      area.replaceChildren();
 
-    if (!applications.length) {
-      emptyMessage(area, "You have not submitted any ownership applications.");
-      return;
-    }
+      $("totalApplications").textContent = applications.length;
 
-    applications.forEach((application) => {
-      const card = document.createElement("article");
-      card.className = "application-card";
-
-      const heading = document.createElement("h3");
-      heading.textContent =
-        "Application #" + valueOrDash(getValue(application, ["id", "application_id"]));
-
-      card.appendChild(heading);
-
-      const statusLine = document.createElement("p");
-      statusLine.appendChild(statusPill(application.status));
-      card.appendChild(statusLine);
-
-      const details = document.createElement("div");
-      details.className = "details";
-
-      addDetail(details, "Room ID", application.room_id);
-      addDetail(details, "Location", application.location);
-      addDetail(details, "Room type", application.room_type);
-
-      const price = getValue(application, ["price", "monthly_rent"]);
-      addDetail(
-        details,
-        "Monthly rent",
-        price === null ? null : "TZS " + Number(price).toLocaleString()
-      );
-
-      addDetail(details, "Application type", application.application_type);
-      addDetail(details, "Phone number", application.phone_number);
-      addDetail(details, "Submitted", application.created_at);
-      addDetail(details, "Reviewed", application.reviewed_at);
-
-      card.appendChild(details);
-
-      if (application.review_reason) {
-        const note = document.createElement("p");
-        note.textContent = "Administrator response: " + application.review_reason;
-        card.appendChild(note);
+      if (!applications.length) {
+        emptyMessage(area, "You have not submitted any ownership applications.");
+        return;
       }
 
-      const photoCount = document.createElement("p");
-      photoCount.className = "muted";
-      photoCount.textContent =
-        "Photographs submitted: " + (application.photo_count ?? (application.photos || []).length);
+      for (const application of applications) {
+        const card = document.createElement("article");
+        card.className = "application-card";
 
-      card.appendChild(photoCount);
-      area.appendChild(card);
-    });
+        const applicationId = getValue(application, ["id", "application_id"]);
+
+        const heading = document.createElement("h3");
+        heading.textContent = "Application #" + valueOrDash(applicationId);
+
+        card.appendChild(heading);
+
+        const statusLine = document.createElement("p");
+        statusLine.appendChild(statusPill(application.status));
+        card.appendChild(statusLine);
+
+        const details = document.createElement("div");
+        details.className = "details";
+
+        addDetail(details, "Room ID", application.room_id);
+        addDetail(details, "Location", application.location);
+        addDetail(details, "Room type", application.room_type);
+
+        const price = getValue(application, ["price", "monthly_rent"]);
+
+        addDetail(
+          details,
+          "Monthly rent",
+          price === null ? null : "TZS " + Number(price).toLocaleString()
+        );
+
+        addDetail(details, "Application type", application.application_type);
+        addDetail(details, "Phone number", application.phone_number);
+        addDetail(details, "Submitted", application.created_at);
+        addDetail(details, "Reviewed", application.reviewed_at);
+
+        card.appendChild(details);
+
+        if (application.review_reason) {
+          const note = document.createElement("p");
+          note.textContent = "Administrator response: " + application.review_reason;
+          card.appendChild(note);
+        }
+
+        const photos = Array.isArray(application.photos)
+          ? application.photos
+          : [];
+
+        const photoHeading = document.createElement("h3");
+        photoHeading.textContent = "Property photographs (" + photos.length + ")";
+        card.appendChild(photoHeading);
+
+        if (!photos.length) {
+          const noPhotos = document.createElement("p");
+          noPhotos.className = "muted";
+          noPhotos.textContent = "No photographs were attached to this application.";
+          card.appendChild(noPhotos);
+        } else {
+          const gallery = document.createElement("div");
+          gallery.className = "photo-gallery";
+
+          card.appendChild(gallery);
+
+          // Load each image with the landlord's authentication token.
+          for (const photo of photos) {
+            loadApplicationPhoto(applicationId, photo, gallery);
+          }
+        }
+
+        area.appendChild(card);
+      }
+
+    } catch (error) {
+      area.textContent =
+        "Could not load ownership applications: " + error.message;
+      throw error;
+    }
   }
 
   async function updateApplicationCount() {
@@ -1049,7 +1349,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
       $("totalApplications").textContent = applications.length;
     } catch (_) {}
   }
-
 
   // -------------------------------------------------------
   // AGENT AUTHORIZATION REQUESTS
@@ -1069,6 +1368,8 @@ Review rental reports submitted by Agents and confirm reports when the rental in
       emptyMessage(area, "There are no Agent advertising permission requests.");
       return;
     }
+
+    area.replaceChildren();
 
     requests.forEach((request) => {
       const card = document.createElement("article");
@@ -1135,7 +1436,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     });
   }
 
-
   async function decideAgentRequest(id, decision, note, ...buttons) {
     const question = {
       approve: "Approve this Agent's request to advertise your property?",
@@ -1159,15 +1459,14 @@ Review rental reports submitted by Agents and confirm reports when the rental in
         }
       );
 
-      setGlobalMessage("Agent request updated successfully.", "success");
+      showMessage($("globalMessage"), "Agent request updated successfully.", "success");
       await loadAgentRequests();
 
     } catch (error) {
-      setGlobalMessage(error.message, "error");
+      showMessage($("globalMessage"), error.message, "error");
       buttons.forEach((button) => button.disabled = false);
     }
   }
-
 
   // -------------------------------------------------------
   // RENTAL REPORTS
@@ -1184,6 +1483,8 @@ Review rental reports submitted by Agents and confirm reports when the rental in
       emptyMessage(area, "There are no rental reports yet.");
       return;
     }
+
+    area.replaceChildren();
 
     reports.forEach((report) => {
       const card = document.createElement("article");
@@ -1251,7 +1552,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     });
   }
 
-
   // -------------------------------------------------------
   // REFRESH
   // -------------------------------------------------------
@@ -1280,7 +1580,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
       showMessage($("globalMessage"), "Dashboard refreshed successfully.", "success");
     }
   }
-
 
   // -------------------------------------------------------
   // REFRESH BUTTONS
@@ -1329,13 +1628,15 @@ Review rental reports submitted by Agents and confirm reports when the rental in
     }
   });
 
-
   // -------------------------------------------------------
   // LOGOUT
   // -------------------------------------------------------
 
   function logout(notice = "") {
     accessToken = null;
+
+    closePhotoViewer();
+    clearPhotoObjectUrls();
 
     $("loginForm").reset();
 
@@ -1368,7 +1669,6 @@ Review rental reports submitted by Agents and confirm reports when the rental in
 
 })();
 </script>
-
 
 </body>
 </html>
