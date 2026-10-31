@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="same-origin">
+  <title>RumCHUO | Landlord Dashboard</title>
+
+
+  <style>
+    :root {
+      --navy: #10233f;
+      --green: #16845b;
+      --background: #f4f7fa;
+      --border: #dce4ec;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--background);
+      color: var(--text);
+    }
+
+    header {
+      background: var(--navy);
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 5px 0 0; color: #d4deeb; font-size: 13px; }
+
+    main { width: min(1250px, 95%); margin: 25px auto; }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px #10233f0a;
+    }
+
+    .login-panel { max-width: 450px; margin: 55px auto; }
+
+    h2 { margin-top: 0; font-size: 20px; }
+    h3 { font-size: 16px; margin-top: 20px; }
+    p { line-height: 1.5; }
+
+    .muted { color: var(--muted); }
+
+    label {
+      display: block;
+      margin: 15px 0 7px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font: inherit;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      margin-right: 7px;
+    }
+
+    input[type="file"] { background: white; }
+
+    button {
+      background: var(--green);
+      color: white;
+      border: 0;
+      border-radius: 7px;
+      padding: 10px 14px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    button:hover { filter: brightness(.94); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .secondary { background: var(--navy); }
+    .danger { background: #b42318; }
+    .light { background: #e8eef5; color: var(--navy); }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .tabs button { background: #e5ebf2; color: var(--navy); }
+    .tabs button.active { background: var(--navy); color: white; }
+
+    .hidden { display: none !important; }
+
+    .message {
+      padding: 12px;
+      border-radius: 7px;
+      margin: 12px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .error { color: #912018; background: #fef0ee; }
+    .success { color: #126443; background: #e8f7ef; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stat {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 17px;
+      border-radius: 9px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 25px;
+      margin-top: 8px;
+      color: var(--navy);
+    }
+
+    .application-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin: 15px 0;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 20px;
+      margin: 15px 0;
+    }
+
+    .detail {
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 7px;
+      overflow-wrap: anywhere;
+    }
+
+    .detail small {
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: capitalize;
+      background: #e8eef5;
+    }
+
+    .status-pending { background: #fff4d6; color: #805b00; }
+    .status-approved,
+    .status-confirmed { background: #e8f7ef; color: #126443; }
+    .status-rejected,
+    .status-revoked { background: #fef0ee; color: #912018; }
+
+    .notice {
+      background: #f1f5f9;
+      border-left: 4px solid var(--navy);
+      border-radius: 5px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    th { color: var(--muted); background: #f8fafc; }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 22px;
+    }
+
+    @media (max-width: 750px) {
+      .stats, .details, .form-grid { grid-template-columns: 1fr; }
+      .form-grid .full { grid-column: auto; }
+    }
+
+    @media (max-width: 450px) {
+      .stats { grid-template-columns: 1fr; }
+      .panel { padding: 15px; }
+    }
+  </style>
+
+
+</head>
+
+
+<body>
+
+
+<header>
+  <div>
+    <h1>RumCHUO Landlord Portal</h1>
+    <p>Manage your properties, Agent permissions and rental reports</p>
+  </div>
+
+
+<button id="logoutButton" class="light hidden" type="button">Log out</button>
+
+</header>
+
+
+<main>
+
+
+  <section id="loginPanel" class="panel login-panel">
+    <h2>Landlord sign in</h2>
+    <p class="muted">Sign in using your RumCHUO landlord account.</p>
+
+
+<form id="loginForm">
+<label for="email">Email address</label>
+<input id="email" type="email" required autocomplete="username">
+
+<label for="password">Password</label>
+<input id="password" type="password" required autocomplete="current-password">
+
+<button id="loginButton" type="submit" style="width:100%;margin-top:18px">
+Sign in
+</button>
+</form>
+
+<div id="loginMessage" role="status" aria-live="polite"></div>
+
+  </section>
+
+
+  <section id="dashboardPanel" class="hidden">
+
+
+<section class="panel">
+<h2>Landlord overview</h2>
+<p id="welcome" class="muted"></p>
+
+<div class="toolbar">
+<button id="refreshButton" type="button">Refresh dashboard</button>
+</div>
+
+<div id="globalMessage" role="status" aria-live="polite"></div>
+
+<div class="stats">
+<div class="stat">
+<span>My properties</span>
+<strong id="totalRooms">—</strong>
+</div>
+
+<div class="stat">
+<span>Ownership applications</span>
+<strong id="totalApplications">—</strong>
+</div>
+
+<div class="stat">
+<span>Pending Agent requests</span>
+<strong id="pendingRequests">—</strong>
+</div>
+</div>
+</section>
+
+<nav class="tabs" aria-label="Landlord sections">
+<button class="active" data-section="roomsSection" type="button">My properties</button>
+<button data-section="submitSection" type="button">Submit property</button>
+<button data-section="claimSection" type="button">Claim existing room</button>
+<button data-section="applicationsSection" type="button">Ownership applications</button>
+<button data-section="agentsSection" type="button">Agent requests</button>
+<button data-section="reportsSection" type="button">Rental reports</button>
+</nav>
+
+<!-- MY PROPERTIES -->
+<section id="roomsSection" class="panel dashboard-section">
+<h2>My properties</h2>
+<p class="muted">Properties assigned to your landlord account.</p>
+
+<div class="toolbar">
+<button id="refreshRoomsButton" type="button">Refresh properties</button>
+</div>
+
+<div id="roomsMessage" role="status" aria-live="polite"></div>
+<div id="roomsArea"></div>
+</section>
+
+<!-- SUBMIT PROPERTY -->
+<section id="submitSection" class="panel dashboard-section hidden">
+<h2>Submit a new property</h2>
+
+<div class="notice">
+Submit accurate property details and actual photographs of the property.
+Your submission will be reviewed by an administrator before the property
+is approved.
+</div>
+
+<form id="propertyForm">
+<div class="form-grid">
+<div>
+<label for="propertyLocation">Property location</label>
+<input id="propertyLocation" required placeholder="Example: Kimara, Dar es Salaam">
+</div>
+
+<div>
+<label for="propertyPrice">Monthly rent (TZS)</label>
+<input id="propertyPrice" type="number" min="1" step="1" required>
+</div>
+
+<div>
+<label for="propertyPhone">Landlord phone number</label>
+<input id="propertyPhone" type="tel" required placeholder="Example: 0765696771">
+</div>
+
+<div>
+<label for="propertyType">Room type</label>
+<select id="propertyType" required>
+<option value="">Select room type</option>
+<option value="shared">Shared</option>
+<option value="single">Single</option>
+<option value="self_contained">Self-contained</option>
+</select>
+</div>
+
+<div class="full">
+<label>
+<input id="propertyAvailable" type="checkbox" checked>
+Property is currently available
+</label>
+</div>
+
+<div class="full">
+<label for="propertyPhotos">Property photographs</label>
+<input id="propertyPhotos" type="file" accept="image/*" multiple required>
+<small class="muted">Upload up to 6 actual property photographs. Maximum 5 MB per photo.</small>
+</div>
+</div>
+
+<div id="propertyFormMessage" role="status" aria-live="polite"></div>
+
+<button id="submitPropertyButton" type="submit">Submit property for verification</button>
+</form>
+</section>
+
+<!-- CLAIM EXISTING ROOM -->
+<section id="claimSection" class="panel dashboard-section hidden">
+<h2>Claim an existing room</h2>
+
+<p class="muted">
+If a property already exists on RumCHUO but is not assigned to you,
+you can submit an ownership claim for administrator review.
+</p>
+
+<div class="toolbar">
+<button id="refreshClaimableButton" type="button">Find claimable rooms</button>
+</div>
+
+<div id="claimableMessage" role="status" aria-live="polite"></div>
+<div id="claimableRooms"></div>
+</section>
+
+<!-- OWNERSHIP APPLICATIONS -->
+<section id="applicationsSection" class="panel dashboard-section hidden">
+<h2>My ownership applications</h2>
+
+<div class="toolbar">
+<button id="refreshApplicationsButton" type="button">Refresh applications</button>
+</div>
+
+<div id="applicationsArea"></div>
+</section>
+
+<!-- AGENT REQUESTS -->
+<section id="agentsSection" class="panel dashboard-section hidden">
+<h2>Agent advertising permission requests</h2>
+
+<p class="muted">
+Review requests from Agents who want permission to advertise your approved properties.
+</p>
+
+<div class="toolbar">
+<button id="refreshAgentsButton" type="button">Refresh Agent requests</button>
+</div>
+
+<div id="agentsArea"></div>
+</section>
+
+<!-- RENTAL REPORTS -->
+<section id="reportsSection" class="panel dashboard-section hidden">
+<h2>Rental reports</h2>
+
+<p class="muted">
+Review rental reports submitted by Agents and confirm reports when the rental information is correct.
+</p>
+
+<div class="toolbar">
+<button id="refreshReportsButton" type="button">Refresh rental reports</button>
+</div>
+
+<div id="reportsArea"></div>
+</section>
+
+  </section>
+
+
+</main>
+
+
+<footer>RumCHUO Landlord Portal</footer>
+
+
+<script>
+"use strict";
+
+(() => {
+  let accessToken = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function showMessage(element, message, type = "") {
+    element.textContent = message;
+    element.className = type ? "message " + type : "";
+  }
+
+  function valueOrDash(value) {
+    return value === null || value === undefined || value === ""
+      ? "—"
+      : String(value);
+  }
+
+  function getList(data, possibleKeys) {
+    if (Array.isArray(data)) return data;
+
+    for (const key of possibleKeys) {
+      if (Array.isArray(data && data[key])) return data[key];
+    }
+
+    return [];
+  }
+
+  function getValue(object, keys, fallback = null) {
+    for (const key of keys) {
+      if (object && object[key] !== undefined && object[key] !== null) {
+        return object[key];
+      }
+    }
+    return fallback;
+  }
+
+  function statusPill(status) {
+    const span = document.createElement("span");
+    const value = String(status || "unknown").toLowerCase();
+
+    span.className = "status-pill status-" + value;
+    span.textContent = value.replaceAll("_", " ");
+
+    return span;
+  }
+
+  function addDetail(container, label, value) {
+    const div = document.createElement("div");
+    div.className = "detail";
+
+    const small = document.createElement("small");
+    small.textContent = label;
+
+    const strong = document.createElement("strong");
+    strong.textContent = valueOrDash(value);
+
+    div.append(small, strong);
+    container.appendChild(div);
+  }
+
+  function makeButton(label, className, handler) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+
+    if (className) button.className = className;
+
+    button.addEventListener("click", handler);
+    return button;
+  }
+
+  function makeTable(headers) {
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+
+    headers.forEach((header) => {
+      const th = document.createElement("th");
+      th.textContent = header;
+      headRow.appendChild(th);
+    });
+
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+
+    return { table, tbody };
+  }
+
+  function addCell(row, value) {
+    const td = document.createElement("td");
+    td.textContent = valueOrDash(value);
+    row.appendChild(td);
+    return td;
+  }
+
+  function emptyMessage(area, message) {
+    const p = document.createElement("p");
+    p.className = "muted";
+    p.textContent = message;
+    area.replaceChildren(p);
+  }
+
+
+  // -------------------------------------------------------
+  // API
+  // -------------------------------------------------------
+
+  async function api(path, options = {}) {
+    if (!accessToken) {
+      throw new Error("Please sign in again.");
+    }
+
+    const headers = {
+      "Authorization": "Bearer " + accessToken,
+      ...(options.headers || {})
+    };
+
+    if (
+      options.body &&
+      !(options.body instanceof FormData) &&
+      !headers["Content-Type"]
+    ) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    const response = await fetch(path, {
+      ...options,
+      headers,
+      cache: "no-store"
+    });
+
+    let data = {};
+
+    try {
+      data = await response.json();
+    } catch (_) {}
+
+    if (response.status === 401) {
+      logout("Your session has expired. Please sign in again.");
+      throw new Error("Your session has expired.");
+    }
+
+    if (!response.ok) {
+      throw new Error(data.detail || "The request failed.");
+    }
+
+    return data;
+  }
+
+
+  // -------------------------------------------------------
+  // LOGIN
+  // -------------------------------------------------------
+
+  $("loginForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    $("loginButton").disabled = true;
+    showMessage($("loginMessage"), "Signing in…");
+
+    try {
+      const response = await fetch("/students/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: $("email").value.trim(),
+          password: $("password").value
+        }),
+        cache: "no-store"
+      });
+
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch (_) {}
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Sign in failed.");
+      }
+
+      if (
+        !data.access_token ||
+        !data.student ||
+        data.student.role !== "landlord"
+      ) {
+        throw new Error("This account does not have landlord access.");
+      }
+
+      accessToken = data.access_token;
+
+      $("password").value = "";
+      $("loginPanel").classList.add("hidden");
+      $("dashboardPanel").classList.remove("hidden");
+      $("logoutButton").classList.remove("hidden");
+
+      $("welcome").textContent =
+        "Welcome, " + (data.student.full_name || "Landlord") + ".";
+
+      await refreshDashboard();
+
+    } catch (error) {
+      accessToken = null;
+      showMessage($("loginMessage"), error.message, "error");
+    } finally {
+      $("loginButton").disabled = false;
+    }
+  });
+
+
+  // -------------------------------------------------------
+  // NAVIGATION
+  // -------------------------------------------------------
+
+  document.querySelectorAll(".tabs button").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach((item) => {
+        item.classList.remove("active");
+      });
+
+      button.classList.add("active");
+
+      document.querySelectorAll(".dashboard-section").forEach((section) => {
+        section.classList.add("hidden");
+      });
+
+      $(button.dataset.section).classList.remove("hidden");
+    });
+  });
+
+
+  // -------------------------------------------------------
+  // MY ROOMS
+  // -------------------------------------------------------
+
+  async function loadRooms() {
+    const area = $("roomsArea");
+    area.textContent = "Loading your properties…";
+
+    const data = await api("/landlord/me/rooms");
+    const rooms = getList(data, ["rooms", "properties"]);
+
+    $("totalRooms").textContent = rooms.length;
+
+    if (!rooms.length) {
+      emptyMessage(area, "You do not have any assigned properties yet.");
+      return;
+    }
+
+    const { table, tbody } = makeTable([
+      "Room ID",
+      "Location",
+      "Room type",
+      "Monthly rent",
+      "Availability",
+      "Status"
+    ]);
+
+    rooms.forEach((room) => {
+      const row = document.createElement("tr");
+
+      addCell(row, getValue(room, ["id", "room_id"]));
+      addCell(row, room.location);
+      addCell(row, room.room_type);
+
+      const price = getValue(room, ["price", "monthly_rent", "rent"]);
+      addCell(row, price === null ? null : "TZS " + Number(price).toLocaleString());
+
+      addCell(
+        row,
+        room.available === undefined
+          ? null
+          : (room.available ? "Available" : "Not available")
+      );
+
+      const statusCell = document.createElement("td");
+      statusCell.appendChild(statusPill(room.status || room.verification_status || "approved"));
+      row.appendChild(statusCell);
+
+      tbody.appendChild(row);
+    });
+
+    area.replaceChildren(table);
+  }
+
+
+  // -------------------------------------------------------
+  // SUBMIT NEW PROPERTY
+  // -------------------------------------------------------
+
+  $("propertyForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const button = $("submitPropertyButton");
+    const photos = $("propertyPhotos").files;
+
+    if (!photos.length) {
+      showMessage($("propertyFormMessage"), "Please select property photographs.", "error");
+      return;
+    }
+
+    if (photos.length > 6) {
+      showMessage($("propertyFormMessage"), "You can upload a maximum of 6 photographs.", "error");
+      return;
+    }
+
+    for (const photo of photos) {
+      if (!photo.type.startsWith("image/")) {
+        showMessage($("propertyFormMessage"), "Only image files are allowed.", "error");
+        return;
+      }
+
+      if (photo.size > 5 * 1024 * 1024) {
+        showMessage($("propertyFormMessage"), "Each photograph must be 5 MB or smaller.", "error");
+        return;
+      }
+    }
+
+    const formData = new FormData();
+
+    formData.append("location", $("propertyLocation").value.trim());
+    formData.append("price", $("propertyPrice").value);
+    formData.append("phone_number", $("propertyPhone").value.trim());
+    formData.append("available", $("propertyAvailable").checked ? "true" : "false");
+    formData.append("room_type", $("propertyType").value);
+
+    for (const photo of photos) {
+      formData.append("photos", photo);
+    }
+
+    button.disabled = true;
+    showMessage($("propertyFormMessage"), "Submitting property…");
+
+    try {
+      const result = await api("/landlord/me/rooms/submit", {
+        method: "POST",
+        body: formData
+      });
+
+      showMessage(
+        $("propertyFormMessage"),
+        result.message || "Property submitted successfully. It is awaiting Admin verification.",
+        "success"
+      );
+
+      $("propertyForm").reset();
+      $("propertyAvailable").checked = true;
+
+      await loadApplications();
+      await loadRooms();
+      await updateApplicationCount();
+
+    } catch (error) {
+      showMessage($("propertyFormMessage"), error.message, "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+
+  // -------------------------------------------------------
+  // CLAIM EXISTING ROOM
+  // -------------------------------------------------------
+
+  async function loadClaimableRooms() {
+    const area = $("claimableRooms");
+    area.textContent = "Loading claimable rooms…";
+
+    const data = await api("/landlord/me/claimable-rooms");
+    const rooms = getList(data, ["rooms", "claimable_rooms"]);
+
+    if (!rooms.length) {
+      emptyMessage(area, "There are currently no claimable rooms.");
+      return;
+    }
+
+    rooms.forEach((room) => {
+      const card = document.createElement("article");
+      card.className = "application-card";
+
+      const roomId = getValue(room, ["id", "room_id"]);
+
+      const heading = document.createElement("h3");
+      heading.textContent = "Room #" + valueOrDash(roomId);
+      card.appendChild(heading);
+
+      const details = document.createElement("div");
+      details.className = "details";
+
+      addDetail(details, "Location", room.location);
+      addDetail(details, "Room type", room.room_type);
+
+      const price = getValue(room, ["price", "monthly_rent", "rent"]);
+      addDetail(
+        details,
+        "Monthly rent",
+        price === null ? null : "TZS " + Number(price).toLocaleString()
+      );
+
+      card.appendChild(details);
+
+      const form = document.createElement("form");
+
+      const phoneLabel = document.createElement("label");
+      phoneLabel.textContent = "Your phone number";
+
+      const phoneInput = document.createElement("input");
+      phoneInput.type = "tel";
+      phoneInput.required = true;
+      phoneInput.placeholder = "Example: 0765696771";
+
+      const photoLabel = document.createElement("label");
+      photoLabel.textContent = "Property photographs";
+
+      const photoInput = document.createElement("input");
+      photoInput.type = "file";
+      photoInput.accept = "image/*";
+      photoInput.multiple = true;
+      photoInput.required = true;
+
+      const message = document.createElement("div");
+
+      const submit = document.createElement("button");
+      submit.type = "submit";
+      submit.textContent = "Submit ownership claim";
+
+      form.append(
+        phoneLabel,
+        phoneInput,
+        photoLabel,
+        photoInput,
+        message,
+        submit
+      );
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const photos = photoInput.files;
+
+        if (!photos.length || photos.length > 6) {
+          showMessage(message, "Select between 1 and 6 photographs.", "error");
+          return;
+        }
+
+        for (const photo of photos) {
+          if (!photo.type.startsWith("image/") || photo.size > 5 * 1024 * 1024) {
+            showMessage(message, "Each file must be an image no larger than 5 MB.", "error");
+            return;
+          }
+        }
+
+        const formData = new FormData();
+        formData.append("phone_number", phoneInput.value.trim());
+
+        for (const photo of photos) {
+          formData.append("photos", photo);
+        }
+
+        submit.disabled = true;
+        showMessage(message, "Submitting claim…");
+
+        try {
+          const result = await api(
+            `/landlord/me/rooms/${encodeURIComponent(roomId)}/claim`,
+            {
+              method: "POST",
+              body: formData
+            }
+          );
+
+          showMessage(
+            message,
+            result.message || "Ownership claim submitted for Admin verification.",
+            "success"
+          );
+
+          form.reset();
+          await loadApplications();
+          await updateApplicationCount();
+
+        } catch (error) {
+          showMessage(message, error.message, "error");
+        } finally {
+          submit.disabled = false;
+        }
+      });
+
+      card.appendChild(form);
+      area.appendChild(card);
+    });
+  }
+
+
+  // -------------------------------------------------------
+  // OWNERSHIP APPLICATIONS
+  // -------------------------------------------------------
+
+  async function loadApplications() {
+    const area = $("applicationsArea");
+    area.textContent = "Loading your applications…";
+
+    const data = await api("/landlord/me/ownership-applications");
+    const applications = getList(data, ["applications", "ownership_applications"]);
+
+    $("totalApplications").textContent = applications.length;
+
+    if (!applications.length) {
+      emptyMessage(area, "You have not submitted any ownership applications.");
+      return;
+    }
+
+    applications.forEach((application) => {
+      const card = document.createElement("article");
+      card.className = "application-card";
+
+      const heading = document.createElement("h3");
+      heading.textContent =
+        "Application #" + valueOrDash(getValue(application, ["id", "application_id"]));
+
+      card.appendChild(heading);
+
+      const statusLine = document.createElement("p");
+      statusLine.appendChild(statusPill(application.status));
+      card.appendChild(statusLine);
+
+      const details = document.createElement("div");
+      details.className = "details";
+
+      addDetail(details, "Room ID", application.room_id);
+      addDetail(details, "Location", application.location);
+      addDetail(details, "Room type", application.room_type);
+
+      const price = getValue(application, ["price", "monthly_rent"]);
+      addDetail(
+        details,
+        "Monthly rent",
+        price === null ? null : "TZS " + Number(price).toLocaleString()
+      );
+
+      addDetail(details, "Application type", application.application_type);
+      addDetail(details, "Phone number", application.phone_number);
+      addDetail(details, "Submitted", application.created_at);
+      addDetail(details, "Reviewed", application.reviewed_at);
+
+      card.appendChild(details);
+
+      if (application.review_reason) {
+        const note = document.createElement("p");
+        note.textContent = "Administrator response: " + application.review_reason;
+        card.appendChild(note);
+      }
+
+      const photoCount = document.createElement("p");
+      photoCount.className = "muted";
+      photoCount.textContent =
+        "Photographs submitted: " + (application.photo_count ?? (application.photos || []).length);
+
+      card.appendChild(photoCount);
+      area.appendChild(card);
+    });
+  }
+
+  async function updateApplicationCount() {
+    try {
+      const data = await api("/landlord/me/ownership-applications");
+      const applications = getList(data, ["applications", "ownership_applications"]);
+      $("totalApplications").textContent = applications.length;
+    } catch (_) {}
+  }
+
+
+  // -------------------------------------------------------
+  // AGENT AUTHORIZATION REQUESTS
+  // -------------------------------------------------------
+
+  async function loadAgentRequests() {
+    const area = $("agentsArea");
+    area.textContent = "Loading Agent requests…";
+
+    const data = await api("/landlord/me/authorization-requests");
+    const requests = getList(data, ["requests", "authorization_requests", "applications"]);
+
+    $("pendingRequests").textContent =
+      requests.filter((item) => item.status === "pending").length;
+
+    if (!requests.length) {
+      emptyMessage(area, "There are no Agent advertising permission requests.");
+      return;
+    }
+
+    requests.forEach((request) => {
+      const card = document.createElement("article");
+      card.className = "application-card";
+
+      const requestId = getValue(request, ["id", "authorization_id"]);
+      const heading = document.createElement("h3");
+
+      heading.textContent = "Agent request #" + valueOrDash(requestId);
+      card.appendChild(heading);
+
+      const statusLine = document.createElement("p");
+      statusLine.appendChild(statusPill(request.status));
+      card.appendChild(statusLine);
+
+      const details = document.createElement("div");
+      details.className = "details";
+
+      addDetail(details, "Agent", getValue(request, ["agent_name", "full_name"]));
+      addDetail(details, "Agent email", getValue(request, ["agent_email", "email"]));
+      addDetail(details, "Room ID", request.room_id);
+      addDetail(details, "Property location", request.location);
+      addDetail(details, "Requested", request.created_at);
+
+      card.appendChild(details);
+
+      if (request.note || request.message) {
+        const note = document.createElement("p");
+        note.textContent = "Agent note: " + (request.note || request.message);
+        card.appendChild(note);
+      }
+
+      if (request.status === "pending" || request.status === "approved") {
+        const decisionArea = document.createElement("div");
+        decisionArea.className = "toolbar";
+
+        const noteInput = document.createElement("input");
+        noteInput.placeholder = "Optional note";
+        noteInput.style.maxWidth = "300px";
+
+        const approve = makeButton("Approve", "", async () => {
+          await decideAgentRequest(requestId, "approve", noteInput.value, approve, reject, revoke);
+        });
+
+        const reject = makeButton("Reject", "danger", async () => {
+          await decideAgentRequest(requestId, "reject", noteInput.value, approve, reject, revoke);
+        });
+
+        const revoke = makeButton("Revoke permission", "danger", async () => {
+          await decideAgentRequest(requestId, "revoke", noteInput.value, approve, reject, revoke);
+        });
+
+        if (request.status === "pending") {
+          decisionArea.append(approve, reject);
+        } else {
+          decisionArea.append(revoke);
+        }
+
+        decisionArea.prepend(noteInput);
+        card.appendChild(decisionArea);
+      }
+
+      area.appendChild(card);
+    });
+  }
+
+
+  async function decideAgentRequest(id, decision, note, ...buttons) {
+    const question = {
+      approve: "Approve this Agent's request to advertise your property?",
+      reject: "Reject this Agent's request?",
+      revoke: "Revoke this Agent's advertising permission?"
+    }[decision];
+
+    if (!window.confirm(question)) return;
+
+    buttons.forEach((button) => button.disabled = true);
+
+    try {
+      await api(
+        `/landlord/me/authorization-requests/${encodeURIComponent(id)}/decision`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            decision,
+            note: note.trim()
+          })
+        }
+      );
+
+      setGlobalMessage("Agent request updated successfully.", "success");
+      await loadAgentRequests();
+
+    } catch (error) {
+      setGlobalMessage(error.message, "error");
+      buttons.forEach((button) => button.disabled = false);
+    }
+  }
+
+
+  // -------------------------------------------------------
+  // RENTAL REPORTS
+  // -------------------------------------------------------
+
+  async function loadRentalReports() {
+    const area = $("reportsArea");
+    area.textContent = "Loading rental reports…";
+
+    const data = await api("/landlord/me/rental-reports");
+    const reports = getList(data, ["reports", "rental_reports"]);
+
+    if (!reports.length) {
+      emptyMessage(area, "There are no rental reports yet.");
+      return;
+    }
+
+    reports.forEach((report) => {
+      const card = document.createElement("article");
+      card.className = "application-card";
+
+      const reportId = getValue(report, ["id", "report_id"]);
+
+      const heading = document.createElement("h3");
+      heading.textContent = "Rental report #" + valueOrDash(reportId);
+      card.appendChild(heading);
+
+      const statusLine = document.createElement("p");
+      statusLine.appendChild(statusPill(report.status || (report.confirmed ? "confirmed" : "pending")));
+      card.appendChild(statusLine);
+
+      const details = document.createElement("div");
+      details.className = "details";
+
+      addDetail(details, "Room ID", report.room_id);
+      addDetail(details, "Property location", report.location);
+      addDetail(details, "Agent", getValue(report, ["agent_name", "full_name"]));
+      addDetail(details, "Tenant", getValue(report, ["tenant_name", "renter_name"]));
+      addDetail(details, "Tenant phone", getValue(report, ["tenant_phone", "phone_number"]));
+      addDetail(details, "Rent amount", getValue(report, ["rent_amount", "price", "monthly_rent"]));
+      addDetail(details, "Reported", report.created_at);
+
+      card.appendChild(details);
+
+      if (report.description || report.note || report.details) {
+        const note = document.createElement("p");
+        note.textContent = "Report details: " + (report.description || report.note || report.details);
+        card.appendChild(note);
+      }
+
+      const isConfirmed =
+        report.confirmed === true ||
+        report.status === "confirmed" ||
+        report.status === "approved";
+
+      if (!isConfirmed) {
+        const confirmButton = makeButton("Confirm rental report", "", async () => {
+          if (!window.confirm("Confirm that this rental report is correct?")) return;
+
+          confirmButton.disabled = true;
+
+          try {
+            await api(
+              `/landlord/me/rental-reports/${encodeURIComponent(reportId)}/confirm`,
+              { method: "POST" }
+            );
+
+            showMessage($("globalMessage"), "Rental report confirmed.", "success");
+            await loadRentalReports();
+
+          } catch (error) {
+            showMessage($("globalMessage"), error.message, "error");
+            confirmButton.disabled = false;
+          }
+        });
+
+        card.appendChild(confirmButton);
+      }
+
+      area.appendChild(card);
+    });
+  }
+
+
+  // -------------------------------------------------------
+  // REFRESH
+  // -------------------------------------------------------
+
+  async function refreshDashboard() {
+    showMessage($("globalMessage"), "Refreshing dashboard…");
+
+    const tasks = await Promise.allSettled([
+      loadRooms(),
+      loadApplications(),
+      loadAgentRequests(),
+      loadRentalReports()
+    ]);
+
+    const errors = tasks
+      .filter((task) => task.status === "rejected")
+      .map((task) => task.reason.message);
+
+    if (errors.length) {
+      showMessage(
+        $("globalMessage"),
+        "Some sections could not be refreshed: " + errors.join(" "),
+        "error"
+      );
+    } else {
+      showMessage($("globalMessage"), "Dashboard refreshed successfully.", "success");
+    }
+  }
+
+
+  // -------------------------------------------------------
+  // REFRESH BUTTONS
+  // -------------------------------------------------------
+
+  $("refreshButton").addEventListener("click", refreshDashboard);
+
+  $("refreshRoomsButton").addEventListener("click", async () => {
+    try {
+      await loadRooms();
+      showMessage($("roomsMessage"), "Properties refreshed.", "success");
+    } catch (error) {
+      showMessage($("roomsMessage"), error.message, "error");
+    }
+  });
+
+  $("refreshClaimableButton").addEventListener("click", async () => {
+    try {
+      await loadClaimableRooms();
+    } catch (error) {
+      showMessage($("claimableMessage"), error.message, "error");
+    }
+  });
+
+  $("refreshApplicationsButton").addEventListener("click", async () => {
+    try {
+      await loadApplications();
+    } catch (error) {
+      showMessage($("applicationsArea"), error.message, "error");
+    }
+  });
+
+  $("refreshAgentsButton").addEventListener("click", async () => {
+    try {
+      await loadAgentRequests();
+    } catch (error) {
+      showMessage($("agentsArea"), error.message, "error");
+    }
+  });
+
+  $("refreshReportsButton").addEventListener("click", async () => {
+    try {
+      await loadRentalReports();
+    } catch (error) {
+      showMessage($("reportsArea"), error.message, "error");
+    }
+  });
+
+
+  // -------------------------------------------------------
+  // LOGOUT
+  // -------------------------------------------------------
+
+  function logout(notice = "") {
+    accessToken = null;
+
+    $("loginForm").reset();
+
+    $("dashboardPanel").classList.add("hidden");
+    $("loginPanel").classList.remove("hidden");
+    $("logoutButton").classList.add("hidden");
+
+    [
+      "roomsArea",
+      "claimableRooms",
+      "applicationsArea",
+      "agentsArea",
+      "reportsArea"
+    ].forEach((id) => $(id).replaceChildren());
+
+    $("totalRooms").textContent = "—";
+    $("totalApplications").textContent = "—";
+    $("pendingRequests").textContent = "—";
+
+    showMessage(
+      $("loginMessage"),
+      notice,
+      notice ? "error" : ""
+    );
+
+    showMessage($("globalMessage"), "");
+  }
+
+  $("logoutButton").addEventListener("click", () => logout());
+
+})();
+</script>
+
+
+</body>
+</html>

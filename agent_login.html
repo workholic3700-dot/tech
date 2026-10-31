@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Login | RumCHUO</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f3f6f4;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 430px;
+            background: white;
+            padding: 38px;
+            border-radius: 14px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo {
+            text-align: center;
+            color: #16834a;
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #222;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ddd;
+            border-radius: 7px;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #16834a;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #16834a;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #106b3b;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            display: none;
+            padding: 12px;
+            margin-bottom: 18px;
+            border-radius: 7px;
+            font-size: 14px;
+        }
+
+        .error {
+            display: block;
+            color: #a12626;
+            background: #ffecec;
+        }
+
+        .success {
+            display: block;
+            color: #176b37;
+            background: #e9f8ee;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .footer a {
+            color: #16834a;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+
+        <div class="logo">RumCHUO</div>
+        <p class="subtitle">Agent Portal</p>
+
+        <h2>Agent Sign In</h2>
+
+        <div id="message" class="message"></div>
+
+        <form id="agentLoginForm">
+
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                placeholder="Enter your registered email"
+                required
+            >
+
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                placeholder="Enter your password"
+                required
+            >
+
+            <button type="submit" id="loginButton">
+                Sign In
+            </button>
+
+        </form>
+
+        <div class="footer">
+            <p>Not an approved Agent?</p>
+            <p>Contact RumCHUO administration for Agent application assistance.</p>
+            <br>
+            <a href="/">Back to Homepage</a>
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin;
+
+        const form = document.getElementById("agentLoginForm");
+        const message = document.getElementById("message");
+        const loginButton = document.getElementById("loginButton");
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = "message " + type;
+        }
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            loginButton.disabled = true;
+            loginButton.textContent = "Signing in...";
+            message.className = "message";
+
+            try {
+                const response = await fetch(
+                    API_BASE_URL + "/students/login",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            password: password
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.detail || "Login failed. Check your email and password."
+                    );
+                }
+
+                if (!data.access_token || !data.student) {
+                    throw new Error("Invalid login response from server.");
+                }
+
+                if (data.student.role !== "agent") {
+                    throw new Error(
+                        "This page is only for approved Agent accounts."
+                    );
+                }
+
+                if (data.student.email_verified !== true) {
+                    throw new Error(
+                        "Please verify your email before signing in."
+                    );
+                }
+
+                localStorage.setItem("accessToken", data.access_token);
+                localStorage.setItem("userRole", data.student.role);
+                localStorage.setItem(
+                    "currentUser",
+                    JSON.stringify(data.student)
+                );
+
+                showMessage(
+                    "Login successful. Opening your dashboard...",
+                    "success"
+                );
+
+                window.location.href = "/agent/dashboard";
+
+            } catch (error) {
+                showMessage(error.message, "error");
+                loginButton.disabled = false;
+                loginButton.textContent = "Sign In";
+            }
+        });
+    </script>
+
+</body>
+</html>

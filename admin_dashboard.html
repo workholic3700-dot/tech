@@ -1,0 +1,1486 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="same-origin">
+  <title>RumCHUO | Admin Dashboard</title>
+
+  <style>
+    :root {
+      --navy: #10233f;
+      --green: #16845b;
+      --background: #f4f7fa;
+      --border: #dce4ec;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--background);
+      color: var(--text);
+    }
+
+    header {
+      background: var(--navy);
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 5px 0 0; color: #d4deeb; font-size: 13px; }
+
+    main { width: min(1250px, 95%); margin: 25px auto; }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px #10233f0a;
+    }
+
+    .login-panel { max-width: 450px; margin: 55px auto; }
+
+    h2 { margin-top: 0; font-size: 20px; }
+    h3 { font-size: 16px; margin-top: 20px; }
+    p { line-height: 1.5; }
+
+    .muted { color: var(--muted); }
+
+    label {
+      display: block;
+      margin: 15px 0 7px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font: inherit;
+    }
+
+    button {
+      background: var(--green);
+      color: white;
+      border: 0;
+      border-radius: 7px;
+      padding: 10px 14px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    button:hover { filter: brightness(.94); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .secondary { background: var(--navy); }
+    .danger { background: #b42318; }
+    .light { background: #e8eef5; color: var(--navy); }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .tabs button { background: #e5ebf2; color: var(--navy); }
+    .tabs button.active { background: var(--navy); color: white; }
+
+    .hidden { display: none !important; }
+
+    .message {
+      padding: 12px;
+      border-radius: 7px;
+      margin: 12px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .error { color: #912018; background: #fef0ee; }
+    .success { color: #126443; background: #e8f7ef; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stat {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 17px;
+      border-radius: 9px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 25px;
+      margin-top: 8px;
+      color: var(--navy);
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    th { color: var(--muted); background: #f8fafc; }
+
+    .status-pill {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: capitalize;
+      background: #e8eef5;
+    }
+
+    .status-pending { background: #fff4d6; color: #805b00; }
+    .status-approved { background: #e8f7ef; color: #126443; }
+    .status-rejected { background: #fef0ee; color: #912018; }
+    .status-suspended { background: #fef0ee; color: #912018; }
+
+    .application-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin: 15px 0;
+    }
+
+    .application-details {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 20px;
+      margin: 15px 0;
+    }
+
+    .detail {
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 7px;
+      overflow-wrap: anywhere;
+    }
+
+    .detail small {
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .detail a {
+      color: var(--green);
+      font-weight: bold;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+
+    .detail a:hover {
+      text-decoration: underline;
+    }
+
+    .photo-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 12px;
+      margin: 15px 0;
+    }
+
+    .photo-gallery img {
+      width: 100%;
+      height: 165px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #f1f5f9;
+    }
+
+    .photo-item small {
+      display: block;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+      margin-top: 5px;
+    }
+
+    .decision-area {
+      border-top: 1px solid var(--border);
+      margin-top: 15px;
+      padding-top: 15px;
+    }
+
+    .decision-area textarea {
+      min-height: 65px;
+      margin-bottom: 10px;
+    }
+
+    .notice {
+      background: #f1f5f9;
+      border-left: 4px solid var(--navy);
+      border-radius: 5px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 22px;
+    }
+
+    @media (max-width: 750px) {
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .application-details { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 450px) {
+      .stats { grid-template-columns: 1fr; }
+      .panel { padding: 15px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div>
+    <h1>RumCHUO Administration</h1>
+    <p>Platform management and property verification</p>
+  </div>
+
+  <button id="logoutButton" class="light hidden" type="button">
+    Log out
+  </button>
+</header>
+
+<main>
+
+  <section id="loginPanel" class="panel login-panel">
+    <h2>Administrator sign in</h2>
+    <p class="muted">Sign in using your RumCHUO administrator account.</p>
+
+    <form id="loginForm">
+      <label for="email">Email address</label>
+      <input id="email" type="email" required autocomplete="username">
+
+      <label for="password">Password</label>
+      <input id="password" type="password" required autocomplete="current-password">
+
+      <button id="loginButton" type="submit" style="width:100%;margin-top:18px">
+        Sign in
+      </button>
+    </form>
+
+    <div id="loginMessage" role="status" aria-live="polite"></div>
+  </section>
+
+  <section id="dashboardPanel" class="hidden">
+
+    <section class="panel">
+      <h2>Administration overview</h2>
+      <p id="welcome" class="muted"></p>
+
+      <div class="toolbar">
+        <button id="refreshButton" type="button">Refresh dashboard</button>
+      </div>
+
+      <div id="globalMessage" role="status" aria-live="polite"></div>
+
+      <div class="stats">
+        <div class="stat">
+          <span>Total accounts</span>
+          <strong id="totalAccounts">—</strong>
+        </div>
+        <div class="stat">
+          <span>Approved Agents</span>
+          <strong id="approvedAgents">—</strong>
+        </div>
+        <div class="stat">
+          <span>Pending Agent applications</span>
+          <strong id="pendingAgents">—</strong>
+        </div>
+        <div class="stat">
+          <span>Total rooms</span>
+          <strong id="totalRooms">—</strong>
+        </div>
+        <div class="stat">
+          <span>Pending property verification</span>
+          <strong id="pendingProperties">—</strong>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="Admin sections">
+      <button class="active" data-section="propertySection" type="button">
+        Property verification
+      </button>
+      <button data-section="agentSection" type="button">
+        Agent applications
+      </button>
+      <button data-section="accountsSection" type="button">
+        Accounts
+      </button>
+      <button data-section="auditSection" type="button">
+        Audit log
+      </button>
+    </nav>
+
+    <section id="propertySection" class="panel dashboard-section">
+      <h2>Property ownership verification</h2>
+
+      <p class="muted">
+        Review property details and photographs submitted by landlords.
+        Approving an application assigns the property to the landlord.
+        Rejected applications do not receive ownership.
+      </p>
+
+      <div class="notice">
+        Only approve a property after reviewing the actual property photographs
+        and the submitted property information. Approved rooms become eligible
+        for Agent advertising permission requests.
+      </div>
+
+      <div class="toolbar" style="margin-top:15px">
+        <button id="refreshPropertiesButton" type="button">
+          Refresh property applications
+        </button>
+      </div>
+
+      <div id="propertyMessage" role="status" aria-live="polite"></div>
+      <div id="propertyApplications"></div>
+    </section>
+
+    <section id="agentSection" class="panel dashboard-section hidden">
+      <h2>Agent applications</h2>
+      <div class="toolbar">
+        <button id="refreshAgentsButton" type="button">
+          Refresh Agent applications
+        </button>
+      </div>
+      <div id="agentApplications" class="table-wrap"></div>
+    </section>
+
+    <section id="accountsSection" class="panel dashboard-section hidden">
+      <h2>Account management</h2>
+      <div class="toolbar">
+        <button id="refreshAccountsButton" type="button">
+          Refresh accounts
+        </button>
+      </div>
+      <div id="accountsArea" class="table-wrap"></div>
+    </section>
+
+    <section id="auditSection" class="panel dashboard-section hidden">
+      <h2>Administrator audit log</h2>
+      <div class="toolbar">
+        <button id="refreshAuditButton" type="button">
+          Refresh audit log
+        </button>
+      </div>
+      <div id="auditArea" class="table-wrap"></div>
+    </section>
+
+  </section>
+
+</main>
+
+<footer>RumCHUO Administration Portal</footer>
+
+<script>
+"use strict";
+
+(() => {
+
+  let accessToken = null;
+  let photoObjectUrls = [];
+
+  const $ = (id) => document.getElementById(id);
+
+  // ---------------------------------------------------------
+  // GENERAL HELPERS
+  // ---------------------------------------------------------
+
+  function showMessage(element, message, type = "") {
+    element.textContent = message;
+    element.className = type ? "message " + type : "";
+  }
+
+  function setGlobalMessage(message, type = "") {
+    showMessage($("globalMessage"), message, type);
+  }
+
+  function valueOrDash(value) {
+    if (value === null || value === undefined || value === "") {
+      return "—";
+    }
+    return String(value);
+  }
+
+  function makeTable(headers) {
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+
+    headers.forEach((label) => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+
+    return { table, tbody };
+  }
+
+  function addCell(row, value) {
+    const td = document.createElement("td");
+    td.textContent = valueOrDash(value);
+    row.appendChild(td);
+    return td;
+  }
+
+  function emptyRow(tbody, colspan, message) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+
+    cell.colSpan = colspan;
+    cell.textContent = message;
+
+    row.appendChild(cell);
+    tbody.appendChild(row);
+  }
+
+  function makeButton(label, className, handler) {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.textContent = label;
+
+    if (className) button.className = className;
+
+    button.addEventListener("click", handler);
+    return button;
+  }
+
+  function statusPill(status) {
+    const span = document.createElement("span");
+    const value = String(status || "unknown").toLowerCase();
+
+    span.className = "status-pill status-" + value;
+    span.textContent = value.replaceAll("_", " ");
+
+    return span;
+  }
+
+  function firstValue(object, keys, fallback = null) {
+    for (const key of keys) {
+      if (
+        object &&
+        object[key] !== undefined &&
+        object[key] !== null
+      ) {
+        return object[key];
+      }
+    }
+
+    return fallback;
+  }
+
+  // ---------------------------------------------------------
+  // API HELPER
+  // ---------------------------------------------------------
+
+  async function api(path, options = {}) {
+    if (!accessToken) {
+      throw new Error("Please sign in again.");
+    }
+
+    const headers = {
+      "Authorization": "Bearer " + accessToken,
+      ...(options.headers || {})
+    };
+
+    if (
+      options.body &&
+      !(options.body instanceof FormData) &&
+      !headers["Content-Type"]
+    ) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    const response = await fetch(path, {
+      ...options,
+      headers,
+      cache: "no-store"
+    });
+
+    let data = {};
+
+    try {
+      data = await response.json();
+    } catch (_) {}
+
+    if (response.status === 401) {
+      logout("Your session has expired. Please sign in again.");
+      throw new Error("Your session has expired.");
+    }
+
+    if (!response.ok) {
+      throw new Error(data.detail || "The request failed.");
+    }
+
+    return data;
+  }
+
+  // ---------------------------------------------------------
+  // LOGIN
+  // ---------------------------------------------------------
+
+  $("loginForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    $("loginButton").disabled = true;
+    showMessage($("loginMessage"), "Signing in…");
+
+    try {
+      const response = await fetch("/students/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: $("email").value.trim(),
+          password: $("password").value
+        }),
+        cache: "no-store"
+      });
+
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch (_) {}
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Sign in failed.");
+      }
+
+      if (
+        !data.access_token ||
+        !data.student ||
+        data.student.role !== "admin"
+      ) {
+        throw new Error(
+          "This account does not have administrator access."
+        );
+      }
+
+      accessToken = data.access_token;
+      $("password").value = "";
+
+      $("loginPanel").classList.add("hidden");
+      $("dashboardPanel").classList.remove("hidden");
+      $("logoutButton").classList.remove("hidden");
+
+      $("welcome").textContent =
+        "Signed in as " + (data.student.full_name || "Administrator") + ".";
+
+      await refreshDashboard();
+
+    } catch (error) {
+      accessToken = null;
+
+      showMessage(
+        $("loginMessage"),
+        error.message,
+        "error"
+      );
+
+    } finally {
+      $("loginButton").disabled = false;
+    }
+  });
+
+  // ---------------------------------------------------------
+  // NAVIGATION TABS
+  // ---------------------------------------------------------
+
+  document.querySelectorAll(".tabs button").forEach((button) => {
+    button.addEventListener("click", () => {
+
+      document.querySelectorAll(".tabs button").forEach((item) => {
+        item.classList.remove("active");
+      });
+
+      button.classList.add("active");
+
+      document.querySelectorAll(".dashboard-section").forEach((section) => {
+        section.classList.add("hidden");
+      });
+
+      $(button.dataset.section).classList.remove("hidden");
+    });
+  });
+
+  // ---------------------------------------------------------
+  // OVERVIEW
+  // ---------------------------------------------------------
+
+  async function loadOverview() {
+    const data = await api("/admin/overview");
+
+    $("totalAccounts").textContent =
+      valueOrDash(data.total_accounts);
+
+    $("approvedAgents").textContent =
+      valueOrDash(data.approved_agents);
+
+    $("pendingAgents").textContent =
+      valueOrDash(data.pending_agent_applications);
+
+    $("totalRooms").textContent =
+      valueOrDash(data.total_rooms);
+
+    $("pendingProperties").textContent =
+      valueOrDash(data.pending_room_ownership_applications);
+  }
+
+  // ---------------------------------------------------------
+  // PROPERTY APPLICATIONS
+  // ---------------------------------------------------------
+
+  function clearPhotoObjectUrls() {
+    photoObjectUrls.forEach((url) => {
+      URL.revokeObjectURL(url);
+    });
+
+    photoObjectUrls = [];
+  }
+
+  async function loadPrivatePhoto(applicationId, photo) {
+    const photoId = firstValue(photo, [
+      "id",
+      "photo_id"
+    ]);
+
+    if (!photoId) {
+      throw new Error("A property photograph has no photo ID.");
+    }
+
+    const url =
+      `/admin/room-ownership-applications/${encodeURIComponent(applicationId)}` +
+      `/photos/${encodeURIComponent(photoId)}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Authorization": "Bearer " + accessToken
+      },
+      cache: "no-store"
+    });
+
+    if (response.status === 401) {
+      logout("Your session has expired. Please sign in again.");
+      throw new Error("Your session has expired.");
+    }
+
+    if (!response.ok) {
+      throw new Error("Unable to load a private property photograph.");
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    photoObjectUrls.push(objectUrl);
+    return objectUrl;
+  }
+
+  function addDetail(container, label, value) {
+    const div = document.createElement("div");
+    div.className = "detail";
+
+    const small = document.createElement("small");
+    small.textContent = label;
+
+    const strong = document.createElement("strong");
+    strong.textContent = valueOrDash(value);
+
+    div.appendChild(small);
+    div.appendChild(strong);
+
+    container.appendChild(div);
+  }
+
+  // NEW: DISPLAY A CLICKABLE LANDLORD PHONE NUMBER
+  function addPhoneDetail(container, phoneNumber) {
+    const div = document.createElement("div");
+    div.className = "detail";
+
+    const label = document.createElement("small");
+    label.textContent = "Landlord phone number";
+
+    const digits = String(phoneNumber || "").replace(/\D/g, "");
+
+    if (digits.length >= 5 && digits.length <= 20) {
+      const link = document.createElement("a");
+
+      link.href = "tel:" + String(phoneNumber).replace(/[^\d+]/g, "");
+      link.textContent = String(phoneNumber);
+      link.setAttribute("aria-label", "Call landlord at " + phoneNumber);
+
+      div.appendChild(label);
+      div.appendChild(link);
+    } else {
+      const value = document.createElement("strong");
+      value.textContent = "Not provided";
+
+      div.appendChild(label);
+      div.appendChild(value);
+    }
+
+    container.appendChild(div);
+  }
+
+  async function buildPropertyCard(application) {
+    const card = document.createElement("article");
+    card.className = "application-card";
+
+    const applicationId = firstValue(application, [
+      "id",
+      "application_id"
+    ]);
+
+    const room = application.room || {};
+    const landlord = application.landlord || {};
+
+    const roomId = firstValue(application, [
+      "room_id"
+    ], firstValue(room, ["id"]));
+
+    const location = firstValue(application, [
+      "location"
+    ], firstValue(room, ["location"]));
+
+    const price = firstValue(application, [
+      "price"
+    ], firstValue(room, ["price"]));
+
+    const roomType = firstValue(application, [
+      "room_type"
+    ], firstValue(room, ["room_type"]));
+
+    const landlordName = firstValue(application, [
+      "landlord_name",
+      "full_name"
+    ], firstValue(landlord, ["full_name", "name"]));
+
+    const landlordEmail = firstValue(application, [
+      "landlord_email",
+      "email"
+    ], firstValue(landlord, ["email"]));
+
+    // NEW: READ PHONE NUMBER FROM THE API RESPONSE
+    const landlordPhone = firstValue(application, [
+      "phone_number",
+      "landlord_phone",
+      "phone"
+    ], firstValue(landlord, [
+      "phone_number",
+      "phone"
+    ]));
+
+    const applicationType = firstValue(application, [
+      "application_type"
+    ]);
+
+    const status = firstValue(application, [
+      "status"
+    ], "pending");
+
+    const heading = document.createElement("h3");
+
+    heading.textContent =
+      `Application #${valueOrDash(applicationId)} — Room #${valueOrDash(roomId)}`;
+
+    card.appendChild(heading);
+
+    const statusLine = document.createElement("p");
+    statusLine.appendChild(statusPill(status));
+    card.appendChild(statusLine);
+
+    const details = document.createElement("div");
+    details.className = "application-details";
+
+    addDetail(details, "Landlord", landlordName);
+    addDetail(details, "Landlord email", landlordEmail);
+
+    // NEW: PHONE NUMBER APPEARS DIRECTLY BELOW LANDLORD EMAIL
+    addPhoneDetail(details, landlordPhone);
+
+    addDetail(details, "Room ID", roomId);
+    addDetail(details, "Location", location);
+
+    addDetail(
+      details,
+      "Monthly rent",
+      price === null ? null : "TZS " + Number(price).toLocaleString()
+    );
+
+    addDetail(details, "Room type", roomType);
+
+    addDetail(
+      details,
+      "Application type",
+      applicationType === "new_room"
+        ? "New property submission"
+        : applicationType === "claim_existing"
+          ? "Claim of existing property"
+          : applicationType
+    );
+
+    addDetail(
+      details,
+      "Submitted",
+      firstValue(application, ["created_at"])
+    );
+
+    addDetail(
+      details,
+      "Photographs submitted",
+      (application.photos || []).length
+    );
+
+    card.appendChild(details);
+
+    const photoHeading = document.createElement("h3");
+    photoHeading.textContent = "Property photographs";
+    card.appendChild(photoHeading);
+
+    const gallery = document.createElement("div");
+    gallery.className = "photo-gallery";
+
+    card.appendChild(gallery);
+
+    const photos = application.photos || [];
+
+    if (!photos.length) {
+      const noPhotos = document.createElement("p");
+      noPhotos.className = "muted";
+      noPhotos.textContent = "No photographs were listed for this application.";
+
+      gallery.appendChild(noPhotos);
+
+    } else {
+      for (const photo of photos) {
+        const photoItem = document.createElement("div");
+        photoItem.className = "photo-item";
+
+        try {
+          const imageUrl = await loadPrivatePhoto(
+            applicationId,
+            photo
+          );
+
+          const image = document.createElement("img");
+
+          image.src = imageUrl;
+          image.alt = "Private property verification photograph";
+          image.loading = "lazy";
+
+          photoItem.appendChild(image);
+
+          const caption = document.createElement("small");
+
+          caption.textContent = firstValue(photo, [
+            "original_name",
+            "filename",
+            "name"
+          ], "Property photograph");
+
+          photoItem.appendChild(caption);
+
+        } catch (error) {
+          const failed = document.createElement("p");
+          failed.className = "muted";
+          failed.textContent = "Photograph could not be loaded.";
+
+          photoItem.appendChild(failed);
+        }
+
+        gallery.appendChild(photoItem);
+      }
+    }
+
+    if (status === "pending") {
+      const decisionArea = document.createElement("div");
+      decisionArea.className = "decision-area";
+
+      const reasonLabel = document.createElement("label");
+      reasonLabel.textContent = "Review note / rejection reason";
+
+      const reasonInput = document.createElement("textarea");
+      reasonInput.placeholder =
+        "Enter a note for the landlord. A reason is recommended when rejecting.";
+
+      const buttons = document.createElement("div");
+      buttons.className = "toolbar";
+
+      const approveButton = makeButton(
+        "Approve ownership",
+        "",
+        async () => {
+          await decideProperty(
+            applicationId,
+            "approve",
+            reasonInput.value,
+            approveButton,
+            rejectButton
+          );
+        }
+      );
+
+      const rejectButton = makeButton(
+        "Reject application",
+        "danger",
+        async () => {
+          await decideProperty(
+            applicationId,
+            "reject",
+            reasonInput.value,
+            approveButton,
+            rejectButton
+          );
+        }
+      );
+
+      buttons.appendChild(approveButton);
+      buttons.appendChild(rejectButton);
+
+      decisionArea.appendChild(reasonLabel);
+      decisionArea.appendChild(reasonInput);
+      decisionArea.appendChild(buttons);
+
+      card.appendChild(decisionArea);
+
+    } else {
+      const reviewReason = firstValue(application, [
+        "review_reason"
+      ]);
+
+      if (reviewReason) {
+        const note = document.createElement("p");
+        note.className = "muted";
+        note.textContent = "Admin response: " + reviewReason;
+        card.appendChild(note);
+      }
+    }
+
+    return card;
+  }
+
+  async function decideProperty(
+    applicationId,
+    decision,
+    reason,
+    approveButton,
+    rejectButton
+  ) {
+    const question = decision === "approve"
+      ? "Approve this ownership application and assign the room to this landlord?"
+      : "Reject this ownership application?";
+
+    if (!window.confirm(question)) return;
+
+    approveButton.disabled = true;
+    rejectButton.disabled = true;
+
+    try {
+      await api(
+        `/admin/room-ownership-applications/${encodeURIComponent(applicationId)}/decision`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            decision,
+            reason: reason.trim()
+          })
+        }
+      );
+
+      showMessage(
+        $("propertyMessage"),
+        `Property application ${decision === "approve" ? "approved" : "rejected"}.`,
+        "success"
+      );
+
+      await loadPropertyApplications();
+      await loadOverview();
+
+    } catch (error) {
+      showMessage(
+        $("propertyMessage"),
+        error.message,
+        "error"
+      );
+
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+    }
+  }
+
+  async function loadPropertyApplications() {
+    clearPhotoObjectUrls();
+
+    const area = $("propertyApplications");
+    area.textContent = "Loading property applications…";
+
+    const data = await api(
+      "/admin/room-ownership-applications"
+    );
+
+    const applications = data.applications || [];
+
+    area.replaceChildren();
+
+    if (!applications.length) {
+      const message = document.createElement("p");
+      message.className = "muted";
+      message.textContent = "There are no property ownership applications.";
+
+      area.appendChild(message);
+      return;
+    }
+
+    for (const application of applications) {
+      const card = await buildPropertyCard(application);
+      area.appendChild(card);
+    }
+  }
+
+  // ---------------------------------------------------------
+  // AGENT APPLICATIONS
+  // ---------------------------------------------------------
+
+  async function loadAgentApplications() {
+    const area = $("agentApplications");
+    area.textContent = "Loading Agent applications…";
+
+    const data = await api("/admin/agent-applications");
+    const applications = data.applications || [];
+
+    const { table, tbody } = makeTable([
+      "Application ID",
+      "Applicant",
+      "Email",
+      "Status",
+      "Submitted",
+      "Decision"
+    ]);
+
+    applications.forEach((application) => {
+      const row = document.createElement("tr");
+
+      addCell(row, application.id);
+      addCell(row, application.full_name);
+      addCell(row, application.email);
+
+      const statusCell = document.createElement("td");
+      statusCell.appendChild(statusPill(application.status));
+      row.appendChild(statusCell);
+
+      addCell(row, application.created_at);
+
+      const actionCell = document.createElement("td");
+
+      if (application.status === "pending") {
+        const toolbar = document.createElement("div");
+        toolbar.className = "toolbar";
+
+        toolbar.appendChild(
+          makeButton("Approve", "", () =>
+            decideAgentApplication(application.id, "approve")
+          )
+        );
+
+        toolbar.appendChild(
+          makeButton("Reject", "danger", () =>
+            decideAgentApplication(application.id, "reject")
+          )
+        );
+
+        actionCell.appendChild(toolbar);
+
+      } else {
+        actionCell.textContent =
+          application.reason || application.review_reason || "Reviewed";
+      }
+
+      row.appendChild(actionCell);
+      tbody.appendChild(row);
+    });
+
+    if (!applications.length) {
+      emptyRow(tbody, 6, "There are no Agent applications.");
+    }
+
+    area.replaceChildren(table);
+  }
+
+  async function decideAgentApplication(id, decision) {
+    const reason = window.prompt(
+      "Enter a reason or review note:",
+      ""
+    );
+
+    if (reason === null) return;
+
+    try {
+      await api(
+        `/admin/agent-applications/${id}/decision`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            decision,
+            reason
+          })
+        }
+      );
+
+      setGlobalMessage(
+        `Agent application ${decision === "approve" ? "approved" : "rejected"}.`,
+        "success"
+      );
+
+      await loadAgentApplications();
+      await loadOverview();
+
+    } catch (error) {
+      setGlobalMessage(error.message, "error");
+    }
+  }
+
+  // ---------------------------------------------------------
+  // ACCOUNTS
+  // ---------------------------------------------------------
+
+  async function loadAccounts() {
+    const area = $("accountsArea");
+    area.textContent = "Loading accounts…";
+
+    const data = await api("/admin/accounts");
+    const accounts = data.accounts || [];
+
+    const { table, tbody } = makeTable([
+      "Account ID",
+      "Name",
+      "Email",
+      "Role",
+      "Email verified",
+      "Account status",
+      "Action"
+    ]);
+
+    accounts.forEach((account) => {
+      const row = document.createElement("tr");
+
+      addCell(row, account.id);
+      addCell(row, account.full_name);
+      addCell(row, account.email);
+      addCell(row, account.role);
+
+      addCell(
+        row,
+        account.email_verified ? "Yes" : "No"
+      );
+
+      const suspended =
+        account.account_status === "suspended";
+
+      const statusCell = document.createElement("td");
+
+      statusCell.appendChild(
+        statusPill(suspended ? "suspended" : "active")
+      );
+
+      row.appendChild(statusCell);
+
+      const actionCell = document.createElement("td");
+
+      if (account.role !== "admin") {
+        actionCell.appendChild(
+          makeButton(
+            suspended ? "Unsuspend" : "Suspend",
+            suspended ? "" : "danger",
+            () => changeAccountStatus(
+              account.id,
+              !suspended
+            )
+          )
+        );
+      } else {
+        actionCell.textContent = "Administrator";
+      }
+
+      row.appendChild(actionCell);
+      tbody.appendChild(row);
+    });
+
+    if (!accounts.length) {
+      emptyRow(tbody, 7, "No accounts were returned.");
+    }
+
+    area.replaceChildren(table);
+  }
+
+  async function changeAccountStatus(id, suspended) {
+    const reason = window.prompt(
+      suspended
+        ? "Why are you suspending this account?"
+        : "Enter a note for unsuspending this account:",
+      ""
+    );
+
+    if (reason === null) return;
+
+    if (
+      suspended &&
+      !window.confirm("Confirm account suspension?")
+    ) {
+      return;
+    }
+
+    try {
+      await api(
+        `/admin/accounts/${id}/suspension`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            suspended,
+            reason
+          })
+        }
+      );
+
+      setGlobalMessage(
+        suspended ? "Account suspended." : "Account unsuspended.",
+        "success"
+      );
+
+      await loadAccounts();
+      await loadOverview();
+
+    } catch (error) {
+      setGlobalMessage(error.message, "error");
+    }
+  }
+
+  // ---------------------------------------------------------
+  // AUDIT LOG
+  // ---------------------------------------------------------
+
+  async function loadAuditLogs() {
+    const area = $("auditArea");
+    area.textContent = "Loading audit logs…";
+
+    const data = await api("/admin/audit-logs");
+    const logs = data.audit_logs || [];
+
+    const { table, tbody } = makeTable([
+      "ID",
+      "Administrator",
+      "Action",
+      "Target",
+      "Details",
+      "Date"
+    ]);
+
+    logs.forEach((log) => {
+      const row = document.createElement("tr");
+
+      addCell(row, log.id);
+      addCell(row, log.admin_name || log.admin_id);
+      addCell(row, log.action);
+      addCell(row, log.target || log.target_id);
+      addCell(row, log.details || log.note);
+      addCell(row, log.created_at);
+
+      tbody.appendChild(row);
+    });
+
+    if (!logs.length) {
+      emptyRow(tbody, 6, "There are no audit log entries.");
+    }
+
+    area.replaceChildren(table);
+  }
+
+  // ---------------------------------------------------------
+  // REFRESH CONTROLS
+  // ---------------------------------------------------------
+
+  async function refreshDashboard() {
+    setGlobalMessage("Refreshing dashboard…");
+
+    const tasks = await Promise.allSettled([
+      loadOverview(),
+      loadPropertyApplications(),
+      loadAgentApplications(),
+      loadAccounts(),
+      loadAuditLogs()
+    ]);
+
+    const errors = tasks
+      .filter((item) => item.status === "rejected")
+      .map((item) => item.reason.message);
+
+    if (errors.length) {
+      setGlobalMessage(
+        "Some sections could not be refreshed: " + errors.join(" "),
+        "error"
+      );
+    } else {
+      setGlobalMessage("Dashboard refreshed successfully.", "success");
+    }
+  }
+
+  $("refreshButton").addEventListener(
+    "click",
+    refreshDashboard
+  );
+
+  $("refreshPropertiesButton").addEventListener(
+    "click",
+    async () => {
+      try {
+        await loadPropertyApplications();
+        await loadOverview();
+
+        showMessage(
+          $("propertyMessage"),
+          "Property applications refreshed.",
+          "success"
+        );
+
+      } catch (error) {
+        showMessage($("propertyMessage"), error.message, "error");
+      }
+    }
+  );
+
+  $("refreshAgentsButton").addEventListener(
+    "click",
+    async () => {
+      try {
+        await loadAgentApplications();
+      } catch (error) {
+        setGlobalMessage(error.message, "error");
+      }
+    }
+  );
+
+  $("refreshAccountsButton").addEventListener(
+    "click",
+    async () => {
+      try {
+        await loadAccounts();
+      } catch (error) {
+        setGlobalMessage(error.message, "error");
+      }
+    }
+  );
+
+  $("refreshAuditButton").addEventListener(
+    "click",
+    async () => {
+      try {
+        await loadAuditLogs();
+      } catch (error) {
+        setGlobalMessage(error.message, "error");
+      }
+    }
+  );
+
+  // ---------------------------------------------------------
+  // LOGOUT
+  // ---------------------------------------------------------
+
+  function logout(notice = "") {
+    accessToken = null;
+
+    clearPhotoObjectUrls();
+
+    $("loginForm").reset();
+
+    $("dashboardPanel").classList.add("hidden");
+    $("loginPanel").classList.remove("hidden");
+
+    $("logoutButton").classList.add("hidden");
+
+    $("propertyApplications").replaceChildren();
+    $("agentApplications").replaceChildren();
+    $("accountsArea").replaceChildren();
+    $("auditArea").replaceChildren();
+
+    showMessage(
+      $("loginMessage"),
+      notice,
+      notice ? "error" : ""
+    );
+
+    setGlobalMessage("");
+  }
+
+  $("logoutButton").addEventListener(
+    "click",
+    () => logout()
+  );
+
+})();
+</script>
+
+</body>
+</html>

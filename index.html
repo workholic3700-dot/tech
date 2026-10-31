@@ -1,0 +1,1218 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RumCHUO helps students explore accommodation and connect with agents.">
+    <title>RumCHUO | Student Accommodation</title>
+
+    <style>
+        :root {
+            --navy: #123b68;
+            --green: #16845b;
+            --background: #f5f7fb;
+            --muted: #667085;
+            --border: #e5eaf1;
+            --white: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #172b4d;
+            background: var(--background);
+        }
+
+        button, input, select { font: inherit; }
+        button { cursor: pointer; }
+        a { color: inherit; }
+
+        .navbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 17px 6%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .brand {
+            color: var(--navy);
+            font-size: 27px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .brand span { color: var(--green); }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+        }
+
+        .nav-links a {
+            color: #344054;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .nav-button {
+            border: 0;
+            border-radius: 8px;
+            padding: 11px 16px;
+            color: white;
+            background: var(--navy);
+        }
+
+        .hero {
+            background: linear-gradient(120deg, #123b68, #176c70);
+            color: white;
+            padding: 62px 6% 72px;
+        }
+
+        .hero-content {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .eyebrow {
+            color: #b8f1d9;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .hero h1 {
+            max-width: 680px;
+            font-size: clamp(34px, 5vw, 52px);
+            line-height: 1.12;
+            margin: 16px 0;
+        }
+
+        .hero p {
+            max-width: 580px;
+            line-height: 1.7;
+            color: #e0eaf3;
+        }
+
+        .search-panel {
+            margin-top: 30px;
+            background: white;
+            border-radius: 13px;
+            padding: 17px;
+            display: grid;
+            grid-template-columns: 1.3fr 1fr 1fr auto;
+            gap: 12px;
+            box-shadow: 0 12px 35px #061d3530;
+        }
+
+        .field label {
+            display: block;
+            color: #475467;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 0 0 8px;
+        }
+
+        .field input, .field select {
+            width: 100%;
+            min-width: 0;
+            padding: 12px;
+            border: 1px solid #d0d5dd;
+            border-radius: 7px;
+            background: white;
+            color: #344054;
+        }
+
+        .search-button {
+            align-self: end;
+            padding: 13px 22px;
+            background: var(--green);
+            color: white;
+            border: 0;
+            border-radius: 7px;
+            font-weight: bold;
+        }
+
+        .search-button:hover, .nav-button:hover { opacity: 0.9; }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 40px 24px;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 22px;
+        }
+
+        .section-heading h2 {
+            color: var(--navy);
+            margin: 0 0 8px;
+            font-size: 27px;
+        }
+
+        .section-heading p {
+            color: var(--muted);
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .clear-button {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 10px 14px;
+            color: var(--navy);
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .room-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            overflow: hidden;
+            box-shadow: 0 3px 12px #102b4c08;
+        }
+
+        .room-image {
+            height: 175px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            background: linear-gradient(135deg, #d9eee8, #c8d9ed);
+        }
+
+        .room-card:nth-child(3n + 2) .room-image {
+            background: linear-gradient(135deg, #f8e8d0, #e6d8f2);
+        }
+
+        .room-card:nth-child(3n) .room-image {
+            background: linear-gradient(135deg, #dce9f7, #d5eadb);
+        }
+
+        .room-info { padding: 18px; }
+
+        .room-type {
+            display: inline-block;
+            background: #e9f7f0;
+            color: #13734f;
+            padding: 6px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .availability {
+            display: inline-block;
+            margin: 10px 0 0 5px;
+            padding: 5px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            background: #e9f7f0;
+            color: #13734f;
+        }
+
+        .availability.unavailable {
+            background: #fff0ed;
+            color: #b42318;
+        }
+
+        .room-info h3 {
+            margin: 13px 0 8px;
+            font-size: 18px;
+            overflow-wrap: anywhere;
+        }
+
+        .location {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 17px;
+            overflow-wrap: anywhere;
+        }
+
+        .room-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+        }
+
+        .price {
+            color: var(--navy);
+            font-weight: 800;
+            font-size: 17px;
+            overflow-wrap: anywhere;
+        }
+
+        .price small {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: normal;
+            margin-top: 4px;
+        }
+
+        .details-button {
+            background: white;
+            border: 1px solid var(--green);
+            color: var(--green);
+            border-radius: 7px;
+            padding: 9px 11px;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .details-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-state, .loading-state, .error-state {
+            display: none;
+            background: white;
+            padding: 35px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            text-align: center;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .error-state {
+            border-color: #fecdca;
+            color: #b42318;
+        }
+
+        .trust-section {
+            background: white;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        .trust-item { padding: 10px 0; }
+        .trust-icon { font-size: 27px; }
+
+        .trust-item h3 {
+            color: var(--navy);
+            font-size: 17px;
+        }
+
+        .trust-item p {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .agent-banner {
+            background: #e9f5ef;
+            border: 1px solid #cde9da;
+            border-radius: 14px;
+            padding: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 25px;
+        }
+
+        .agent-banner h2 {
+            margin-top: 0;
+            color: var(--navy);
+        }
+
+        .agent-banner p {
+            color: #475467;
+            line-height: 1.6;
+            max-width: 650px;
+        }
+
+        .agent-banner button {
+            background: var(--green);
+            color: white;
+            border: 0;
+            border-radius: 8px;
+            padding: 13px 17px;
+            white-space: nowrap;
+        }
+
+        footer {
+            background: #102c4b;
+            color: #dce6f0;
+            text-align: center;
+            padding: 28px 20px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .notice {
+            margin-top: 15px;
+            padding: 12px 15px;
+            background: #e9f5ef;
+            border: 1px solid #cde9da;
+            color: #145c40;
+            border-radius: 8px;
+            display: none;
+            line-height: 1.5;
+        }
+
+        /* Sign-in window */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(10, 27, 48, 0.68);
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .login-modal {
+            background: white;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 15px;
+            padding: 28px;
+            box-shadow: 0 20px 60px #0003;
+            position: relative;
+        }
+
+        .login-modal h2 {
+            color: var(--navy);
+            margin: 0 0 8px;
+        }
+
+        .login-modal > p {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 22px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 13px;
+            right: 15px;
+            border: 0;
+            background: transparent;
+            color: #667085;
+            font-size: 27px;
+            padding: 3px 8px;
+        }
+
+        .login-field { margin-bottom: 16px; }
+
+        .login-field label {
+            display: block;
+            color: #344054;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 7px;
+        }
+
+        .login-field input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d0d5dd;
+            border-radius: 7px;
+            outline: none;
+        }
+
+        .login-field input:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px #16845b20;
+        }
+
+        .login-submit {
+            width: 100%;
+            padding: 13px;
+            background: var(--navy);
+            color: white;
+            border: 0;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .login-submit:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .login-error {
+            display: none;
+            background: #fff0ed;
+            color: #b42318;
+            border: 1px solid #fecdca;
+            padding: 11px;
+            border-radius: 7px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+
+        .login-help {
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+            margin: 16px 0 0;
+        }
+
+        @media (max-width: 800px) {
+            .search-panel { grid-template-columns: 1fr 1fr; }
+            .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .nav-links { gap: 12px; }
+            .nav-links a:not(.nav-button) { display: none; }
+        }
+
+        @media (max-width: 540px) {
+            .hero { padding: 42px 22px 48px; }
+            .navbar { padding: 16px 20px; }
+            .brand { font-size: 23px; }
+
+            .search-panel, .room-grid, .trust-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-button { width: 100%; }
+
+            .section-heading, .agent-banner {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .room-image { height: 190px; }
+            .login-modal { padding: 25px 20px; }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <a class="brand" href="#">Rum<span>CHUO</span></a>
+
+        <nav class="nav-links">
+            <a href="#rooms">Find a room</a>
+            <a href="#how-it-works">How it works</a>
+            <button class="nav-button" type="button" onclick="openLogin()">
+                Sign in
+            </button>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <div class="eyebrow">Your next room starts here</div>
+            <h1>Find a student room that feels like home.</h1>
+
+            <p>
+                Explore accommodation options, compare budgets,
+                and connect with agents through RumCHUO.
+            </p>
+
+            <form class="search-panel" id="searchForm">
+                <div class="field">
+                    <label for="area">LOCATION OR AREA</label>
+                    <input id="area" type="text"
+                        placeholder="e.g. Mlimani, Dar es Salaam">
+                </div>
+
+                <div class="field">
+                    <label for="budget">MAXIMUM MONTHLY RENT (TZS)</label>
+                    <select id="budget">
+                        <option value="">Any budget</option>
+                        <option value="100000">TZS 100,000</option>
+                        <option value="150000">TZS 150,000</option>
+                        <option value="200000">TZS 200,000</option>
+                        <option value="300000">TZS 300,000</option>
+                        <option value="500000">TZS 500,000</option>
+                        <option value="1000000">TZS 1,000,000</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="roomType">ROOM TYPE</label>
+                    <select id="roomType">
+                        <option value="">All types</option>
+                        <option value="single">Single room</option>
+                        <option value="shared">Shared room</option>
+                        <option value="self-contained">Self-contained</option>
+                    </select>
+                </div>
+
+                <button class="search-button" type="submit">Search rooms</button>
+            </form>
+        </div>
+    </section>
+
+    <main>
+        <section class="container" id="rooms">
+            <div class="section-heading">
+                <div>
+                    <h2>Explore student rooms</h2>
+                    <p id="resultCount" aria-live="polite">
+                        Connecting to RumCHUO room listings...
+                    </p>
+                </div>
+
+                <button class="clear-button" id="clearFilters" type="button">
+                    Clear filters
+                </button>
+            </div>
+
+            <div class="loading-state" id="loadingState" role="status">
+                <h3>Loading rooms...</h3>
+                <p>Please wait while RumCHUO retrieves room listings.</p>
+            </div>
+
+            <div class="room-grid" id="roomGrid"></div>
+
+            <div class="empty-state" id="emptyState">
+                <h3>No rooms found</h3>
+                <p>
+                    No available rooms match your search.
+                    Try another location, budget, or room type.
+                </p>
+                <button class="clear-button" id="emptyClearFilters" type="button">
+                    Show all available rooms
+                </button>
+            </div>
+
+            <div class="error-state" id="errorState" role="alert">
+                <h3>We couldn't load the room listings</h3>
+                <p id="errorMessage">
+                    Please check that the RumCHUO backend is running.
+                </p>
+                <button class="clear-button" id="retryButton" type="button">
+                    Try again
+                </button>
+            </div>
+
+            <div class="notice" id="notice" role="status" aria-live="polite"></div>
+        </section>
+
+        <section class="trust-section" id="how-it-works">
+            <div class="container">
+                <div class="section-heading">
+                    <div>
+                        <h2>A smarter way to find a room</h2>
+                        <p>Designed around students and authorized agents.</p>
+                    </div>
+                </div>
+
+                <div class="trust-grid">
+                    <div class="trust-item">
+                        <div class="trust-icon">🔎</div>
+                        <h3>Search with confidence</h3>
+                        <p>
+                            Compare room options by location, rent,
+                            and room type.
+                        </p>
+                    </div>
+
+                    <div class="trust-item">
+                        <div class="trust-icon">🤝</div>
+                        <h3>Connect through agents</h3>
+                        <p>
+                            Room enquiries are intended to go through
+                            authorized agents, not directly to landlords.
+                        </p>
+                    </div>
+
+                    <div class="trust-item">
+                        <div class="trust-icon">🔐</div>
+                        <h3>Clear expectations</h3>
+                        <p>
+                            Service fees and terms should be disclosed
+                            before a student agrees to a paid service.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="container" id="agents">
+            <div class="agent-banner">
+                <div>
+                    <h2>Are you an Agent?</h2>
+                    <p>
+                        RumCHUO is being built to help agents manage
+                        authorized room listings and connect with students.
+                        Agent accounts will require platform approval,
+                        and permission from a landlord will be required
+                        before advertising that landlord's room.
+                    </p>
+                </div>
+
+                <!-- Agent sign-in now opens the dedicated Agent login page -->
+                <button type="button" onclick="goToAgentLogin()">
+                    Agent sign in
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <strong>RumCHUO</strong><br>
+        ProTech Asset01 · HLVision Tech Company<br>
+        © 2026 RumCHUO. Student accommodation made simpler.
+    </footer>
+
+    <!-- SIGN-IN WINDOW -->
+    <div class="modal-overlay" id="loginOverlay"
+         role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+
+        <div class="login-modal">
+            <button class="modal-close" type="button"
+                    onclick="closeLogin()" aria-label="Close sign in">
+                &times;
+            </button>
+
+            <h2 id="loginTitle">Welcome back</h2>
+            <p>Sign in to your RumCHUO account.</p>
+
+            <div class="login-error" id="loginError" role="alert"></div>
+
+            <form id="loginForm">
+                <div class="login-field">
+                    <label for="loginEmail">Email address</label>
+                    <input id="loginEmail" type="email"
+                           placeholder="Enter your email"
+                           autocomplete="username" required>
+                </div>
+
+                <div class="login-field">
+                    <label for="loginPassword">Password</label>
+                    <input id="loginPassword" type="password"
+                           placeholder="Enter your password"
+                           autocomplete="current-password" required>
+                </div>
+
+                <button class="login-submit" id="loginSubmit"
+                        type="submit">
+                    Sign in
+                </button>
+            </form>
+
+            <p class="login-help">
+                Use the email and password registered with your RumCHUO account.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin;
+
+        const searchForm = document.getElementById("searchForm");
+        const areaInput = document.getElementById("area");
+        const budgetInput = document.getElementById("budget");
+        const typeInput = document.getElementById("roomType");
+
+        const resultCount = document.getElementById("resultCount");
+        const roomGrid = document.getElementById("roomGrid");
+        const loadingState = document.getElementById("loadingState");
+        const emptyState = document.getElementById("emptyState");
+        const errorState = document.getElementById("errorState");
+        const errorMessage = document.getElementById("errorMessage");
+        const notice = document.getElementById("notice");
+
+        const loginOverlay = document.getElementById("loginOverlay");
+        const loginForm = document.getElementById("loginForm");
+        const loginError = document.getElementById("loginError");
+        const loginSubmit = document.getElementById("loginSubmit");
+
+        let allRooms = [];
+        let requestNumber = 0;
+
+        // Dedicated Agent login page
+        function goToAgentLogin() {
+            window.location.href = "/agent/login";
+        }
+
+        function openLogin() {
+            loginError.style.display = "none";
+            loginError.textContent = "";
+            loginOverlay.classList.add("open");
+            document.getElementById("loginEmail").focus();
+        }
+
+        function closeLogin() {
+            loginOverlay.classList.remove("open");
+        }
+
+        loginOverlay.addEventListener("click", event => {
+            if (event.target === loginOverlay) {
+                closeLogin();
+            }
+        });
+
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                closeLogin();
+            }
+        });
+
+        function showNotice(message) {
+            notice.textContent = message;
+            notice.style.display = "block";
+            notice.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest"
+            });
+        }
+
+        function hideNotice() {
+            notice.style.display = "none";
+            notice.textContent = "";
+        }
+
+        function showLoginError(message) {
+            loginError.textContent = message;
+            loginError.style.display = "block";
+        }
+
+        function getDashboardForRole(role) {
+            const normalisedRole = String(role || "")
+                .trim()
+                .toLowerCase()
+                .replace(/[\s-]+/g, "_");
+
+            const destinations = {
+                admin: "/admin/dashboard",
+                landlord: "/landlord/dashboard",
+                agent: "/agent/dashboard",
+                student: "/"
+            };
+
+            return destinations[normalisedRole] || null;
+        }
+
+        loginForm.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            loginError.style.display = "none";
+            loginSubmit.disabled = true;
+            loginSubmit.textContent = "Signing in...";
+
+            const email = document.getElementById("loginEmail")
+                .value.trim();
+
+            const password = document.getElementById("loginPassword")
+                .value;
+
+            try {
+                const response = await fetch(
+                    API_BASE_URL + "/students/login",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            password: password
+                        })
+                    }
+                );
+
+                let data;
+
+                try {
+                    data = await response.json();
+                } catch {
+                    throw new Error("The server returned an invalid response.");
+                }
+
+                if (!response.ok) {
+                    const detail = data.detail;
+
+                    if (typeof detail === "string") {
+                        throw new Error(detail);
+                    }
+
+                    if (Array.isArray(detail)) {
+                        throw new Error(
+                            detail.map(item => item.msg || "Invalid input")
+                                .join(", ")
+                        );
+                    }
+
+                    throw new Error("Sign-in failed. Check your email and password.");
+                }
+
+                if (!data.access_token) {
+                    throw new Error(
+                        "The server did not return an access token. Please contact the administrator."
+                    );
+                }
+
+                const account = data.student || data.user || data.account || {};
+                const role = account.role || data.role;
+
+                if (!role) {
+                    throw new Error(
+                        "Your account role was not included in the login response. Please contact the administrator."
+                    );
+                }
+
+                const destination = getDashboardForRole(role);
+
+                if (!destination) {
+                    throw new Error(
+                        "Your account role (" + role +
+                        ") does not have a configured dashboard."
+                    );
+                }
+
+                localStorage.setItem("accessToken", data.access_token);
+
+                if (data.token_type) {
+                    localStorage.setItem("tokenType", data.token_type);
+                }
+
+                localStorage.setItem("userRole", String(role).toLowerCase());
+
+                if (account.id !== undefined) {
+                    localStorage.setItem("userId", String(account.id));
+                }
+
+                if (account.full_name) {
+                    localStorage.setItem("userName", account.full_name);
+                }
+
+                if (destination === "/") {
+                    closeLogin();
+                    loginForm.reset();
+                    showNotice("Welcome to RumCHUO! You are signed in successfully.");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    return;
+                }
+
+                window.location.assign(destination);
+
+            } catch (error) {
+                showLoginError(
+                    error.message ||
+                    "Unable to sign in. Please check your connection and try again."
+                );
+            } finally {
+                loginSubmit.disabled = false;
+                loginSubmit.textContent = "Sign in";
+            }
+        });
+
+        function formatPrice(price) {
+            const amount = Number(price);
+
+            if (!Number.isFinite(amount)) {
+                return "Price not provided";
+            }
+
+            return "TZS " + new Intl.NumberFormat("en-TZ", {
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function normaliseRoomType(value) {
+            const type = String(value || "").trim().toLowerCase();
+
+            if (type === "single") return "Single room";
+            if (type === "shared") return "Shared room";
+
+            if (
+                type === "self-contained" ||
+                type === "self contained" ||
+                type === "self_contained"
+            ) {
+                return "Self-contained";
+            }
+
+            return type
+                ? type.replace(/[-_]/g, " ")
+                    .replace(/\b\w/g, letter => letter.toUpperCase())
+                : "Room";
+        }
+
+        function roomTypeEmoji(value) {
+            const type = String(value || "").toLowerCase();
+
+            if (type === "shared") return "🏘️";
+
+            if (
+                type === "self-contained" ||
+                type === "self contained" ||
+                type === "self_contained"
+            ) {
+                return "🏠";
+            }
+
+            return "🛏️";
+        }
+
+        function isRoomAvailable(room) {
+            return room.available === true ||
+                   room.available === 1 ||
+                   String(room.available).toLowerCase() === "true";
+        }
+
+        function setLoading(isLoading) {
+            loadingState.style.display = isLoading ? "block" : "none";
+        }
+
+        function hideError() {
+            errorState.style.display = "none";
+        }
+
+        function getFilteredRooms() {
+            const area = areaInput.value.trim().toLowerCase();
+
+            const budget = budgetInput.value === ""
+                ? Infinity
+                : Number(budgetInput.value);
+
+            const selectedType = typeInput.value;
+
+            return allRooms.filter(room => {
+                const location = String(room.location || "").toLowerCase();
+                const price = Number(room.price);
+                const type = String(room.room_type || "").toLowerCase();
+
+                const matchesArea = !area || location.includes(area);
+
+                const matchesBudget =
+                    Number.isFinite(price) && price <= budget;
+
+                const matchesType = !selectedType || type === selectedType;
+
+                return matchesArea && matchesBudget && matchesType;
+            });
+        }
+
+        function createRoomCard(room) {
+            const card = document.createElement("article");
+            card.className = "room-card";
+
+            const image = document.createElement("div");
+            image.className = "room-image";
+            image.setAttribute("aria-label", "Room illustration");
+            image.textContent = roomTypeEmoji(room.room_type);
+
+            const info = document.createElement("div");
+            info.className = "room-info";
+
+            const typeBadge = document.createElement("span");
+            typeBadge.className = "room-type";
+            typeBadge.textContent = normaliseRoomType(room.room_type);
+
+            const available = isRoomAvailable(room);
+
+            const availabilityBadge = document.createElement("span");
+            availabilityBadge.className = available
+                ? "availability"
+                : "availability unavailable";
+
+            availabilityBadge.textContent = available
+                ? "Available"
+                : "Not available";
+
+            const heading = document.createElement("h3");
+            heading.textContent = normaliseRoomType(room.room_type) +
+                " in " + (room.location || "location not specified");
+
+            const location = document.createElement("div");
+            location.className = "location";
+            location.textContent = "📍 " +
+                (room.location || "Location not provided");
+
+            const bottom = document.createElement("div");
+            bottom.className = "room-bottom";
+
+            const price = document.createElement("div");
+            price.className = "price";
+            price.appendChild(document.createTextNode(formatPrice(room.price)));
+
+            const priceNote = document.createElement("small");
+            priceNote.textContent = "Rent · confirm terms with the Agent";
+            price.appendChild(priceNote);
+
+            const detailsButton = document.createElement("button");
+            detailsButton.className = "details-button";
+            detailsButton.type = "button";
+            detailsButton.textContent = "Enquire";
+            detailsButton.disabled = !available;
+
+            detailsButton.addEventListener("click", () => {
+                showNotice(
+                    "Room ID: " + room.id +
+                    ". The agent enquiry service is not connected yet. " +
+                    "RumCHUO will route enquiries through an authorized Agent " +
+                    "when that feature is implemented."
+                );
+            });
+
+            info.appendChild(typeBadge);
+            info.appendChild(availabilityBadge);
+            info.appendChild(heading);
+            info.appendChild(location);
+
+            bottom.appendChild(price);
+            bottom.appendChild(detailsButton);
+
+            info.appendChild(bottom);
+            card.appendChild(image);
+            card.appendChild(info);
+
+            return card;
+        }
+
+        function renderRooms() {
+            const filteredRooms = getFilteredRooms();
+            roomGrid.replaceChildren();
+
+            filteredRooms.forEach(room => {
+                roomGrid.appendChild(createRoomCard(room));
+            });
+
+            const count = filteredRooms.length;
+
+            resultCount.textContent = count +
+                " available room" + (count === 1 ? "" : "s") + " found.";
+
+            emptyState.style.display = count === 0 ? "block" : "none";
+            roomGrid.style.display = count === 0 ? "none" : "grid";
+        }
+
+        async function loadRooms() {
+            const currentRequest = ++requestNumber;
+
+            hideNotice();
+            hideError();
+            setLoading(true);
+
+            roomGrid.style.display = "none";
+            emptyState.style.display = "none";
+            resultCount.textContent = "Loading room listings...";
+
+            const params = new URLSearchParams();
+            params.set("available_only", "true");
+            params.set("limit", "100");
+            params.set("offset", "0");
+
+            try {
+                const response = await fetch(
+                    API_BASE_URL + "/rooms?" + params.toString()
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        "The server returned HTTP " + response.status + "."
+                    );
+                }
+
+                const data = await response.json();
+
+                if (currentRequest !== requestNumber) return;
+
+                if (Array.isArray(data)) {
+                    allRooms = data;
+                } else if (data && Array.isArray(data.rooms)) {
+                    allRooms = data.rooms;
+                } else if (data && Array.isArray(data.items)) {
+                    allRooms = data.items;
+                } else {
+                    throw new Error(
+                        "The server response was not in the expected room-list format."
+                    );
+                }
+
+                setLoading(false);
+                renderRooms();
+
+                if (allRooms.length === 0) {
+                    resultCount.textContent =
+                        "No available rooms are currently listed in the database.";
+                }
+
+            } catch (error) {
+                if (currentRequest !== requestNumber) return;
+
+                setLoading(false);
+                roomGrid.replaceChildren();
+                roomGrid.style.display = "none";
+                emptyState.style.display = "none";
+                errorState.style.display = "block";
+
+                resultCount.textContent = "Room listings could not be loaded.";
+
+                errorMessage.textContent =
+                    "Please make sure the RumCHUO API is running at " +
+                    API_BASE_URL + ". Details: " + error.message;
+            }
+        }
+
+        searchForm.addEventListener("submit", event => {
+            event.preventDefault();
+
+            hideNotice();
+            hideError();
+            renderRooms();
+
+            document.getElementById("rooms").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        });
+
+        function clearFilters() {
+            areaInput.value = "";
+            budgetInput.value = "";
+            typeInput.value = "";
+
+            hideNotice();
+            hideError();
+            renderRooms();
+        }
+
+        document.getElementById("clearFilters")
+            .addEventListener("click", clearFilters);
+
+        document.getElementById("emptyClearFilters")
+            .addEventListener("click", clearFilters);
+
+        document.getElementById("retryButton")
+            .addEventListener("click", loadRooms);
+
+        loadRooms();
+    </script>
+</body>
+</html>

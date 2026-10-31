@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RumCHUO | Agent Dashboard</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f5f9;color:#202938}
+header{background:#123b63;color:white;padding:18px 25px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+header h2{margin:0}
+main{max-width:1200px;margin:25px auto;padding:0 16px}
+section{background:white;padding:22px;margin-bottom:22px;border-radius:12px;box-shadow:0 2px 9px #00000010}
+h3{margin-top:0;color:#123b63}
+input,select,textarea{width:100%;padding:11px;margin:7px 0 14px;border:1px solid #ccd3dc;border-radius:7px;font-size:14px}
+textarea{min-height:85px;resize:vertical}
+button{border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-weight:bold;background:#1769aa;color:white}
+button:hover{opacity:.88}
+button.secondary{background:#64748b}
+button.danger{background:#bd3030}
+button.success{background:#16834b}
+button:disabled{opacity:.55;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px}
+.card{border:1px solid #e0e5eb;border-radius:10px;padding:15px;min-width:0}
+.card h4{margin:0 0 10px;color:#123b63}
+.muted{color:#64748b;font-size:13px}
+.status{display:inline-block;padding:5px 9px;border-radius:20px;background:#e8eef5;font-size:12px;font-weight:bold}
+.pending{background:#fff1c7;color:#855900}
+.approved{background:#d9f5e5;color:#146b3a}
+.rejected{background:#ffe0e0;color:#9b2020}
+.revoked{background:#ffe0e0;color:#9b2020}
+.photos{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.photos img{width:90px;height:75px;object-fit:cover;border-radius:7px;cursor:pointer;border:1px solid #ddd}
+.photos img:hover{opacity:.8}
+.notice{padding:12px;border-radius:8px;background:#eef5fc;margin-bottom:15px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#message{padding:12px;margin-bottom:15px;border-radius:8px;display:none}
+#lightbox{position:fixed;inset:0;background:#000e;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+#lightbox img{max-width:90vw;max-height:82vh;object-fit:contain}
+#lightbox button{position:absolute}
+#closeLightbox{top:18px;right:20px}
+#previousPhoto{left:15px;top:50%}
+#nextPhoto{right:15px;top:50%}
+footer{text-align:center;color:#64748b;padding:20px}
+label{font-weight:bold;font-size:14px}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h2>RumCHUO Agent Dashboard</h2>
+    <button class="secondary" onclick="logout()">Logout</button>
+</header>
+
+<main>
+    <div id="message"></div>
+
+    <section>
+        <h3>Welcome, Agent</h3>
+        <p class="muted">Manage your advertising requests and submit your own properties for Admin verification.</p>
+    </section>
+
+    <section>
+        <h3>Submit Your Own Property</h3>
+        <div class="notice">
+            Your property will be registered under your Agent account and must be approved by Admin before it becomes publicly available.
+        </div>
+
+        <form id="propertyForm">
+            <label>Property Location</label>
+            <input name="location" placeholder="Enter property location" required>
+
+            <label>Room Type</label>
+            <select name="room_type" required>
+                <option value="">Select room type</option>
+                <option value="single">Single Room</option>
+                <option value="shared">Shared Room</option>
+                <option value="self-contained">Self Contained</option>
+            </select>
+
+            <label>Description</label>
+            <textarea name="description" placeholder="Describe the property"></textarea>
+
+            <label>Monthly Rent (TZS)</label>
+            <input name="price" type="number" min="1" step="1" placeholder="Monthly rent" required>
+
+            <label>Contact Phone Number</label>
+            <input name="phone_number" type="tel" placeholder="e.g. 0712345678" required>
+
+            <label>Availability</label>
+            <select name="available">
+                <option value="true">Available</option>
+                <option value="false">Not Available</option>
+            </select>
+
+            <label>Property Photos (maximum 6, JPG/PNG/WEBP, 5MB each)</label>
+            <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple required>
+
+            <button type="submit" id="submitProperty">Submit Property</button>
+        </form>
+    </section>
+
+    <section>
+        <h3>My Submitted Properties</h3>
+        <div id="myProperties" class="grid">Loading properties...</div>
+    </section>
+
+    <section>
+        <h3>Available Landlord Properties</h3>
+        <p class="muted">Browse approved properties and request permission from the Landlord to advertise them.</p>
+
+        <input id="locationFilter" placeholder="Filter by location">
+        <input id="priceFilter" type="number" placeholder="Maximum monthly rent">
+
+        <button onclick="loadAvailableRooms()">Search Properties</button>
+        <div id="availableRooms" class="grid" style="margin-top:15px">Loading properties...</div>
+    </section>
+
+    <section>
+        <h3>My Advertising Properties</h3>
+        <div id="myRooms" class="grid">Loading properties...</div>
+    </section>
+</main>
+
+<div id="lightbox">
+    <button id="closeLightbox" class="danger" onclick="closeLightbox()">Close ✕</button>
+    <button id="previousPhoto" onclick="changePhoto(-1)">❮</button>
+    <img id="lightboxImage" src="" alt="Property photo">
+    <button id="nextPhoto" onclick="changePhoto(1)">❯</button>
+</div>
+
+<footer>RumCHUO Property Management</footer>
+
+<script>
+let accessToken = localStorage.getItem("accessToken");
+let galleryImages = [];
+let galleryIndex = 0;
+
+if (!accessToken) {
+    window.location.href = "/";
+}
+
+async function apiRequest(url, options = {}) {
+    options.headers = options.headers || {};
+    options.headers["Authorization"] = "Bearer " + accessToken;
+
+    const response = await fetch(url, options);
+
+    if (response.status === 401) {
+        logout();
+        throw new Error("Your session has expired. Please log in again.");
+    }
+
+    let data = {};
+    try {
+        data = await response.json();
+    } catch (_) {}
+
+    if (!response.ok) {
+        throw new Error(data.detail || "Request failed");
+    }
+
+    return data;
+}
+
+function showMessage(message, error = false) {
+    const box = document.getElementById("message");
+    box.textContent = message;
+    box.style.display = "block";
+    box.style.background = error ? "#ffe0e0" : "#d9f5e5";
+    box.style.color = error ? "#9b2020" : "#146b3a";
+    window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+function logout() {
+    localStorage.removeItem("accessToken");
+    window.location.href = "/";
+}
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#039;"
+    })[char]);
+}
+
+function money(value) {
+    return "TZS " + Number(value || 0).toLocaleString();
+}
+
+function statusBadge(status) {
+    const value = String(status || "unknown").toLowerCase();
+    return `<span class="status ${escapeHTML(value)}">${escapeHTML(value.toUpperCase())}</span>`;
+}
+
+function openGallery(images, start = 0) {
+    galleryImages = images;
+    galleryIndex = start;
+    if (!galleryImages.length) return;
+    displayGalleryImage();
+    document.getElementById("lightbox").style.display = "flex";
+}
+
+function displayGalleryImage() {
+    document.getElementById("lightboxImage").src = galleryImages[galleryIndex];
+}
+
+function changePhoto(direction) {
+    if (!galleryImages.length) return;
+    galleryIndex = (galleryIndex + direction + galleryImages.length) % galleryImages.length;
+    displayGalleryImage();
+}
+
+function closeLightbox() {
+    document.getElementById("lightbox").style.display = "none";
+    document.getElementById("lightboxImage").src = "";
+}
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeLightbox();
+    if (event.key === "ArrowRight") changePhoto(1);
+    if (event.key === "ArrowLeft") changePhoto(-1);
+});
+
+function photoUrl(applicationId, photoId) {
+    return `/agents/me/properties/${applicationId}/photos/${photoId}`;
+}
+
+async function loadMyProperties() {
+    const container = document.getElementById("myProperties");
+
+    try {
+        const response = await apiRequest("/agents/me/properties");
+        const properties = Array.isArray(response) ? response : (response.properties || []);
+
+        if (!properties.length) {
+            container.innerHTML = "<p>No properties submitted yet.</p>";
+            return;
+        }
+
+        container.innerHTML = properties.map(property => {
+            const photos = property.photos || [];
+            const urls = photos.map(photo => photoUrl(property.id, photo.id));
+
+            return `
+                <div class="card">
+                    <h4>${escapeHTML(property.location)}</h4>
+                    <p><b>Room:</b> ${escapeHTML(property.room_type)}</p>
+                    <p><b>Rent:</b> ${money(property.price)}</p>
+                    <p><b>Phone:</b> ${escapeHTML(property.phone_number)}</p>
+                    <p><b>Availability:</b> ${property.available ? "Available" : "Not available"}</p>
+                    <p><b>Status:</b> ${statusBadge(property.status)}</p>
+                    <p>${escapeHTML(property.description || "")}</p>
+                    <div class="photos">
+                        ${photos.map((photo, index) => `
+                            <img src="${urls[index]}" alt="Property photo"
+                                data-gallery="${escapeHTML(property.id)}"
+                                data-index="${index}">
+                        `).join("")}
+                    </div>
+                    ${property.review_note ? `<p class="muted">Admin note: ${escapeHTML(property.review_note)}</p>` : ""}
+                </div>
+            `;
+        }).join("");
+
+        container.querySelectorAll("img[data-gallery]").forEach(img => {
+            img.addEventListener("click", () => {
+                const property = properties.find(p => String(p.id) === img.dataset.gallery);
+                if (!property) return;
+
+                const urls = (property.photos || []).map(photo => photoUrl(property.id, photo.id));
+                openGallery(urls, Number(img.dataset.index));
+            });
+        });
+
+    } catch (error) {
+        container.textContent = error.message;
+    }
+}
+
+document.getElementById("propertyForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const photoInput = form.querySelector('input[name="photos"]');
+
+    if (!photoInput.files.length) {
+        showMessage("Upload at least one property photo.", true);
+        return;
+    }
+
+    if (photoInput.files.length > 6) {
+        showMessage("You can upload a maximum of 6 photos.", true);
+        return;
+    }
+
+    for (const file of photoInput.files) {
+        if (file.size > 5 * 1024 * 1024) {
+            showMessage("Each photo must be 5MB or smaller.", true);
+            return;
+        }
+    }
+
+    data.delete("photos");
+    for (const file of photoInput.files) {
+        data.append("photos", file);
+    }
+
+    const button = document.getElementById("submitProperty");
+    button.disabled = true;
+    button.textContent = "Submitting...";
+
+    try {
+        const result = await apiRequest("/agents/me/properties/submit", {
+            method: "POST",
+            body: data
+        });
+
+        showMessage(result.message || "Property submitted successfully.");
+        form.reset();
+        await loadMyProperties();
+
+    } catch (error) {
+        showMessage(error.message, true);
+    } finally {
+        button.disabled = false;
+        button.textContent = "Submit Property";
+    }
+});
+
+async function loadAvailableRooms() {
+    const container = document.getElementById("availableRooms");
+    container.textContent = "Loading properties...";
+
+    try {
+        const params = new URLSearchParams({
+            available_only: "true",
+            limit: "100"
+        });
+
+        const location = document.getElementById("locationFilter").value.trim();
+        const maxPrice = document.getElementById("priceFilter").value;
+
+        if (location) params.set("location", location);
+        if (maxPrice) params.set("max_price", maxPrice);
+
+        const [data, myRoomsResponse] = await Promise.all([
+            apiRequest("/rooms?" + params.toString()),
+            apiRequest("/agents/me/rooms")
+        ]);
+
+        const rooms = Array.isArray(data) ? data : (data.rooms || []);
+        const myRooms = Array.isArray(myRoomsResponse)
+            ? myRoomsResponse
+            : (Array.isArray(myRoomsResponse.rooms) ? myRoomsResponse.rooms : []);
+
+        const authorizationByRoom = new Map(
+            myRooms.map(item => [
+                Number(item.room_id || item.id),
+                String(item.authorization_status || item.status || "").toLowerCase()
+            ])
+        );
+
+        if (!rooms.length) {
+            container.innerHTML = "<p>No available properties found.</p>";
+            return;
+        }
+
+        container.innerHTML = rooms.map(room => {
+            const requestStatus = authorizationByRoom.get(Number(room.id));
+
+            let requestButton = "";
+
+            if (requestStatus === "pending") {
+                requestButton = `<button disabled class="secondary">Requested</button>`;
+            } else if (requestStatus === "approved") {
+                requestButton = `<button disabled class="success">Approved</button>`;
+            } else if (String(room.ownership_status).toLowerCase() === "assigned") {
+                requestButton = `<button onclick="requestPermission(${Number(room.id)}, this)">Request Advertising Permission</button>`;
+            } else {
+                requestButton = `<button disabled class="secondary">Not approved for advertising</button>`;
+            }
+
+            return `
+                <div class="card">
+                    <h4>${escapeHTML(room.location)}</h4>
+                    <p><b>Room:</b> ${escapeHTML(room.room_type || "Not specified")}</p>
+                    <p><b>Rent:</b> ${money(room.price)}</p>
+                    <p><b>Ownership status:</b> ${statusBadge(room.ownership_status)}</p>
+                    <p class="muted">Only properties with approved ownership can receive advertising requests.</p>
+                    ${requestButton}
+                </div>
+            `;
+        }).join("");
+
+    } catch (error) {
+        container.textContent = error.message;
+    }
+}
+
+async function requestPermission(roomId, button) {
+    const note = prompt("Add a message to the Landlord (optional):") || "";
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Sending...";
+    }
+
+    try {
+        const result = await apiRequest("/agents/me/room-requests", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                room_id: roomId,
+                note: note
+            })
+        });
+
+        if (button) {
+            button.textContent = "Requested";
+            button.disabled = true;
+            button.classList.add("secondary");
+        }
+
+        showMessage(result.message || "Advertising request submitted.");
+
+        await Promise.all([
+            loadAvailableRooms(),
+            loadRooms()
+        ]);
+
+    } catch (error) {
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Request Advertising Permission";
+        }
+
+        showMessage(error.message, true);
+
+        await loadAvailableRooms();
+        await loadRooms();
+    }
+}
+
+async function loadRooms() {
+    const container = document.getElementById("myRooms");
+    container.textContent = "Loading advertising properties...";
+
+    try {
+        const response = await apiRequest("/agents/me/rooms");
+
+        const rooms = Array.isArray(response)
+            ? response
+            : (Array.isArray(response.rooms) ? response.rooms : []);
+
+        if (!rooms.length) {
+            container.innerHTML = "<p>You have no advertising properties yet.</p>";
+            return;
+        }
+
+        container.innerHTML = rooms.map(room => {
+            const status = String(room.authorization_status || room.status || "unknown").toLowerCase();
+
+            return `
+                <div class="card">
+                    <h4>${escapeHTML(room.location)}</h4>
+                    <p><b>Room:</b> ${escapeHTML(room.room_type || "Not specified")}</p>
+                    <p><b>Rent:</b> ${money(room.price)}</p>
+                    <p><b>Authorization:</b> ${statusBadge(status)}</p>
+                    <p><b>Advertising enabled:</b> ${Number(room.advertising_enabled) === 1 ? "Yes" : "No"}</p>
+                    ${
+                        status === "approved" && Number(room.advertising_enabled) === 1
+                        ? `
+                            <div class="actions">
+                                <button class="danger" onclick="removeRoom(${Number(room.room_id || room.id)})">Remove Advertising</button>
+                                <button class="secondary" onclick="submitRentalReport(${Number(room.room_id || room.id)})">Submit Rental Report</button>
+                            </div>
+                        `
+                        : `<p class="muted">This permission is not currently active for advertising.</p>`
+                    }
+                </div>
+            `;
+        }).join("");
+
+    } catch (error) {
+        container.textContent = error.message;
+    }
+}
+
+async function removeRoom(roomId) {
+    if (!confirm("Remove this property from your advertising list?")) return;
+
+    try {
+        const result = await apiRequest(`/agents/me/rooms/${roomId}/remove`, {
+            method: "POST"
+        });
+
+        showMessage(result.message || "Property removed.");
+        await loadRooms();
+
+    } catch (error) {
+        showMessage(error.message, true);
+    }
+}
+
+async function submitRentalReport(roomId) {
+    const note = prompt("Enter rental report details:");
+    if (note === null || !note.trim()) return;
+
+    try {
+        const result = await apiRequest(`/agents/me/rooms/${roomId}/rental-report`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({note: note.trim()})
+        });
+
+        showMessage(result.message || "Rental report submitted.");
+
+    } catch (error) {
+        showMessage(error.message, true);
+    }
+}
+
+async function initializeDashboard() {
+    try {
+        const account = await apiRequest("/students/me");
+
+        if (account.role !== "agent") {
+            showMessage("This dashboard is for Agent accounts only.", true);
+            return;
+        }
+
+        await Promise.all([
+            loadMyProperties(),
+            loadAvailableRooms(),
+            loadRooms()
+        ]);
+
+    } catch (error) {
+        showMessage(error.message, true);
+    }
+}
+
+initializeDashboard();
+</script>
+
+</body>
+</html>
