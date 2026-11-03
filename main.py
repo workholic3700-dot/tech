@@ -13,15 +13,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 from pwdlib import PasswordHash
 
 load_dotenv()
 
-APP_NAME, APP_VERSION, DATABASE_NAME = "RumCHUO", "1.8.0", "rumchuo.db"
+APP_NAME, APP_VERSION, DATABASE_NAME = "RumCHUO", "1.10.0", "rumchuo.db"
 SECRET_KEY = os.getenv("RUMCHUO_SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES, VERIFICATION_TOKEN_MINUTES = 30, 30
+PASSWORD_RESET_TOKEN_MINUTES = 30
 SMTP_EMAIL = os.getenv("SMTP_EMAIL", "").strip()
 SMTP_APP_PASSWORD = os.getenv("SMTP_APP_PASSWORD", "").replace(" ", "").strip()
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
@@ -36,6 +37,20 @@ app = FastAPI(
     version=APP_VERSION,
     description="Student accommodation and roommate matching platform."
 )
+
+
+@app.get("/student/dashboard")
+def student_dashboard():
+    dashboard_file = Path(__file__).parent / "student_dashboard.html"
+
+    if not dashboard_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Student dashboard file was not found."
+        )
+
+    return FileResponse(dashboard_file)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,6 +71,36 @@ app.add_middleware(
 
 security = HTTPBearer(auto_error=False)
 password_hash = PasswordHash.recommended()
+
+PROFILE_FIELDS = {
+    "full_name",
+    "university",
+    "campus",
+    "faculty",
+    "course",
+    "year_of_study",
+    "gender",
+    "phone",
+    "accommodation_status"
+}
+
+BASE_DIR = Path(__file__).resolve().parent
+
+PRIVATE_PHOTO_DIR = BASE_DIR / "private_ownership_photos"
+AGENT_PHOTO_DIR = BASE_DIR / "private_agent_property_photos"
+
+# Budgets are no longer part of active student preferences.
+PREFERENCE_FIELDS = (
+    "preferred_location",
+    "preferred_campus",
+    "room_type"
+)
+
+ProximityTier = Literal[
+    "under_5_min_walk",
+    "5_to_15_min_walk",
+    "requires_transport"
+]
 
 
 @contextmanager
@@ -111,7 +156,9 @@ def initialize_database():
             "created_at": "TEXT",
             "room_type": "TEXT NOT NULL DEFAULT 'single'",
             "owner_id": "INTEGER REFERENCES students(id)",
-            "ownership_status": "TEXT NOT NULL DEFAULT 'unassigned'"
+            "ownership_status": "TEXT NOT NULL DEFAULT 'unassigned'",
+            "nearest_campus": "TEXT",
+            "proximity_tier": "TEXT"
         }
 
         student_additions = {
@@ -120,6 +167,8 @@ def initialize_database():
             "course": "TEXT",
             "year_of_study": "INTEGER",
             "gender": "TEXT",
+            # Retained for compatibility with existing databases.
+            # These columns are no longer used by preferences or matching.
             "budget_min": "REAL",
             "budget_max": "REAL",
             "preferred_location": "TEXT",
@@ -128,7 +177,13 @@ def initialize_database():
             "email_verification_token_hash": "TEXT",
             "email_verification_expires_at": "TEXT",
             "role": "TEXT NOT NULL DEFAULT 'student'",
-            "account_status": "TEXT NOT NULL DEFAULT 'active'"
+            "account_status": "TEXT NOT NULL DEFAULT 'active'",
+            "phone": "TEXT",
+            "campus": "TEXT",
+            "accommodation_status": "TEXT",
+            "preferred_campus": "TEXT",
+            "password_reset_token_hash": "TEXT",
+            "password_reset_expires_at": "TEXT"
         }
 
         for table, additions in (
@@ -153,6 +208,10 @@ def initialize_database():
         c.execute("CREATE INDEX IF NOT EXISTS idx_rooms_price ON rooms(price)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_rooms_type ON rooms(room_type)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_rooms_owner ON rooms(owner_id)")
+        c.execute("""
+            CREATE INDEX IF NOT EXISTS idx_rooms_campus
+            ON rooms(nearest_campus, proximity_tier)
+        """)
         c.execute("CREATE INDEX IF NOT EXISTS idx_students_email ON students(email)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_students_role ON students(role)")
 
@@ -195,7 +254,6 @@ def initialize_database():
             ON room_rental_reports(status)
         """)
 
-        # Preserve the original sample-room behavior only for a genuinely empty database.
         if c.execute("SELECT COUNT(*) AS n FROM rooms").fetchone()["n"] == 0:
             c.executemany("""
                 INSERT INTO rooms(
@@ -239,18 +297,22 @@ def student_to_dict(s):
         "email_verified": bool(s["email_verified"]),
         "role": s["role"],
         "university": s["university"],
+        "campus": s["campus"],
+        "faculty": s["faculty"],
         "course": s["course"],
         "year_of_study": s["year_of_study"],
         "gender": s["gender"],
-        "budget_min": s["budget_min"],
-        "budget_max": s["budget_max"],
+        "phone": s["phone"],
+        "accommodation_status": s["accommodation_status"],
         "preferred_location": s["preferred_location"],
+        "preferred_campus": s["preferred_campus"],
         "room_type": s["room_type"],
         "created_at": s["created_at"]
     }
 
 
 def room_to_dict(room):
+    keys = room.keys()
     return {
         "id": room["id"],
         "location": room["location"],
@@ -260,8 +322,18 @@ def room_to_dict(room):
         "created_at": room["created_at"],
         "ownership_status": (
             room["ownership_status"]
-            if "ownership_status" in room.keys()
+            if "ownership_status" in keys
             else "unassigned"
+        ),
+        "nearest_campus": (
+            room["nearest_campus"]
+            if "nearest_campus" in keys
+            else None
+        ),
+        "proximity_tier": (
+            room["proximity_tier"]
+            if "proximity_tier" in keys
+            else None
         )
     }
 
@@ -299,6 +371,38 @@ def send_verification_email(email, full_name, token):
         f"{url}\n\n"
         f"This link expires in {VERIFICATION_TOKEN_MINUTES} minutes.\n\n"
         "If you did not create this account, ignore this email.\n\n"
+        "RumCHUO"
+    )
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
+        server.ehlo()
+        server.starttls(context=ssl.create_default_context())
+        server.ehlo()
+        server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
+        server.send_message(msg)
+
+
+def send_password_reset_email(email, full_name, token):
+    if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
+        raise RuntimeError(
+            "SMTP_EMAIL or SMTP_APP_PASSWORD is not configured."
+        )
+
+    url = f"{PUBLIC_BASE_URL}/reset-password?token={quote(token, safe='')}"
+
+    msg = EmailMessage()
+    msg["Subject"] = "Reset your RumCHUO password"
+    msg["From"] = SMTP_EMAIL
+    msg["To"] = email
+
+    msg.set_content(
+        f"Hello {full_name},\n\n"
+        "We received a request to reset your RumCHUO password.\n\n"
+        "Choose a new password using this link:\n\n"
+        f"{url}\n\n"
+        f"This link expires in {PASSWORD_RESET_TOKEN_MINUTES} minutes.\n\n"
+        "If you did not request this, ignore this email. "
+        "Your password will not change.\n\n"
         "RumCHUO"
     )
 
@@ -368,39 +472,69 @@ class ResendVerification(BaseModel):
         return validate_email_format(v)
 
 
+class ForgotPassword(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def clean_email(cls, v):
+        return validate_email_format(v)
+
+
+class ResetPassword(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ChangePassword(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class StudentProfileUpdate(BaseModel):
     full_name: str | None = Field(default=None, min_length=2, max_length=100)
     university: str | None = Field(default=None, max_length=150)
+    campus: str | None = Field(default=None, max_length=100)
+    faculty: str | None = Field(default=None, max_length=150)
     course: str | None = Field(default=None, max_length=150)
     year_of_study: int | None = Field(default=None, ge=1, le=10)
     gender: Literal["male", "female", "other"] | None = None
+    phone: str | None = Field(default=None, max_length=25)
+    accommodation_status: Literal[
+        "looking_for_room",
+        "has_room_needs_roommate",
+        "not_looking"
+    ] | None = None
 
-    @field_validator("full_name", "university", "course", mode="before")
+    @field_validator(
+        "full_name", "university", "campus", "faculty",
+        "course", "phone",
+        mode="before"
+    )
     @classmethod
     def clean_optional_text(cls, v):
         return v.strip() or None if isinstance(v, str) else v
 
+    @field_validator("phone")
+    @classmethod
+    def check_phone(cls, v):
+        if v is not None:
+            if not re.fullmatch(r"[+0-9()\-\s]{5,25}", v):
+                raise ValueError("Enter a valid phone number.")
+            if not 5 <= len(re.sub(r"\D", "", v)) <= 20:
+                raise ValueError("Enter a valid phone number.")
+        return v
+
 
 class StudentPreferencesUpdate(BaseModel):
-    budget_min: float | None = Field(default=None, ge=0)
-    budget_max: float | None = Field(default=None, ge=0)
     preferred_location: str | None = Field(default=None, max_length=150)
+    preferred_campus: str | None = Field(default=None, max_length=100)
     room_type: Literal["single", "shared", "any"] | None = None
 
-    @field_validator("preferred_location")
+    @field_validator("preferred_location", "preferred_campus")
     @classmethod
     def clean_location(cls, v):
         return v.strip() or None if isinstance(v, str) else v
-
-    @model_validator(mode="after")
-    def check_budget_range(self):
-        if (
-            self.budget_min is not None
-            and self.budget_max is not None
-            and self.budget_min > self.budget_max
-        ):
-            raise ValueError("Minimum budget cannot exceed maximum budget.")
-        return self
 
 
 class RoomCreate(BaseModel):
@@ -431,6 +565,19 @@ class RoomUpdate(BaseModel):
             v = v.strip()
             if len(v) < 2:
                 raise ValueError("Enter a valid room location.")
+        return v
+
+
+class RoomProximity(BaseModel):
+    nearest_campus: str = Field(min_length=2, max_length=50)
+    proximity_tier: ProximityTier
+
+    @field_validator("nearest_campus")
+    @classmethod
+    def clean_campus(cls, v):
+        v = v.strip().upper()
+        if len(v) < 2:
+            raise ValueError("Enter a valid campus code.")
         return v
 
 
@@ -508,7 +655,7 @@ def require_room_manager(student=Depends(get_current_student)):
     if student["role"] not in {"landlord", "admin"}:
         raise HTTPException(
             403,
-            "Only a landlord or administrator can manage original room records."
+            "Only an Owner or administrator can manage original room records."
         )
     return student
 
@@ -518,7 +665,7 @@ def require_admin(student=Depends(get_current_student)):
         raise HTTPException(
             403,
             "Only an administrator can create original room records. "
-            "Landlords must submit properties for verification."
+            "Owners must submit properties for verification."
         )
     return student
 
@@ -527,7 +674,7 @@ def require_landlord(student=Depends(get_current_student)):
     if student["role"] != "landlord":
         raise HTTPException(
             403,
-            "Only a landlord can perform this action."
+            "Only an Owner can perform this action."
         )
     return student
 
@@ -729,6 +876,129 @@ def login_student(data: StudentLogin):
     }
 
 
+# PASSWORD RESET AND CHANGE
+
+@app.get("/reset-password", include_in_schema=False)
+def reset_password_page():
+    file_path = Path(__file__).resolve().parent / "reset_password.html"
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Password reset page (reset_password.html) was not found."
+        )
+
+    return FileResponse(file_path, media_type="text/html")
+
+
+@app.post("/students/forgot-password")
+def forgot_password(data: ForgotPassword):
+    generic = {
+        "message": "If an account exists for that email, a password reset link will be sent."
+    }
+
+    with get_connection() as c:
+        s = c.execute("""
+            SELECT id, full_name, email
+            FROM students
+            WHERE email=?
+            AND email_verified=1
+            AND account_status='active'
+        """, (normalize_email(data.email),)).fetchone()
+
+        if s is None:
+            return generic
+
+        token = secrets.token_urlsafe(32)
+        expiry = (
+            utc_now() + timedelta(minutes=PASSWORD_RESET_TOKEN_MINUTES)
+        ).isoformat()
+
+        c.execute("""
+            UPDATE students
+            SET password_reset_token_hash=?,
+                password_reset_expires_at=?
+            WHERE id=?
+        """, (hash_verification_token(token), expiry, s["id"]))
+
+    try:
+        send_password_reset_email(s["email"], s["full_name"], token)
+    except Exception:
+        pass
+
+    return generic
+
+
+@app.post("/students/reset-password")
+def reset_password(data: ResetPassword):
+    token_hash = hash_verification_token(data.token)
+
+    with get_connection() as c:
+        s = c.execute("""
+            SELECT id, password_reset_expires_at
+            FROM students
+            WHERE password_reset_token_hash=?
+        """, (token_hash,)).fetchone()
+
+        expiry = None
+
+        if s is not None:
+            try:
+                expiry = datetime.fromisoformat(
+                    s["password_reset_expires_at"]
+                )
+                if expiry.tzinfo is None:
+                    expiry = expiry.replace(tzinfo=timezone.utc)
+            except (TypeError, ValueError):
+                expiry = None
+
+        if s is None or expiry is None or expiry <= utc_now():
+            raise HTTPException(
+                400,
+                "This password reset link is invalid or has expired."
+            )
+
+        c.execute("""
+            UPDATE students
+            SET password_hash=?,
+                password_reset_token_hash=NULL,
+                password_reset_expires_at=NULL
+            WHERE id=?
+        """, (password_hash.hash(data.new_password), s["id"]))
+
+    return {
+        "message": "Password updated successfully. You can now log in."
+    }
+
+
+@app.post("/students/me/change-password")
+def change_password(
+    data: ChangePassword,
+    student=Depends(get_current_student)
+):
+    if not password_hash.verify(
+        data.current_password,
+        student["password_hash"]
+    ):
+        raise HTTPException(400, "Current password is incorrect.")
+
+    if data.current_password == data.new_password:
+        raise HTTPException(
+            400,
+            "The new password must be different from the current password."
+        )
+
+    with get_connection() as c:
+        c.execute(
+            "UPDATE students SET password_hash=? WHERE id=?",
+            (password_hash.hash(data.new_password), student["id"])
+        )
+
+    return {"message": "Password changed successfully."}
+
+
+# PROFILE AND PREFERENCES
+
 @app.get("/students/me")
 def get_my_profile(student=Depends(get_current_student)):
     return student_to_dict(student)
@@ -742,13 +1012,7 @@ def update_my_profile(
     updates = {
         k: v
         for k, v in data.model_dump(exclude_unset=True).items()
-        if k in {
-            "full_name",
-            "university",
-            "course",
-            "year_of_study",
-            "gender"
-        }
+        if k in PROFILE_FIELDS
     }
 
     if updates:
@@ -771,15 +1035,7 @@ def update_my_profile(
 
 @app.get("/students/me/preferences")
 def get_my_preferences(student=Depends(get_current_student)):
-    return {
-        k: student[k]
-        for k in (
-            "budget_min",
-            "budget_max",
-            "preferred_location",
-            "room_type"
-        )
-    }
+    return {k: student[k] for k in PREFERENCE_FIELDS}
 
 
 @app.put("/students/me/preferences")
@@ -789,24 +1045,10 @@ def update_my_preferences(
 ):
     updates = data.model_dump(exclude_unset=True)
 
-    low = updates.get("budget_min", student["budget_min"])
-    high = updates.get("budget_max", student["budget_max"])
-
-    if low is not None and high is not None and low > high:
-        raise HTTPException(
-            400,
-            "Minimum budget cannot exceed maximum budget."
-        )
-
     updates = {
         k: v
         for k, v in updates.items()
-        if k in {
-            "budget_min",
-            "budget_max",
-            "preferred_location",
-            "room_type"
-        }
+        if k in PREFERENCE_FIELDS
     }
 
     if updates:
@@ -824,20 +1066,92 @@ def update_my_preferences(
             (student["id"],)
         ).fetchone()
 
-    return {
-        k: s[k]
-        for k in (
-            "budget_min",
-            "budget_max",
-            "preferred_location",
-            "room_type"
-        )
-    }
+    return {k: s[k] for k in PREFERENCE_FIELDS}
 
 
-# PUBLIC ROOM RESPONSES DELIBERATELY OMIT LANDLORD IDENTITY AND CONTACT DETAILS.
+# APPROVED AGENT PROPERTY HELPERS
+
+def get_approved_agent_application(c, room_id):
+    """
+    Find the approved direct Agent property application for a room.
+
+    Direct Agent properties are stored in agent_property_applications.
+    The Admin approval workflow connects the application to the room.
+    """
+
+    try:
+        return c.execute("""
+            SELECT
+                a.id AS application_id,
+                a.agent_id,
+                a.description,
+                a.phone_number,
+                a.location,
+                a.status,
+                s.full_name AS agent_name,
+                s.university,
+                s.phone AS account_phone
+            FROM agent_property_applications a
+            JOIN students s ON s.id=a.agent_id
+            WHERE a.room_id=?
+            AND a.status='approved'
+            AND s.role='agent'
+            AND s.account_status='active'
+            AND s.email_verified=1
+            ORDER BY a.id DESC
+            LIMIT 1
+        """, (room_id,)).fetchone()
+
+    except sqlite3.OperationalError:
+        return None
+
+
+def get_agent_property_photos(c, room_id):
+    """Get photographs belonging to an approved direct Agent property."""
+
+    try:
+        rows = c.execute("""
+            SELECT
+                p.id,
+                p.original_name,
+                p.content_type
+            FROM agent_property_photos p
+            JOIN agent_property_applications a
+                ON a.id=p.application_id
+            WHERE a.room_id=?
+            AND a.status='approved'
+            ORDER BY p.id
+        """, (room_id,)).fetchall()
+
+        return [
+            {
+                "id": row["id"],
+                "original_name": row["original_name"],
+                "content_type": row["content_type"]
+            }
+            for row in rows
+        ]
+
+    except sqlite3.OperationalError:
+        return []
+
+
+# PUBLIC ROOM RESPONSES
 
 def add_public_agents(c, room_id):
+    """
+    Return Agent names for direct Agent properties or
+    Owner properties advertised by authorized Agents.
+    """
+
+    direct_application = get_approved_agent_application(c, room_id)
+
+    if direct_application is not None:
+        return [{
+            "agent_id": direct_application["agent_id"],
+            "agent_name": direct_application["agent_name"]
+        }]
+
     rows = c.execute("""
         SELECT s.id, s.full_name
         FROM agent_room_authorizations a
@@ -859,9 +1173,102 @@ def add_public_agents(c, room_id):
     ]
 
 
+def get_room_photos(c, room_id):
+    """
+    Retrieve photographs from either:
+    - An approved direct Agent property.
+    - The latest approved Owner verification application.
+    """
+
+    direct_application = get_approved_agent_application(c, room_id)
+
+    if direct_application is not None:
+        return get_agent_property_photos(c, room_id)
+
+    try:
+        rows = c.execute("""
+            SELECT p.id, p.original_name, p.content_type
+            FROM rooms r
+            JOIN room_ownership_applications a
+                ON a.room_id=r.id
+                AND a.landlord_id=r.owner_id
+                AND a.status='approved'
+            JOIN room_ownership_photos p
+                ON p.application_id=a.id
+            WHERE r.id=?
+            AND a.id=(
+                SELECT MAX(a2.id)
+                FROM room_ownership_applications a2
+                WHERE a2.room_id=r.id
+                AND a2.landlord_id=r.owner_id
+                AND a2.status='approved'
+            )
+            ORDER BY p.id
+        """, (room_id,)).fetchall()
+
+    except sqlite3.OperationalError:
+        return []
+
+    return [
+        {
+            "id": r["id"],
+            "original_name": r["original_name"],
+            "content_type": r["content_type"]
+        }
+        for r in rows
+    ]
+
+
+def get_agents_with_contact(c, room_id):
+    """
+    Return verified Agent contact information to logged-in students.
+
+    For direct Agent properties, the phone number submitted with
+    the property takes priority over the Agent account phone number.
+    """
+
+    direct_application = get_approved_agent_application(c, room_id)
+
+    if direct_application is not None:
+        return [{
+            "agent_id": direct_application["agent_id"],
+            "agent_name": direct_application["agent_name"],
+            "phone": (
+                direct_application["phone_number"]
+                or direct_application["account_phone"]
+            ),
+            "university": direct_application["university"]
+        }]
+
+    rows = c.execute("""
+        SELECT s.id, s.full_name, s.phone, s.university
+        FROM agent_room_authorizations a
+        JOIN students s ON s.id=a.agent_id
+        WHERE a.room_id=?
+        AND a.status='approved'
+        AND a.advertising_enabled=1
+        AND s.role='agent'
+        AND s.account_status='active'
+        AND s.email_verified=1
+        ORDER BY s.full_name
+    """, (room_id,)).fetchall()
+
+    return [
+        {
+            "agent_id": r["id"],
+            "agent_name": r["full_name"],
+            "phone": r["phone"],
+            "university": r["university"]
+        }
+        for r in rows
+    ]
+
+
 @app.get("/rooms")
 def list_rooms(
     location: str | None = None,
+    campus: str | None = None,
+    proximity: ProximityTier | None = None,
     max_price: float | None = Query(default=None, gt=0),
     room_type: Literal["single", "shared", "self-contained"] | None = None,
     available_only: bool = True,
@@ -875,6 +1282,14 @@ def list_rooms(
         conditions.append("LOWER(location) LIKE ?")
         params.append(f"%{location.strip().lower()}%")
 
+    if campus and campus.strip():
+        conditions.append("UPPER(nearest_campus)=?")
+        params.append(campus.strip().upper())
+
+    if proximity:
+        conditions.append("proximity_tier=?")
+        params.append(proximity)
+
     if max_price is not None:
         conditions.append("price<=?")
         params.append(max_price)
@@ -886,7 +1301,6 @@ def list_rooms(
     if available_only:
         conditions.append("available=1")
 
-    # Only administrator-verified rooms are publicly listed.
     conditions.append("ownership_status='assigned'")
     conditions.append("owner_id IS NOT NULL")
 
@@ -912,7 +1326,22 @@ def list_rooms(
 
         for r in rows:
             item = room_to_dict(r)
+
+            application = get_approved_agent_application(c, r["id"])
+
             item["agents"] = add_public_agents(c, r["id"])
+
+            item["description"] = (
+                application["description"]
+                if application is not None
+                else None
+            )
+
+            photos = get_room_photos(c, r["id"])
+
+            item["photo_ids"] = [ph["id"] for ph in photos]
+            item["photo_count"] = len(photos)
+
             rooms.append(item)
 
     return {
@@ -936,19 +1365,138 @@ def get_room(room_id: int):
         if r is None:
             raise HTTPException(404, "Room not found.")
 
-        # Do not expose pending or unverified properties publicly.
         if r["ownership_status"] != "assigned" or r["owner_id"] is None:
             raise HTTPException(404, "Verified room not found.")
 
         result = room_to_dict(r)
+
+        application = get_approved_agent_application(c, room_id)
+
         result["agents"] = add_public_agents(c, room_id)
+
+        result["description"] = (
+            application["description"]
+            if application is not None
+            else None
+        )
 
     return result
 
 
-# IMPORTANT SECURITY CHANGE:
+@app.get("/rooms/{room_id}/details")
+def get_room_details(
+    room_id: int,
+    student=Depends(get_current_student)
+):
+    """Full room details for logged-in students."""
+
+    with get_connection() as c:
+        r = c.execute(
+            "SELECT * FROM rooms WHERE id=?",
+            (room_id,)
+        ).fetchone()
+
+        if (
+            r is None
+            or r["ownership_status"] != "assigned"
+            or r["owner_id"] is None
+        ):
+            raise HTTPException(404, "Verified room not found.")
+
+        result = room_to_dict(r)
+
+        application = get_approved_agent_application(c, room_id)
+
+        result["description"] = (
+            application["description"]
+            if application is not None
+            else None
+        )
+
+        result["photos"] = get_room_photos(c, room_id)
+        result["agents"] = get_agents_with_contact(c, room_id)
+
+    return result
+
+
+@app.get("/rooms/{room_id}/photos/{photo_id}")
+def get_room_photo(
+    room_id: int,
+    photo_id: int,
+    student=Depends(get_current_student)
+):
+    """Serve verified Owner or Agent photographs to logged-in students."""
+
+    with get_connection() as c:
+        r = c.execute(
+            "SELECT ownership_status, owner_id FROM rooms WHERE id=?",
+            (room_id,)
+        ).fetchone()
+
+        if (
+            r is None
+            or r["ownership_status"] != "assigned"
+            or r["owner_id"] is None
+        ):
+            raise HTTPException(404, "Verified room not found.")
+
+        direct_application = get_approved_agent_application(c, room_id)
+
+        if direct_application is not None:
+            photo = c.execute("""
+                SELECT stored_name, content_type
+                FROM agent_property_photos
+                WHERE id=?
+                AND application_id=?
+            """, (
+                photo_id,
+                direct_application["application_id"]
+            )).fetchone()
+
+            photo_directory = AGENT_PHOTO_DIR
+
+        else:
+            allowed = {
+                p["id"]
+                for p in get_room_photos(c, room_id)
+            }
+
+            photo = None
+
+            if photo_id in allowed:
+                photo = c.execute("""
+                    SELECT stored_name, content_type
+                    FROM room_ownership_photos
+                    WHERE id=?
+                """, (photo_id,)).fetchone()
+
+            photo_directory = PRIVATE_PHOTO_DIR
+
+    if photo is None:
+        raise HTTPException(404, "Property photograph not found.")
+
+    path = photo_directory / Path(photo["stored_name"]).name
+
+    if not path.is_file():
+        raise HTTPException(
+            404,
+            "The stored photograph could not be found."
+        )
+
+    return FileResponse(
+        path,
+        media_type=photo["content_type"],
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "X-Content-Type-Options": "nosniff"
+        }
+    )
+
+
+# IMPORTANT SECURITY:
 # Only administrators can create original room records here.
-# Landlords must use the photo-based property verification workflow.
+# Owners must use the property verification workflow.
+
 @app.post("/rooms", status_code=201)
 def create_room(
     data: RoomCreate,
@@ -1012,7 +1560,7 @@ def update_room(
         ):
             raise HTTPException(
                 403,
-                "You can only edit verified rooms assigned to your landlord account."
+                "You can only edit verified rooms assigned to your Owner account."
             )
 
         values = {
@@ -1039,6 +1587,46 @@ def update_room(
     return room_to_dict(updated)
 
 
+@app.put("/admin/rooms/{room_id}/proximity")
+def set_room_proximity(
+    room_id: int,
+    data: RoomProximity,
+    admin=Depends(require_admin)
+):
+    with get_connection() as c:
+        if c.execute(
+            "SELECT 1 FROM rooms WHERE id=?",
+            (room_id,)
+        ).fetchone() is None:
+            raise HTTPException(404, "Room not found.")
+
+        c.execute("""
+            UPDATE rooms
+            SET nearest_campus=?, proximity_tier=?
+            WHERE id=?
+        """, (data.nearest_campus, data.proximity_tier, room_id))
+
+        c.execute("""
+            INSERT INTO admin_audit_logs(
+                admin_id, action, target_type, target_id, details
+            )
+            VALUES(?,?,?,?,?)
+        """, (
+            admin["id"],
+            "room_proximity_set",
+            "room",
+            room_id,
+            f"{data.nearest_campus}/{data.proximity_tier}"
+        ))
+
+    return {
+        "room_id": room_id,
+        "nearest_campus": data.nearest_campus,
+        "proximity_tier": data.proximity_tier,
+        "message": "Room proximity updated."
+    }
+
+
 @app.delete("/rooms/{room_id}")
 def delete_room(
     room_id: int,
@@ -1062,7 +1650,7 @@ def delete_room(
         ):
             raise HTTPException(
                 403,
-                "You can only delete verified rooms assigned to your landlord account."
+                "You can only delete verified rooms assigned to your Owner account."
             )
 
         c.execute(
@@ -1231,12 +1819,12 @@ def report_room_rented(
         ))
 
     return {
-        "message": "Rental report sent to the landlord for confirmation.",
+        "message": "Rental report sent to the Owner for confirmation.",
         "status": "pending"
     }
 
 
-# LANDLORD ROUTES
+# OWNER ROUTES
 
 @app.get("/landlord/me/rooms")
 def landlord_rooms(owner=Depends(require_landlord)):
@@ -1435,7 +2023,7 @@ def confirm_rented(
     }
 
 
-# ROOMMATE MATCHING RETAINED
+# ROOMMATE MATCHING
 
 def normalize_location_words(value):
     if not value:
@@ -1450,96 +2038,178 @@ def normalize_location_words(value):
     }
 
 
+def normalize_match_text(value):
+    """Normalize text for case-insensitive matching."""
+    if not value:
+        return ""
+
+    return " ".join(value.strip().casefold().split())
+
+
 @app.get("/students/matches")
 def find_roommate_matches(
     same_year: bool = False,
     student=Depends(get_current_student)
 ):
+    # Both students must be looking for shared accommodation.
     if student["room_type"] != "shared":
         raise HTTPException(
             400,
             "Set your room_type preference to 'shared' to find roommate matches."
         )
 
-    if not student["preferred_location"]:
+    # University is a mandatory matching requirement.
+    if not student["university"] or not student["university"].strip():
         raise HTTPException(
             400,
-            "Set your preferred location before searching for roommates."
+            "Add your university to your profile before searching for roommates."
         )
 
-    target = normalize_location_words(
+    # Gender is a mandatory matching requirement.
+    if not student["gender"]:
+        raise HTTPException(
+            400,
+            "Set your gender in your profile before searching for roommates."
+        )
+
+    # Same-year filtering is optional.
+    if same_year and student["year_of_study"] is None:
+        raise HTTPException(
+            400,
+            "Add your year of study to your profile before using the same-year filter."
+        )
+
+    university = normalize_match_text(student["university"])
+    gender = normalize_match_text(student["gender"])
+
+    target_location = normalize_location_words(
         student["preferred_location"]
     )
+
+    target_faculty = normalize_match_text(student["faculty"])
+    target_course = normalize_match_text(student["course"])
+    target_year = student["year_of_study"]
 
     with get_connection() as c:
         candidates = c.execute("""
             SELECT *
             FROM students
-            WHERE id!=?
-            AND email_verified=1
-            AND account_status='active'
-            AND role='student'
-            AND room_type='shared'
-            AND gender IS ?
+            WHERE id != ?
+            AND email_verified = 1
+            AND account_status = 'active'
+            AND role = 'student'
+            AND room_type = 'shared'
+            AND LOWER(TRIM(university)) = LOWER(TRIM(?))
+            AND LOWER(TRIM(gender)) = LOWER(TRIM(?))
         """, (
             student["id"],
-            student["gender"]
+            student["university"].strip(),
+            student["gender"].strip()
         )).fetchall()
 
     matches = []
 
     for candidate in candidates:
-        if (
-            same_year
-            and candidate["year_of_study"] != student["year_of_study"]
-        ):
-            continue
 
-        loc = normalize_location_words(
-            candidate["preferred_location"]
-        )
-
-        if not target or not loc or not target.intersection(loc):
+        # Apply the optional same-year filter only when requested.
+        if same_year and candidate["year_of_study"] != target_year:
             continue
 
         score = 1
+        matching_reasons = []
+
+        # Location increases the score but does not exclude candidates.
+        candidate_location = normalize_location_words(
+            candidate["preferred_location"]
+        )
 
         if (
-            student["course"]
-            and candidate["course"]
-            and student["course"].strip().lower()
-            == candidate["course"].strip().lower()
+            target_location
+            and candidate_location
+            and target_location.intersection(candidate_location)
+        ):
+            score += 3
+            matching_reasons.append("Similar preferred location")
+
+        # Same faculty increases the score.
+        candidate_faculty = normalize_match_text(
+            candidate["faculty"]
+        )
+
+        if (
+            target_faculty
+            and candidate_faculty
+            and target_faculty == candidate_faculty
         ):
             score += 2
+            matching_reasons.append("Same faculty")
+
+        # Same course increases the score.
+        candidate_course = normalize_match_text(
+            candidate["course"]
+        )
 
         if (
-            student["year_of_study"] is not None
-            and candidate["year_of_study"] == student["year_of_study"]
+            target_course
+            and candidate_course
+            and target_course == candidate_course
+        ):
+            score += 2
+            matching_reasons.append("Same course")
+
+        # Same year increases the score, whether or not the filter is active.
+        if (
+            target_year is not None
+            and candidate["year_of_study"] is not None
+            and candidate["year_of_study"] == target_year
         ):
             score += 1
+            matching_reasons.append("Same year of study")
 
         matches.append({
             "student_id": candidate["id"],
             "full_name": candidate["full_name"],
             "university": candidate["university"],
+            "faculty": candidate["faculty"],
             "course": candidate["course"],
             "year_of_study": candidate["year_of_study"],
             "preferred_location": candidate["preferred_location"],
-            "match_score": score
+            "match_score": score,
+            "matching_reasons": matching_reasons
         })
 
+    # Highest score first; names alphabetically when scores are equal.
     matches.sort(
         key=lambda x: (
-            x["match_score"],
-            x["full_name"].lower()
-        ),
-        reverse=True
+            -x["match_score"],
+            x["full_name"].casefold()
+        )
     )
 
     return {
         "count": len(matches),
         "matches": matches,
-        "note": "Location matching uses shared words in location names, not geographic distance. Match scores are indicators, not guarantees of compatibility."
+        "matching_rules": {
+            "mandatory": [
+                "Same university",
+                "Same gender",
+                "Both students must prefer shared accommodation"
+            ],
+            "score_factors": {
+                "similar_location": 3,
+                "same_faculty": 2,
+                "same_course": 2,
+                "same_year": 1
+            },
+            "same_year_filter_enabled": same_year
+        },
+        "note": (
+            "University and gender are mandatory matching requirements. "
+            "Location, faculty, course and year increase the match score "
+            "but do not exclude otherwise eligible students. "
+            "Location matching compares words, not geographic distance. "
+            "Scores are indicators, not guarantees of compatibility."
+        )
     }
 
 
@@ -1574,7 +2244,8 @@ def agent_dashboard():
             detail="Agent dashboard file not found"
         )
 
-    return FileResponse(file_path, media_type="text/html")
+    return FileResponse(file_path)
+
 
 # AGENT LOGIN PAGE
 

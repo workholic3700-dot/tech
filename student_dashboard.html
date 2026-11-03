@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RumCHUO | Student Dashboard</title>
+<style>
+:root {
+    --bg: #f4f6fa;
+    --sidebar: #14243a;
+    --sidebar-light: #203650;
+    --primary: #2864e8;
+    --text: #172338;
+    --muted: #758198;
+    --white: #ffffff;
+    --border: #e8edf4;
+    --green: #159b68;
+    --red: #d94b55;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
+body.no-scroll { overflow: hidden; }
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+    width: 255px; background: var(--sidebar); color: white;
+    padding: 25px 17px; position: fixed; inset: 0 auto 0 0;
+    display: flex; flex-direction: column; z-index: 20;
+}
+.brand { font-size: 25px; font-weight: 800; padding: 5px 13px 35px; letter-spacing: 1px; }
+.brand span { color: #65a0ff; }
+.side-label { color: #91a2b9; font-size: 11px; font-weight: bold; padding: 12px 13px; letter-spacing: 1.5px; }
+.nav-link {
+    width: 100%; border: 0; background: transparent; color: #c6d1df;
+    padding: 14px 13px; border-radius: 9px; text-align: left;
+    cursor: pointer; font-size: 14px; margin: 3px 0;
+    display: flex; align-items: center; gap: 12px;
+}
+.nav-link:hover, .nav-link.active { background: var(--sidebar-light); color: white; }
+.nav-link.active { border-left: 3px solid #65a0ff; }
+.sidebar-bottom { margin-top: auto; }
+.main { margin-left: 255px; width: calc(100% - 255px); min-height: 100vh; }
+.topbar {
+    height: 76px; background: white; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 35px; position: sticky; top: 0; z-index: 10;
+}
+.topbar h2 { font-size: 18px; }
+.user-area { display: flex; align-items: center; gap: 12px; }
+.avatar {
+    width: 39px; height: 39px; border-radius: 50%; background: #e5edff;
+    color: var(--primary); display: grid; place-items: center; font-weight: bold;
+}
+.user-name { font-size: 13px; font-weight: bold; }
+.user-role { color: var(--muted); font-size: 11px; margin-top: 3px; }
+.menu-btn { display: none; background: none; border: 0; font-size: 25px; cursor: pointer; }
+.content { padding: 32px 35px; max-width: 1500px; margin: auto; }
+.page { display: none; }
+.page.active { display: block; }
+.welcome {
+    background: linear-gradient(120deg, #1c4382, #2864e8);
+    color: white; padding: 30px; border-radius: 15px; margin-bottom: 25px;
+}
+.welcome h1 { font-size: 25px; margin-bottom: 9px; }
+.welcome p { color: #dce8ff; font-size: 14px; line-height: 1.6; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; margin: 28px 0 17px; }
+.section-heading h2 { font-size: 19px; }
+.muted { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 17px; }
+.stat-card, .panel, .room-card, .match-card {
+    background: white; border: 1px solid var(--border); border-radius: 12px; padding: 22px;
+}
+.stat-label { color: var(--muted); font-size: 13px; }
+.stat-number { font-size: 28px; font-weight: 800; margin-top: 12px; }
+.stat-icon { font-size: 23px; margin-bottom: 15px; }
+.panel { margin-bottom: 20px; }
+.panel h3 { font-size: 16px; margin-bottom: 18px; }
+.grid-two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.btn {
+    background: var(--primary); color: white; border: 0; border-radius: 8px;
+    padding: 11px 17px; cursor: pointer; font-weight: bold; font-size: 13px;
+    text-decoration: none; display: inline-block;
+}
+.btn:hover { opacity: .9; }
+.btn-outline { background: white; border: 1px solid var(--border); color: var(--text); }
+.btn-danger { background: var(--red); }
+.btn-green { background: var(--green); }
+.btn-small { padding: 9px 14px; font-size: 12px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
+.field { margin-bottom: 17px; }
+.field label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+.field input, .field select {
+    width: 100%; padding: 12px; border: 1px solid #dce3ed;
+    border-radius: 8px; outline: none; font-size: 14px; background: white;
+}
+.field input:focus, .field select:focus { border-color: var(--primary); }
+.search-row { display: flex; gap: 12px; margin-bottom: 20px; }
+.search-row input, .search-row select {
+    padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: white; flex: 1; min-width: 0;
+}
+.cards-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
+.room-card, .match-card { padding: 0; overflow: hidden; }
+.card-body { padding: 20px 22px 22px; }
+.match-card { padding: 22px; }
+.room-card h3, .match-card h3 { margin: 0 0 8px; }
+.match-card h3 { margin: 12px 0 8px; }
+.room-location { color: var(--muted); font-size: 13px; }
+.room-price { color: var(--primary); font-size: 21px; font-weight: bold; margin: 14px 0; }
+.tag {
+    display: inline-block; background: #eaf1ff; color: #2864e8;
+    padding: 6px 9px; border-radius: 20px; font-size: 11px; margin: 3px 3px 3px 0;
+}
+.tag.available { background: #e7f8f0; color: #08764c; }
+.tag.unavailable { background: #fff0f0; color: #b52e38; }
+.match-score { color: var(--green); font-weight: bold; font-size: 13px; }
+.match-reasons {
+    margin-top: 12px; padding: 11px 13px; background: #f3f7ff;
+    border-radius: 8px; color: #405574; font-size: 12px; line-height: 1.6;
+}
+.empty {
+    background: white; border: 1px dashed #cbd5e1; border-radius: 12px;
+    padding: 35px; text-align: center; color: var(--muted);
+    line-height: 1.7; grid-column: 1 / -1;
+}
+.notice { padding: 12px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; display: none; line-height: 1.6; }
+.notice.success { background: #e7f8f0; color: #08764c; }
+.notice.error { background: #fff0f0; color: #b52e38; }
+.loading { color: var(--muted); padding: 20px 0; }
+.profile-summary { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+.big-avatar {
+    width: 65px; height: 65px; border-radius: 50%; display: grid;
+    place-items: center; background: #e5edff; color: var(--primary);
+    font-size: 25px; font-weight: bold;
+}
+.matching-rules { padding: 14px 16px; background: #f3f7ff; border-radius: 9px; margin: 12px 0 17px; }
+.matching-rules ul { padding-left: 20px; margin-top: 8px; }
+.matching-rules li { margin: 5px 0; font-size: 13px; line-height: 1.5; color: #405574; }
+.required-note { font-size: 12px; color: var(--muted); margin: 0 0 15px; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+
+/* Room photos and details */
+.room-photo {
+    position: relative; width: 100%; aspect-ratio: 16 / 10;
+    background: #e9edf3; cursor: zoom-in; overflow: hidden;
+    display: grid; place-items: center; color: var(--muted); font-size: 13px;
+}
+.room-photo.no-photo { cursor: default; }
+.room-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-badge {
+    position: absolute; right: 10px; bottom: 10px;
+    background: rgba(20, 36, 58, .8); color: white;
+    font-size: 11px; padding: 5px 9px; border-radius: 20px; pointer-events: none;
+}
+.card-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+.modal-backdrop {
+    position: fixed; inset: 0; background: rgba(12, 22, 38, .6);
+    z-index: 50; display: none; align-items: flex-start; justify-content: center;
+    overflow-y: auto; padding: 30px 15px;
+}
+.modal-backdrop.open { display: flex; }
+.modal { background: white; border-radius: 14px; width: 100%; max-width: 820px; position: relative; overflow: hidden; }
+.modal-close {
+    position: absolute; top: 12px; right: 12px; z-index: 3;
+    width: 36px; height: 36px; border-radius: 50%; border: 0;
+    background: rgba(20, 36, 58, .75); color: white; font-size: 20px; cursor: pointer;
+}
+.gallery-main {
+    position: relative; width: 100%; aspect-ratio: 16 / 9;
+    background: #e9edf3; display: grid; place-items: center;
+    color: var(--muted); cursor: zoom-in; overflow: hidden;
+}
+.gallery-main.no-photo { cursor: default; }
+.gallery-main img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumbs { display: flex; gap: 8px; padding: 10px 22px 0; overflow-x: auto; }
+.thumb {
+    flex: 0 0 auto; width: 76px; height: 56px; border-radius: 8px;
+    border: 2px solid transparent; background: #e9edf3; padding: 0;
+    cursor: pointer; overflow: hidden;
+}
+.thumb.active { border-color: var(--primary); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.modal-body { padding: 22px; }
+.modal-body h2 { font-size: 21px; margin-bottom: 6px; }
+.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0 6px; }
+.detail-item { background: var(--bg); border-radius: 10px; padding: 12px 14px; }
+.detail-item .k { color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+.detail-item .v { font-size: 14px; font-weight: bold; }
+.modal-body h3 { font-size: 16px; margin: 22px 0 12px; }
+.agent-card {
+    display: flex; align-items: center; gap: 14px;
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.agent-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: #e5edff; color: var(--primary); display: grid;
+    place-items: center; font-weight: bold; font-size: 18px; flex: 0 0 auto;
+}
+.agent-info { flex: 1; min-width: 150px; }
+.agent-name { font-weight: bold; font-size: 14px; }
+.agent-phone { font-size: 14px; margin-top: 4px; }
+.agent-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.lightbox {
+    position: fixed; inset: 0; background: rgba(5, 10, 18, .94);
+    z-index: 100; display: none; align-items: center; justify-content: center;
+}
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 92vw; max-height: 86vh; object-fit: contain; border-radius: 6px; }
+.lb-btn {
+    position: absolute; background: rgba(255, 255, 255, .15);
+    color: white; border: 0; border-radius: 50%; width: 46px;
+    height: 46px; font-size: 24px; cursor: pointer;
+}
+.lb-btn:hover { background: rgba(255, 255, 255, .28); }
+.lb-close { top: 18px; right: 18px; }
+.lb-prev { left: 18px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 18px; top: 50%; transform: translateY(-50%); }
+.lb-count { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); color: #dbe4f0; font-size: 13px; }
+.lb-status { color: #dbe4f0; font-size: 14px; position: absolute; }
+
+@media(max-width: 900px) {
+    .sidebar { transform: translateX(-100%); transition: .25s; }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; width: 100%; }
+    .menu-btn { display: block; }
+    .topbar { padding: 0 18px; }
+    .content { padding: 22px 18px; }
+}
+@media(max-width: 650px) {
+    .stats, .grid-two, .cards-grid, .form-grid, .detail-grid { grid-template-columns: 1fr; }
+    .search-row { flex-direction: column; }
+    .welcome h1 { font-size: 21px; }
+    .content { padding: 17px 13px; }
+    .user-name { display: none; }
+    .modal-backdrop { padding: 0; }
+    .modal { border-radius: 0; min-height: 100vh; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar" id="sidebar">
+    <div class="brand">Rum<span>CHUO</span></div>
+    <div class="side-label">STUDENT MENU</div>
+    <button class="nav-link active" data-page="overview">▦ &nbsp; Overview</button>
+    <button class="nav-link" data-page="rooms">⌂ &nbsp; Find Accommodation</button>
+    <button class="nav-link" data-page="matches">♧ &nbsp; Roommate Matching</button>
+    <div class="side-label">MY ACCOUNT</div>
+    <button class="nav-link" data-page="profile">◉ &nbsp; My Profile</button>
+    <button class="nav-link" data-page="preferences">⚙ &nbsp; Preferences</button>
+    <div class="sidebar-bottom">
+        <button class="nav-link" id="logoutButton">↪ &nbsp; Logout</button>
+    </div>
+</aside>
+
+<main class="main">
+<header class="topbar">
+    <div style="display:flex;align-items:center;gap:15px">
+        <button class="menu-btn" id="menuButton">☰</button>
+        <h2 id="pageTitle">Student Overview</h2>
+    </div>
+    <div class="user-area">
+        <div class="avatar" id="topAvatar">S</div>
+        <div>
+            <div class="user-name" id="topName">Student</div>
+            <div class="user-role">Student Account</div>
+        </div>
+    </div>
+</header>
+
+<div class="content">
+
+<section class="page active" id="overview">
+    <div class="welcome">
+        <h1>Welcome back, <span id="welcomeName">Student</span>!</h1>
+        <p>Your accommodation journey starts here. Find a room, connect with compatible roommates and manage your student profile.</p>
+    </div>
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-icon">⌂</div>
+            <div class="stat-label">Available Accommodation</div>
+            <div class="stat-number" id="roomCount">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">♧</div>
+            <div class="stat-label">Roommate Matches</div>
+            <div class="stat-number" id="matchCount">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">◉</div>
+            <div class="stat-label">Profile Status</div>
+            <div class="stat-number" id="profileStatus" style="font-size:19px">Loading</div>
+        </div>
+    </div>
+    <div class="section-heading"><h2>Quick Actions</h2></div>
+    <div class="grid-two">
+        <div class="panel">
+            <h3>Find your accommodation</h3>
+            <p class="muted">Explore available rooms and discover accommodation options.</p>
+            <br><button class="btn" data-go="rooms">Explore Rooms</button>
+        </div>
+        <div class="panel">
+            <h3>Find a roommate</h3>
+            <p class="muted">Find students who meet the essential compatibility requirements and share similar preferences.</p>
+            <br><button class="btn" data-go="matches">Find Roommates</button>
+        </div>
+    </div>
+</section>
+
+<section class="page" id="rooms">
+    <div class="section-heading">
+        <div>
+            <h2>Find Accommodation</h2>
+            <p class="muted">Explore verified accommodation listings. Select a room to see its photos, details and agent contact.</p>
+        </div>
+        <button class="btn btn-outline" id="refreshRooms">↻ Refresh</button>
+    </div>
+    <div class="search-row">
+        <input id="roomSearch" placeholder="Search by location...">
+        <select id="roomTypeFilter">
+            <option value="">All room types</option>
+            <option value="single">Single</option>
+            <option value="shared">Shared</option>
+            <option value="self-contained">Self-contained</option>
+        </select>
+    </div>
+    <div class="cards-grid" id="roomsList">
+        <div class="loading">Loading accommodation...</div>
+    </div>
+</section>
+
+<section class="page" id="matches">
+    <div class="section-heading">
+        <div>
+            <h2>Roommate Matching</h2>
+            <p class="muted">Find compatible students for shared accommodation.</p>
+        </div>
+        <button class="btn btn-outline" id="refreshMatches">↻ Refresh</button>
+    </div>
+
+    <div class="panel">
+        <h3>How matching works</h3>
+        <p class="muted">
+            RumCHUO first checks the essential requirements for shared accommodation.
+            Students are only matched when they meet all the mandatory requirements below.
+        </p>
+
+        <div class="matching-rules">
+            <strong style="font-size:13px">Mandatory requirements</strong>
+            <ul>
+                <li>You and the potential roommate must be from the same university.</li>
+                <li>You and the potential roommate must have the same gender.</li>
+                <li>Both students must have selected shared accommodation.</li>
+            </ul>
+        </div>
+
+        <p class="muted">
+            After these requirements are met, RumCHUO uses the following details
+            to improve the match score:
+        </p>
+        <div class="matching-rules">
+            <ul>
+                <li>Preferred accommodation location.</li>
+                <li>Course or programme of study.</li>
+                <li>Year of study.</li>
+            </ul>
+        </div>
+
+        <p class="muted" style="margin-bottom:15px">
+            Year of study is a scoring factor by default. You can optionally
+            restrict results to students in your exact year.
+        </p>
+
+        <label class="checkbox-row">
+            <input type="checkbox" id="sameYear">
+            Only show students in my year of study
+        </label>
+    </div>
+
+    <div class="cards-grid" id="matchesList">
+        <div class="loading">Loading roommate matches...</div>
+    </div>
+</section>
+
+<section class="page" id="profile">
+    <div class="section-heading">
+        <div>
+            <h2>My Profile</h2>
+            <p class="muted">Manage your personal and academic information. Accurate details help RumCHUO find compatible roommates.</p>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="profile-summary">
+            <div class="big-avatar" id="profileAvatar">S</div>
+            <div>
+                <h3 id="profileDisplayName">Student</h3>
+                <p class="muted">Student profile</p>
+            </div>
+        </div>
+        <div id="profileNotice" class="notice"></div>
+        <p class="required-note">Fields marked with * are important for roommate matching.</p>
+
+        <form id="profileForm">
+            <div class="form-grid">
+                <div class="field">
+                    <label for="fullName">Full Name *</label>
+                    <input id="fullName" required>
+                </div>
+                <div class="field">
+                    <label for="email">Email Address</label>
+                    <input id="email" type="email" disabled>
+                </div>
+                <div class="field">
+                    <label for="university">University *</label>
+                    <input id="university" placeholder="Enter your university" required>
+                </div>
+                <div class="field">
+                    <label for="campus">Campus</label>
+                    <input id="campus" placeholder="e.g. Main Campus">
+                </div>
+                <div class="field">
+                    <label for="course">Course / Programme</label>
+                    <input id="course" placeholder="e.g. Computer Science">
+                </div>
+                <div class="field">
+                    <label for="yearOfStudy">Year of Study</label>
+                    <select id="yearOfStudy">
+                        <option value="">Select year</option>
+                        <option value="1">Year 1</option>
+                        <option value="2">Year 2</option>
+                        <option value="3">Year 3</option>
+                        <option value="4">Year 4</option>
+                    
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="gender">Gender *</label>
+                    <select id="gender" required>
+                        <option value="">Select gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn" type="submit">Save Profile</button>
+        </form>
+    </div>
+</section>
+
+<section class="page" id="preferences">
+    <div class="section-heading">
+        <div>
+            <h2>Accommodation Preferences</h2>
+            <p class="muted">Tell us what kind of accommodation you are looking for.</p>
+        </div>
+    </div>
+    <div class="panel">
+        <div id="preferencesNotice" class="notice"></div>
+        <form id="preferencesForm">
+            <div class="field">
+                <label for="preferredLocation">Preferred Location</label>
+                <input id="preferredLocation" placeholder="e.g. Near UDSM, Mlimani, Mwenge">
+            </div>
+            <div class="field">
+                <label for="preferredRoomType">Preferred Room Type</label>
+                <select id="preferredRoomType">
+                    <option value="">Select room type</option>
+                    <option value="single">Single Room</option>
+                    <option value="shared">Shared Room</option>
+                    <option value="any">Any Room Type</option>
+                </select>
+            </div>
+            <p class="muted" style="margin-bottom:15px">
+                To receive roommate matches, select Shared Room. Budget is not used
+                in roommate matching.
+            </p>
+            <button class="btn" type="submit">Save Preferences</button>
+        </form>
+    </div>
+</section>
+
+</div>
+</main>
+</div>
+
+<!-- Room details modal -->
+<div class="modal-backdrop" id="roomModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<!-- Full-screen image preview -->
+<div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lb-btn lb-close" id="lbClose" aria-label="Close preview">×</button>
+    <button class="lb-btn lb-prev" id="lbPrev" aria-label="Previous photo">‹</button>
+    <button class="lb-btn lb-next" id="lbNext" aria-label="Next photo">›</button>
+    <span class="lb-status" id="lbStatus"></span>
+    <img id="lbImage" alt="Property photograph" style="display:none">
+    <div class="lb-count" id="lbCount"></div>
+</div>
+
+<script>
+const API_BASE = "";
+const token = localStorage.getItem("accessToken");
+
+if (!token) {
+    window.location.href = "/";
+}
+
+const headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + token
+};
+
+let currentStudent = null;
+let allRooms = [];
+
+const pageTitles = {
+    overview: "Student Overview",
+    rooms: "Find Accommodation",
+    matches: "Roommate Matching",
+    profile: "My Profile",
+    preferences: "Accommodation Preferences"
+};
+
+const proximityLabels = {
+    under_5_min_walk: "Under 5 min walk",
+    "5_to_15_min_walk": "5 to 15 min walk",
+    requires_transport: "Requires transport"
+};
+
+async function api(path, options = {}) {
+    const response = await fetch(API_BASE + path, {
+        ...options,
+        headers: {
+            ...headers,
+            ...(options.headers || {})
+        }
+    });
+
+    if (response.status === 401 || response.status === 403) {
+        logout();
+        throw new Error("Your session has expired or you are not authorized. Please log in again.");
+    }
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(data.detail || data.message || "Request failed.");
+    }
+
+    return data;
+}
+
+function logout() {
+    [
+        "accessToken", "tokenType", "userRole",
+        "userId", "userName"
+    ].forEach(key => localStorage.removeItem(key));
+
+    window.location.href = "/";
+}
+
+function showNotice(id, message, type = "success") {
+    const element = document.getElementById(id);
+    element.textContent = message;
+    element.className = "notice " + type;
+    element.style.display = "block";
+}
+
+function showPage(page) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".nav-link[data-page]").forEach(b => b.classList.remove("active"));
+
+    document.getElementById(page)?.classList.add("active");
+    document.querySelector(`.nav-link[data-page="${page}"]`)?.classList.add("active");
+
+    document.getElementById("pageTitle").textContent = pageTitles[page] || "Student Dashboard";
+    document.getElementById("sidebar").classList.remove("open");
+
+    if (page === "rooms") loadRooms();
+    if (page === "matches") loadMatches();
+    if (page === "profile") loadProfile();
+    if (page === "preferences") loadPreferences();
+}
+
+document.querySelectorAll(".nav-link[data-page]").forEach(button => {
+    button.addEventListener("click", () => showPage(button.dataset.page));
+});
+
+document.querySelectorAll("[data-go]").forEach(button => {
+    button.addEventListener("click", () => showPage(button.dataset.go));
+});
+
+document.getElementById("menuButton").addEventListener("click", () => {
+    document.getElementById("sidebar").classList.toggle("open");
+});
+
+document.getElementById("logoutButton").addEventListener("click", logout);
+
+function displayName(student) {
+    return student?.full_name || localStorage.getItem("userName") || "Student";
+}
+
+function setStudentHeader(student) {
+    const name = displayName(student);
+    const initial = name.charAt(0).toUpperCase();
+
+    document.getElementById("welcomeName").textContent = name.split(" ")[0];
+    document.getElementById("topName").textContent = name;
+    document.getElementById("topAvatar").textContent = initial;
+    document.getElementById("profileAvatar").textContent = initial;
+    document.getElementById("profileDisplayName").textContent = name;
+}
+
+function updateProfileStatus(student) {
+    const requiredFields = [
+        student.full_name,
+        student.university,
+        student.gender
+    ];
+
+    const completed = requiredFields.every(value =>
+        value !== null && value !== undefined && String(value).trim() !== ""
+    );
+
+    document.getElementById("profileStatus").textContent =
+        completed ? "Complete" : "Incomplete";
+}
+
+async function loadProfile() {
+    try {
+        const student = await api("/students/me");
+        currentStudent = student;
+        setStudentHeader(student);
+
+        document.getElementById("fullName").value = student.full_name || "";
+        document.getElementById("email").value = student.email || "";
+        document.getElementById("university").value = student.university || "";
+        document.getElementById("campus").value = student.campus || "";
+        document.getElementById("course").value = student.course || "";
+        document.getElementById("yearOfStudy").value = student.year_of_study || "";
+        document.getElementById("gender").value = student.gender || "";
+
+        updateProfileStatus(student);
+    } catch (error) {
+        showNotice("profileNotice", error.message, "error");
+    }
+}
+
+document.getElementById("profileForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const payload = {
+        full_name: document.getElementById("fullName").value.trim(),
+        university: document.getElementById("university").value.trim(),
+        campus: document.getElementById("campus").value.trim() || null,
+        course: document.getElementById("course").value.trim() || null,
+        year_of_study: document.getElementById("yearOfStudy").value
+            ? Number(document.getElementById("yearOfStudy").value) : null,
+        gender: document.getElementById("gender").value || null
+    };
+
+    try {
+        const result = await api("/students/me/profile", {
+            method: "PUT",
+            body: JSON.stringify(payload)
+        });
+
+        currentStudent = result;
+        setStudentHeader(result);
+        updateProfileStatus(result);
+        showNotice("profileNotice", "Your profile has been updated successfully.");
+        await loadProfile();
+    } catch (error) {
+        showNotice("profileNotice", error.message, "error");
+    }
+});
+
+async function loadPreferences() {
+    try {
+        const preferences = await api("/students/me/preferences");
+
+        document.getElementById("preferredLocation").value =
+            preferences.preferred_location || "";
+        document.getElementById("preferredRoomType").value =
+            preferences.room_type || "";
+    } catch (error) {
+        showNotice("preferencesNotice", error.message, "error");
+    }
+}
+
+document.getElementById("preferencesForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const payload = {
+        preferred_location: document.getElementById("preferredLocation").value.trim(),
+        room_type: document.getElementById("preferredRoomType").value || null
+    };
+
+    try {
+        await api("/students/me/preferences", {
+            method: "PUT",
+            body: JSON.stringify(payload)
+        });
+        showNotice("preferencesNotice", "Your preferences have been saved.");
+    } catch (error) {
+        showNotice("preferencesNotice", error.message, "error");
+    }
+});
+
+/* PHOTO LOADING */
+
+const photoCache = new Map();
+
+function getPhotoUrl(roomId, photoId) {
+    const key = roomId + ":" + photoId;
+
+    if (!photoCache.has(key)) {
+        const promise = fetch(
+            API_BASE + "/rooms/" + roomId + "/photos/" + photoId,
+            { headers: { "Authorization": "Bearer " + token } }
+        )
+            .then(response => {
+                if (!response.ok) throw new Error("Photo unavailable");
+                return response.blob();
+            })
+            .then(blob => URL.createObjectURL(blob));
+
+        photoCache.set(key, promise);
+        promise.catch(() => photoCache.delete(key));
+    }
+
+    return photoCache.get(key);
+}
+
+function loadImageInto(container, roomId, photoId, alt) {
+    getPhotoUrl(roomId, photoId)
+        .then(url => {
+            const img = document.createElement("img");
+            img.src = url;
+            img.alt = alt || "Property photograph";
+            container.querySelectorAll("img").forEach(i => i.remove());
+            container.querySelector(".photo-placeholder")?.remove();
+            container.prepend(img);
+        })
+        .catch(() => {
+            const placeholder = container.querySelector(".photo-placeholder");
+            if (placeholder) placeholder.textContent = "Photo unavailable";
+        });
+}
+
+const lazyObserver = ("IntersectionObserver" in window)
+    ? new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            lazyObserver.unobserve(el);
+            loadImageInto(
+                el,
+                Number(el.dataset.roomId),
+                Number(el.dataset.photoId),
+                el.dataset.alt
+            );
+        });
+    }, { rootMargin: "200px" })
+    : null;
+
+function lazyLoadImage(container, roomId, photoId, alt) {
+    container.dataset.roomId = roomId;
+    container.dataset.photoId = photoId;
+    container.dataset.alt = alt;
+
+    if (lazyObserver) {
+        lazyObserver.observe(container);
+    } else {
+        loadImageInto(container, roomId, photoId, alt);
+    }
+}
+
+/* FULL-SCREEN IMAGE PREVIEW */
+
+const lightbox = document.getElementById("lightbox");
+const lbImage = document.getElementById("lbImage");
+const lbStatus = document.getElementById("lbStatus");
+const lbCount = document.getElementById("lbCount");
+let lbState = { roomId: null, ids: [], index: 0 };
+
+function openLightbox(roomId, photoIds, startIndex = 0) {
+    if (!photoIds.length) return;
+    lbState = { roomId, ids: photoIds, index: startIndex };
+    lightbox.classList.add("open");
+    lightbox.setAttribute("aria-hidden", "false");
+    document.body.classList.add("no-scroll");
+    showLightboxPhoto();
+}
+
+function closeLightbox() {
+    lightbox.classList.remove("open");
+    lightbox.setAttribute("aria-hidden", "true");
+    lbImage.style.display = "none";
+    lbImage.removeAttribute("src");
+
+    if (!document.getElementById("roomModal").classList.contains("open")) {
+        document.body.classList.remove("no-scroll");
+    }
+}
+
+function showLightboxPhoto() {
+    const { roomId, ids, index } = lbState;
+    const multiple = ids.length > 1;
+
+    document.getElementById("lbPrev").style.display = multiple ? "block" : "none";
+    document.getElementById("lbNext").style.display = multiple ? "block" : "none";
+    lbCount.textContent = multiple ? (index + 1) + " / " + ids.length : "";
+
+    lbImage.style.display = "none";
+    lbStatus.textContent = "Loading photo...";
+
+    const expected = index;
+
+    getPhotoUrl(roomId, ids[index])
+        .then(url => {
+            if (lbState.index !== expected || !lightbox.classList.contains("open")) return;
+            lbImage.src = url;
+            lbImage.style.display = "block";
+            lbStatus.textContent = "";
+        })
+        .catch(() => {
+            if (lbState.index !== expected) return;
+            lbStatus.textContent = "This photo could not be loaded.";
+        });
+}
+
+function stepLightbox(direction) {
+    const total = lbState.ids.length;
+    if (total < 2) return;
+    lbState.index = (lbState.index + direction + total) % total;
+    showLightboxPhoto();
+}
+
+document.getElementById("lbClose").addEventListener("click", closeLightbox);
+document.getElementById("lbPrev").addEventListener("click", event => {
+    event.stopPropagation();
+    stepLightbox(-1);
+});
+document.getElementById("lbNext").addEventListener("click", event => {
+    event.stopPropagation();
+    stepLightbox(1);
+});
+lightbox.addEventListener("click", event => {
+    if (event.target === lightbox) closeLightbox();
+});
+
+document.addEventListener("keydown", event => {
+    if (lightbox.classList.contains("open")) {
+        if (event.key === "Escape") closeLightbox();
+        if (event.key === "ArrowLeft") stepLightbox(-1);
+        if (event.key === "ArrowRight") stepLightbox(1);
+        return;
+    }
+    if (event.key === "Escape") closeRoomModal();
+});
+
+/* ROOM LIST */
+
+async function loadRooms() {
+    const container = document.getElementById("roomsList");
+    container.innerHTML = '<div class="loading">Loading accommodation...</div>';
+
+    try {
+        const data = await api("/rooms?available_only=false&limit=100");
+        allRooms = Array.isArray(data) ? data : (data.rooms || data.items || []);
+        renderRooms();
+        document.getElementById("roomCount").textContent =
+            allRooms.filter(room => room.available).length;
+    } catch (error) {
+        container.textContent = error.message;
+    }
+}
+
+function formatPrice(value) {
+    return "TZS " + Number(value || 0).toLocaleString();
+}
+
+function formatRoomType(value) {
+    const text = (value || "room").replace(/-/g, " ");
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function availabilityTag(available) {
+    const tag = document.createElement("span");
+    tag.className = "tag " + (available ? "available" : "unavailable");
+    tag.textContent = available ? "Available" : "Unavailable";
+    return tag;
+}
+
+function renderRooms() {
+    const container = document.getElementById("roomsList");
+    const search = document.getElementById("roomSearch").value.toLowerCase().trim();
+    const type = document.getElementById("roomTypeFilter").value;
+
+    const rooms = allRooms.filter(room => {
+        const location = (room.location || "").toLowerCase();
+        const roomType = (room.room_type || "").toLowerCase();
+        return location.includes(search) && (!type || roomType === type);
+    });
+
+    container.innerHTML = "";
+
+    if (!rooms.length) {
+        container.innerHTML = '<div class="empty">No accommodation listings found for this search.</div>';
+        return;
+    }
+
+    rooms.forEach(room => {
+        const card = document.createElement("article");
+        card.className = "room-card";
+
+        const photoIds = Array.isArray(room.photo_ids) ? room.photo_ids : [];
+
+        const photoBox = document.createElement("div");
+        photoBox.className = "room-photo" + (photoIds.length ? "" : " no-photo");
+
+        const placeholder = document.createElement("span");
+        placeholder.className = "photo-placeholder";
+        placeholder.textContent = photoIds.length ? "Loading photo..." : "No photo uploaded yet";
+        photoBox.appendChild(placeholder);
+
+        if (photoIds.length) {
+            lazyLoadImage(photoBox, room.id, photoIds[0], room.location);
+
+            if (photoIds.length > 1) {
+                const badge = document.createElement("span");
+                badge.className = "photo-badge";
+                badge.textContent = photoIds.length + " photos";
+                photoBox.appendChild(badge);
+            }
+
+            photoBox.title = "Click to preview";
+            photoBox.addEventListener("click", () => openLightbox(room.id, photoIds, 0));
+        }
+
+        const body = document.createElement("div");
+        body.className = "card-body";
+
+        const title = document.createElement("h3");
+        title.textContent = room.location || "Accommodation";
+
+        const price = document.createElement("div");
+        price.className = "room-price";
+        price.textContent = formatPrice(room.price) + " / month";
+
+        const tagType = document.createElement("span");
+        tagType.className = "tag";
+        tagType.textContent = formatRoomType(room.room_type);
+
+        body.append(title, price, tagType, availabilityTag(room.available));
+
+        if (room.nearest_campus && room.proximity_tier) {
+            const prox = document.createElement("span");
+            prox.className = "tag";
+            prox.textContent = room.nearest_campus + ": " +
+                (proximityLabels[room.proximity_tier] || room.proximity_tier);
+            body.appendChild(prox);
+        }
+
+        if (Array.isArray(room.agents) && room.agents.length) {
+            const agent = document.createElement("p");
+            agent.className = "muted";
+            agent.style.marginTop = "12px";
+            agent.textContent = "Listed by: " +
+                room.agents.map(a => a.agent_name || "Approved agent").join(", ");
+            body.appendChild(agent);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "card-actions";
+
+        const detailsButton = document.createElement("button");
+        detailsButton.className = "btn btn-small";
+        detailsButton.type = "button";
+        detailsButton.textContent = "View details";
+        detailsButton.addEventListener("click", () => openRoomModal(room.id));
+
+        actions.appendChild(detailsButton);
+        body.appendChild(actions);
+
+        card.append(photoBox, body);
+        container.appendChild(card);
+    });
+}
+
+document.getElementById("roomSearch").addEventListener("input", renderRooms);
+document.getElementById("roomTypeFilter").addEventListener("change", renderRooms);
+document.getElementById("refreshRooms").addEventListener("click", loadRooms);
+
+/* ROOM DETAILS MODAL */
+
+const roomModal = document.getElementById("roomModal");
+const modalContent = document.getElementById("modalContent");
+
+function closeRoomModal() {
+    roomModal.classList.remove("open");
+    roomModal.setAttribute("aria-hidden", "true");
+    modalContent.innerHTML = "";
+    document.body.classList.remove("no-scroll");
+}
+
+document.getElementById("modalClose").addEventListener("click", closeRoomModal);
+roomModal.addEventListener("click", event => {
+    if (event.target === roomModal) closeRoomModal();
+});
+
+function phoneForWhatsApp(phone) {
+    let digits = String(phone || "").replace(/\D/g, "");
+    if (digits.startsWith("0")) digits = "255" + digits.slice(1);
+    return digits;
+}
+
+function detailItem(label, valueNode) {
+    const item = document.createElement("div");
+    item.className = "detail-item";
+
+    const key = document.createElement("div");
+    key.className = "k";
+    key.textContent = label;
+
+    const value = document.createElement("div");
+    value.className = "v";
+    if (typeof valueNode === "string") value.textContent = valueNode;
+    else value.appendChild(valueNode);
+
+    item.append(key, value);
+    return item;
+}
+
+async function openRoomModal(roomId) {
+    modalContent.innerHTML = '<div class="modal-body"><div class="loading">Loading room details...</div></div>';
+    roomModal.classList.add("open");
+    roomModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("no-scroll");
+
+    try {
+        const room = await api("/rooms/" + roomId + "/details");
+        renderRoomModal(room);
+    } catch (error) {
+        modalContent.innerHTML = "";
+        const body = document.createElement("div");
+        body.className = "modal-body";
+        body.textContent = error.message;
+        modalContent.appendChild(body);
+    }
+}
+
+function renderRoomModal(room) {
+    modalContent.innerHTML = "";
+
+    const photos = Array.isArray(room.photos) ? room.photos : [];
+    const photoIds = photos.map(p => p.id);
+    let activeIndex = 0;
+
+    const main = document.createElement("div");
+    main.className = "gallery-main" + (photoIds.length ? "" : " no-photo");
+
+    const mainPlaceholder = document.createElement("span");
+    mainPlaceholder.className = "photo-placeholder";
+    mainPlaceholder.textContent = photoIds.length ? "Loading photo..." : "No photo uploaded yet";
+    main.appendChild(mainPlaceholder);
+    modalContent.appendChild(main);
+
+    const thumbButtons = [];
+
+    function selectPhoto(index) {
+        activeIndex = index;
+        thumbButtons.forEach((b, i) => b.classList.toggle("active", i === index));
+        loadImageInto(main, room.id, photoIds[index], room.location);
+    }
+
+    if (photoIds.length) {
+        main.title = "Click to enlarge";
+        main.addEventListener("click", () => openLightbox(room.id, photoIds, activeIndex));
+
+        if (photoIds.length > 1) {
+            const strip = document.createElement("div");
+            strip.className = "thumbs";
+
+            photoIds.forEach((photoId, index) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "thumb";
+                button.setAttribute("aria-label", "Show photo " + (index + 1));
+                button.addEventListener("click", () => selectPhoto(index));
+                thumbButtons.push(button);
+                strip.appendChild(button);
+
+                getPhotoUrl(room.id, photoId).then(url => {
+                    const img = document.createElement("img");
+                    img.src = url;
+                    img.alt = "";
+                    button.appendChild(img);
+                }).catch(() => {});
+            });
+
+            modalContent.appendChild(strip);
+        }
+
+        selectPhoto(0);
+    }
+
+    const body = document.createElement("div");
+    body.className = "modal-body";
+
+    const title = document.createElement("h2");
+    title.id = "modalTitle";
+    title.textContent = room.location || "Accommodation";
+
+    const price = document.createElement("div");
+    price.className = "room-price";
+    price.style.margin = "8px 0 0";
+    price.textContent = formatPrice(room.price) + " / month";
+
+    const grid = document.createElement("div");
+    grid.className = "detail-grid";
+    grid.appendChild(detailItem("Location", room.location || "Not specified"));
+    grid.appendChild(detailItem("Rent", formatPrice(room.price) + " / month"));
+    grid.appendChild(detailItem("Room type", formatRoomType(room.room_type)));
+    grid.appendChild(detailItem("Status", availabilityTag(room.available)));
+
+    if (room.nearest_campus) {
+        grid.appendChild(detailItem("Nearest campus", room.nearest_campus));
+    }
+    if (room.proximity_tier) {
+        grid.appendChild(detailItem(
+            "Distance to campus",
+            proximityLabels[room.proximity_tier] || room.proximity_tier
+        ));
+    }
+
+    body.append(title, price, grid);
+
+    const agentHeading = document.createElement("h3");
+    agentHeading.textContent = "Agent contact";
+    body.appendChild(agentHeading);
+
+    const agents = Array.isArray(room.agents) ? room.agents : [];
+
+    if (!agents.length) {
+        const none = document.createElement("p");
+        none.className = "muted";
+        none.textContent = "No agent is currently listed for this room.";
+        body.appendChild(none);
+    }
+
+    agents.forEach(agent => {
+        const card = document.createElement("div");
+        card.className = "agent-card";
+
+        const avatar = document.createElement("div");
+        avatar.className = "agent-avatar";
+        avatar.textContent = (agent.agent_name || "A").charAt(0).toUpperCase();
+
+        const info = document.createElement("div");
+        info.className = "agent-info";
+
+        const name = document.createElement("div");
+        name.className = "agent-name";
+        name.textContent = agent.agent_name || "Approved agent";
+
+        const role = document.createElement("div");
+        role.className = "muted";
+        role.textContent = ["Approved RumCHUO agent", agent.university]
+            .filter(Boolean).join(" • ");
+
+        const phone = document.createElement("div");
+        phone.className = "agent-phone";
+        phone.textContent = agent.phone
+            ? "Phone: " + agent.phone
+            : "Phone number not provided yet";
+
+        info.append(name, role, phone);
+        card.append(avatar, info);
+
+        if (agent.phone) {
+            const actions = document.createElement("div");
+            actions.className = "agent-actions";
+
+            const call = document.createElement("a");
+            call.className = "btn btn-small";
+            call.href = "tel:" + String(agent.phone).replace(/[^\d+]/g, "");
+            call.textContent = "Call";
+
+            const whatsapp = document.createElement("a");
+            whatsapp.className = "btn btn-small btn-green";
+            whatsapp.href = "https://wa.me/" + phoneForWhatsApp(agent.phone);
+            whatsapp.target = "_blank";
+            whatsapp.rel = "noopener noreferrer";
+            whatsapp.textContent = "WhatsApp";
+
+            actions.append(call, whatsapp);
+            card.appendChild(actions);
+        }
+
+        body.appendChild(card);
+    });
+
+    modalContent.appendChild(body);
+}
+
+/* ROOMMATE MATCHES */
+
+function formatMatchReasons(reasons) {
+    if (Array.isArray(reasons)) {
+        return reasons
+            .map(reason => {
+                if (typeof reason === "string") return reason;
+                return reason.label || reason.reason || "";
+            })
+            .filter(Boolean)
+            .join(" • ");
+    }
+
+    if (typeof reasons === "string") return reasons;
+
+    return "";
+}
+
+async function loadMatches() {
+    const container = document.getElementById("matchesList");
+    container.innerHTML = '<div class="loading">Finding compatible roommates...</div>';
+
+    try {
+        const sameYear = document.getElementById("sameYear").checked;
+        const data = await api("/students/matches" + (sameYear ? "?same_year=true" : ""));
+        const matches = Array.isArray(data) ? data : (data.matches || data.items || []);
+
+        document.getElementById("matchCount").textContent = matches.length;
+        container.innerHTML = "";
+
+        if (!matches.length) {
+            const empty = document.createElement("div");
+            empty.className = "empty";
+            empty.textContent =
+                "No roommate matches found yet. To receive matches, make sure your university and gender are set in your profile and your preferred room type is Shared Room. Adding your course and preferred location can improve your match score.";
+            container.appendChild(empty);
+            return;
+        }
+
+        matches.forEach(match => {
+            const card = document.createElement("article");
+            card.className = "match-card";
+
+            const name = document.createElement("h3");
+            name.textContent = match.full_name || "Student";
+
+            const score = document.createElement("p");
+            score.className = "match-score";
+            score.textContent = "Match score: " +
+                (match.match_score ?? "—");
+
+            const details = document.createElement("p");
+            details.className = "muted";
+            details.style.marginTop = "12px";
+            details.textContent = [
+                match.university,
+                match.campus ? "Campus: " + match.campus : "",
+                match.course ? "Course: " + match.course : "",
+                match.year_of_study ? "Year " + match.year_of_study : "",
+                match.preferred_location
+                    ? "Preferred location: " + match.preferred_location : ""
+            ].filter(Boolean).join(" • ");
+
+            card.append(name, score, details);
+
+            const reasonsText = formatMatchReasons(match.reasons);
+            if (reasonsText) {
+                const reasons = document.createElement("div");
+                reasons.className = "match-reasons";
+                reasons.textContent = "Compatibility: " + reasonsText;
+                card.appendChild(reasons);
+            }
+
+            container.appendChild(card);
+        });
+    } catch (error) {
+        container.innerHTML = "";
+
+        const message = document.createElement("div");
+        message.className = "empty";
+        message.textContent =
+            error.message +
+            " Check that your university and gender are saved in your profile and that your preferred room type is Shared Room.";
+        container.appendChild(message);
+
+        document.getElementById("matchCount").textContent = "—";
+    }
+}
+
+document.getElementById("refreshMatches").addEventListener("click", loadMatches);
+document.getElementById("sameYear").addEventListener("change", loadMatches);
+
+/* DASHBOARD INITIALIZATION */
+
+async function initializeDashboard() {
+    try {
+        const student = await api("/students/me");
+
+        // This page is only for student accounts.
+        if (student.role && student.role !== "student") {
+            alert("This dashboard is only available to student accounts.");
+            logout();
+            return;
+        }
+
+        currentStudent = student;
+        setStudentHeader(student);
+        updateProfileStatus(student);
+
+        await loadRooms();
+        await loadMatches();
+    } catch (error) {
+        console.error("Dashboard initialization failed:", error);
+    }
+}
+
+initializeDashboard();
+</script>
+</body>
+</html>

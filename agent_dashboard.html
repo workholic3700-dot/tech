@@ -11,8 +11,11 @@
 body{margin:0;font-family:Arial,sans-serif;background:#f3f5f9;color:#202938}
 header{background:#123b63;color:white;padding:18px 25px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 header h2{margin:0}
+nav{background:#fff;padding:12px 20px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid #e0e5eb;position:sticky;top:0;z-index:20}
+nav a{color:#123b63;text-decoration:none;font-weight:bold;font-size:13px;padding:9px 12px;border-radius:7px}
+nav a:hover{background:#eef5fc}
 main{max-width:1200px;margin:25px auto;padding:0 16px}
-section{background:white;padding:22px;margin-bottom:22px;border-radius:12px;box-shadow:0 2px 9px #00000010}
+section{background:white;padding:22px;margin-bottom:22px;border-radius:12px;box-shadow:0 2px 9px #00000010;scroll-margin-top:85px}
 h3{margin-top:0;color:#123b63}
 input,select,textarea{width:100%;padding:11px;margin:7px 0 14px;border:1px solid #ccd3dc;border-radius:7px;font-size:14px}
 textarea{min-height:85px;resize:vertical}
@@ -35,6 +38,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .photos img{width:90px;height:75px;object-fit:cover;border-radius:7px;cursor:pointer;border:1px solid #ddd}
 .photos img:hover{opacity:.8}
 .notice{padding:12px;border-radius:8px;background:#eef5fc;margin-bottom:15px}
+.warning{padding:12px;border-radius:8px;background:#fff1c7;color:#855900;margin-bottom:15px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 #message{padding:12px;margin-bottom:15px;border-radius:8px;display:none}
 #lightbox{position:fixed;inset:0;background:#000e;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
@@ -45,6 +49,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 #nextPhoto{right:15px;top:50%}
 footer{text-align:center;color:#64748b;padding:20px}
 label{font-weight:bold;font-size:14px}
+.profile-status{font-size:13px;margin:0 0 14px}
 </style>
 </head>
 
@@ -55,6 +60,14 @@ label{font-weight:bold;font-size:14px}
     <button class="secondary" onclick="logout()">Logout</button>
 </header>
 
+<nav>
+    <a href="#profileSection">My Profile</a>
+    <a href="#submitPropertySection">Submit Property</a>
+    <a href="#myPropertiesSection">My Submitted Properties</a>
+    <a href="#availableRoomsSection">Available Properties</a>
+    <a href="#myRoomsSection">My Advertising Properties</a>
+</nav>
+
 <main>
     <div id="message"></div>
 
@@ -63,7 +76,35 @@ label{font-weight:bold;font-size:14px}
         <p class="muted">Manage your advertising requests and submit your own properties for Admin verification.</p>
     </section>
 
-    <section>
+    <!-- AGENT PROFILE -->
+    <section id="profileSection">
+        <h3>My Profile</h3>
+
+        <div id="profileWarning" class="warning" style="display:none">
+            Your phone number is missing. Please add your phone number so students can contact you about properties.
+        </div>
+
+        <p class="muted">
+            Keep your contact information updated. Your phone number is used by students who want to enquire about properties you advertise or own.
+        </p>
+
+        <form id="profileForm">
+            <label>Full Name</label>
+            <input id="profileFullName" type="text" disabled>
+
+            <label>Email Address</label>
+            <input id="profileEmail" type="email" disabled>
+
+            <label>Phone Number</label>
+            <input id="profilePhone" name="phone" type="tel" placeholder="e.g. 0712345678" maxlength="20" required>
+
+            <p id="profileStatus" class="profile-status muted"></p>
+
+            <button type="submit" id="saveProfileButton">Save Profile</button>
+        </form>
+    </section>
+
+    <section id="submitPropertySection">
         <h3>Submit Your Own Property</h3>
         <div class="notice">
             Your property will be registered under your Agent account and must be approved by Admin before it becomes publicly available.
@@ -103,14 +144,14 @@ label{font-weight:bold;font-size:14px}
         </form>
     </section>
 
-    <section>
+    <section id="myPropertiesSection">
         <h3>My Submitted Properties</h3>
         <div id="myProperties" class="grid">Loading properties...</div>
     </section>
 
-    <section>
-        <h3>Available Landlord Properties</h3>
-        <p class="muted">Browse approved properties and request permission from the Landlord to advertise them.</p>
+    <section id="availableRoomsSection">
+        <h3>Available Owner Properties</h3>
+        <p class="muted">Browse approved properties and request permission from the Owner to advertise them.</p>
 
         <input id="locationFilter" placeholder="Filter by location">
         <input id="priceFilter" type="number" placeholder="Maximum monthly rent">
@@ -119,7 +160,7 @@ label{font-weight:bold;font-size:14px}
         <div id="availableRooms" class="grid" style="margin-top:15px">Loading properties...</div>
     </section>
 
-    <section>
+    <section id="myRoomsSection">
         <h3>My Advertising Properties</h3>
         <div id="myRooms" class="grid">Loading properties...</div>
     </section>
@@ -144,6 +185,25 @@ if (!accessToken) {
     window.location.href = "/";
 }
 
+function getErrorMessage(detail, fallback = "Request failed") {
+    if (typeof detail === "string") {
+        return detail;
+    }
+
+    if (Array.isArray(detail)) {
+        return detail.map(item => {
+            if (typeof item === "string") return item;
+            return item.msg || JSON.stringify(item);
+        }).join("; ");
+    }
+
+    if (detail && typeof detail === "object") {
+        return detail.message || detail.msg || JSON.stringify(detail);
+    }
+
+    return fallback;
+}
+
 async function apiRequest(url, options = {}) {
     options.headers = options.headers || {};
     options.headers["Authorization"] = "Bearer " + accessToken;
@@ -161,7 +221,9 @@ async function apiRequest(url, options = {}) {
     } catch (_) {}
 
     if (!response.ok) {
-        throw new Error(data.detail || "Request failed");
+        throw new Error(
+            getErrorMessage(data.detail, data.message || "Request failed")
+        );
     }
 
     return data;
@@ -200,6 +262,79 @@ function statusBadge(status) {
     return `<span class="status ${escapeHTML(value)}">${escapeHTML(value.toUpperCase())}</span>`;
 }
 
+/* AGENT PROFILE FUNCTIONS */
+
+async function loadAgentProfile() {
+    const status = document.getElementById("profileStatus");
+
+    try {
+        status.textContent = "Loading your profile...";
+
+        const account = await apiRequest("/students/me");
+
+        document.getElementById("profileFullName").value = account.full_name || "";
+        document.getElementById("profileEmail").value = account.email || "";
+        document.getElementById("profilePhone").value = account.phone || "";
+
+        updateProfileWarning(account.phone);
+
+        status.textContent = "Your profile information has been loaded.";
+
+    } catch (error) {
+        status.textContent = error.message;
+        showMessage(error.message, true);
+    }
+}
+
+function updateProfileWarning(phone) {
+    const warning = document.getElementById("profileWarning");
+    warning.style.display = phone && String(phone).trim() ? "none" : "block";
+}
+
+document.getElementById("profileForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const phone = document.getElementById("profilePhone").value.trim();
+    const button = document.getElementById("saveProfileButton");
+    const status = document.getElementById("profileStatus");
+
+    if (!phone) {
+        showMessage("Please enter your phone number.", true);
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Saving...";
+    status.textContent = "Saving your profile...";
+
+    try {
+        const result = await apiRequest("/students/me/profile", {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                phone: phone
+            })
+        });
+
+        updateProfileWarning(phone);
+        status.textContent = "Profile updated successfully.";
+
+        showMessage(result.message || "Your profile has been updated successfully.");
+
+        await loadAgentProfile();
+
+    } catch (error) {
+        status.textContent = error.message;
+        showMessage(error.message, true);
+
+    } finally {
+        button.disabled = false;
+        button.textContent = "Save Profile";
+    }
+});
+
+/* PROPERTY PHOTO GALLERY */
+
 function openGallery(images, start = 0) {
     galleryImages = images;
     galleryIndex = start;
@@ -233,21 +368,71 @@ function photoUrl(applicationId, photoId) {
     return `/agents/me/properties/${applicationId}/photos/${photoId}`;
 }
 
+/* MY SUBMITTED PROPERTIES */
+
 async function loadMyProperties() {
     const container = document.getElementById("myProperties");
+    container.textContent = "Loading your submitted properties...";
 
     try {
         const response = await apiRequest("/agents/me/properties");
-        const properties = Array.isArray(response) ? response : (response.properties || []);
+
+        const properties = Array.isArray(response.applications)
+            ? response.applications
+            : [];
 
         if (!properties.length) {
             container.innerHTML = "<p>No properties submitted yet.</p>";
             return;
         }
 
+        const photoUrls = {};
+
+        // Load photographs with the Agent's authentication token.
+        await Promise.all(properties.map(async property => {
+            photoUrls[property.id] = {};
+
+            for (const photo of (property.photos || [])) {
+                try {
+                    const photoResponse = await fetch(
+                        photoUrl(property.id, photo.id),
+                        {
+                            headers: {
+                                "Authorization": "Bearer " + accessToken
+                            }
+                        }
+                    );
+
+                    if (!photoResponse.ok) {
+                        throw new Error("Unable to load photograph.");
+                    }
+
+                    const blob = await photoResponse.blob();
+
+                    photoUrls[property.id][photo.id] =
+                        URL.createObjectURL(blob);
+
+                } catch (error) {
+                    console.error(
+                        "Photo loading failed:",
+                        property.id,
+                        photo.id,
+                        error
+                    );
+                }
+            }
+        }));
+
         container.innerHTML = properties.map(property => {
             const photos = property.photos || [];
-            const urls = photos.map(photo => photoUrl(property.id, photo.id));
+
+            const availablePhotos = photos.filter(
+                photo => photoUrls[property.id][photo.id]
+            );
+
+            const urls = availablePhotos.map(
+                photo => photoUrls[property.id][photo.id]
+            );
 
             return `
                 <div class="card">
@@ -255,27 +440,53 @@ async function loadMyProperties() {
                     <p><b>Room:</b> ${escapeHTML(property.room_type)}</p>
                     <p><b>Rent:</b> ${money(property.price)}</p>
                     <p><b>Phone:</b> ${escapeHTML(property.phone_number)}</p>
-                    <p><b>Availability:</b> ${property.available ? "Available" : "Not available"}</p>
+                    <p><b>Availability:</b> ${
+                        Number(property.available) === 1 ||
+                        property.available === true
+                        ? "Available"
+                        : "Not available"
+                    }</p>
                     <p><b>Status:</b> ${statusBadge(property.status)}</p>
                     <p>${escapeHTML(property.description || "")}</p>
+
                     <div class="photos">
-                        ${photos.map((photo, index) => `
-                            <img src="${urls[index]}" alt="Property photo"
+                        ${availablePhotos.map((photo, index) => `
+                            <img
+                                src="${urls[index]}"
+                                alt="Property photo"
                                 data-gallery="${escapeHTML(property.id)}"
-                                data-index="${index}">
+                                data-index="${index}"
+                            >
                         `).join("")}
                     </div>
-                    ${property.review_note ? `<p class="muted">Admin note: ${escapeHTML(property.review_note)}</p>` : ""}
+
+                    ${photos.length && !availablePhotos.length
+                        ? `<p class="muted">Property photographs could not be loaded.</p>`
+                        : ""}
+
+                    ${property.review_note
+                        ? `<p class="muted">Admin note: ${escapeHTML(property.review_note)}</p>`
+                        : ""}
                 </div>
             `;
         }).join("");
 
         container.querySelectorAll("img[data-gallery]").forEach(img => {
             img.addEventListener("click", () => {
-                const property = properties.find(p => String(p.id) === img.dataset.gallery);
+                const property = properties.find(
+                    p => String(p.id) === img.dataset.gallery
+                );
+
                 if (!property) return;
 
-                const urls = (property.photos || []).map(photo => photoUrl(property.id, photo.id));
+                const availablePhotos = (property.photos || []).filter(
+                    photo => photoUrls[property.id][photo.id]
+                );
+
+                const urls = availablePhotos.map(
+                    photo => photoUrls[property.id][photo.id]
+                );
+
                 openGallery(urls, Number(img.dataset.index));
             });
         });
@@ -284,6 +495,9 @@ async function loadMyProperties() {
         container.textContent = error.message;
     }
 }
+
+
+/* SUBMIT PROPERTY */
 
 document.getElementById("propertyForm").addEventListener("submit", async event => {
     event.preventDefault();
@@ -326,6 +540,8 @@ document.getElementById("propertyForm").addEventListener("submit", async event =
 
         showMessage(result.message || "Property submitted successfully.");
         form.reset();
+
+        // Reload submissions so the new pending property appears immediately.
         await loadMyProperties();
 
     } catch (error) {
@@ -335,6 +551,8 @@ document.getElementById("propertyForm").addEventListener("submit", async event =
         button.textContent = "Submit Property";
     }
 });
+
+/* PROTECTED OWNER PROPERTY PHOTOS */
 
 async function loadProtectedLandlordPhotos(container) {
     const images = Array.from(container.querySelectorAll("img[data-landlord-photo]"));
@@ -372,9 +590,11 @@ async function loadProtectedLandlordPhotos(container) {
     }));
 }
 
+/* AVAILABLE OWNER PROPERTIES */
+
 async function loadAvailableRooms() {
     const container = document.getElementById("availableRooms");
-    container.textContent = "Loading verified landlord properties...";
+    container.textContent = "Loading verified owner properties...";
 
     landlordPhotoObjectUrls.forEach(url => URL.revokeObjectURL(url));
     landlordPhotoObjectUrls = [];
@@ -409,7 +629,7 @@ async function loadAvailableRooms() {
         );
 
         if (!rooms.length) {
-            container.innerHTML = "<p>No available verified landlord properties found.</p>";
+            container.innerHTML = "<p>No available verified owner properties found.</p>";
             return;
         }
 
@@ -433,8 +653,8 @@ async function loadAvailableRooms() {
                     <h4>${escapeHTML(room.location)}</h4>
                     <p><b>Room:</b> ${escapeHTML(room.room_type || "Not specified")}</p>
                     <p><b>Rent:</b> ${money(room.price)}</p>
-                    <p><b>Landlord:</b> ${escapeHTML(room.landlord_name || "Verified landlord")}</p>
-                    <p><b>Landlord phone:</b> ${room.landlord_phone
+                    <p><b>Owner:</b> ${escapeHTML(room.landlord_name || "Verified Owner")}</p>
+                    <p><b>Owner phone:</b> ${room.landlord_phone
                         ? `<a href="tel:${escapeHTML(room.landlord_phone)}">${escapeHTML(room.landlord_phone)}</a>`
                         : "Not provided"}</p>
                     <p><b>Ownership status:</b> ${statusBadge(room.ownership_status)}</p>
@@ -463,10 +683,11 @@ async function loadAvailableRooms() {
     }
 }
 
-async function requestPermission(roomId, button) {
-    const note = prompt("Add a message to the Landlord (optional):") || "";
+/* REQUEST ADVERTISING PERMISSION */
 
-    // Change the button immediately while the request is being submitted.
+async function requestPermission(roomId, button) {
+    const note = prompt("Add a message to the Owner (optional):") || "";
+
     if (button) {
         button.disabled = true;
         button.textContent = "Sending...";
@@ -482,7 +703,6 @@ async function requestPermission(roomId, button) {
             })
         });
 
-        // Keep the requested state visible and prevent duplicate submissions.
         if (button) {
             button.textContent = "Requested";
             button.disabled = true;
@@ -497,18 +717,18 @@ async function requestPermission(roomId, button) {
         ]);
 
     } catch (error) {
-        // Allow another attempt if the request was not submitted.
         if (button) {
             button.disabled = false;
             button.textContent = "Request Advertising Permission";
         }
         showMessage(error.message, true);
 
-        // If the server says a request already exists, reload its real status.
         await loadAvailableRooms();
         await loadRooms();
     }
 }
+
+/* MY ADVERTISING PROPERTIES */
 
 async function loadRooms() {
     const container = document.getElementById("myRooms");
@@ -517,8 +737,6 @@ async function loadRooms() {
     try {
         const response = await apiRequest("/agents/me/rooms");
 
-        // IMPORTANT FIX:
-        // The backend returns {"rooms": [...]}, not a plain array.
         const rooms = Array.isArray(response)
             ? response
             : (Array.isArray(response.rooms) ? response.rooms : []);
@@ -557,6 +775,8 @@ async function loadRooms() {
     }
 }
 
+/* REMOVE ADVERTISING */
+
 async function removeRoom(roomId) {
     if (!confirm("Remove this property from your advertising list?")) return;
 
@@ -572,6 +792,8 @@ async function removeRoom(roomId) {
         showMessage(error.message, true);
     }
 }
+
+/* RENTAL REPORT */
 
 async function submitRentalReport(roomId) {
     const note = prompt("Enter rental report details:");
@@ -591,6 +813,8 @@ async function submitRentalReport(roomId) {
     }
 }
 
+/* DASHBOARD INITIALIZATION */
+
 async function initializeDashboard() {
     try {
         const account = await apiRequest("/students/me");
@@ -601,6 +825,7 @@ async function initializeDashboard() {
         }
 
         await Promise.all([
+            loadAgentProfile(),
             loadMyProperties(),
             loadAvailableRooms(),
             loadRooms()

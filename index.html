@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="RumCHUO helps students explore accommodation and connect with agents.">
+    <meta name="description" content="RumCHUO helps students explore accommodation and connect with authorized agents.">
     <title>RumCHUO | Student Accommodation</title>
 
     <style>
@@ -382,7 +382,7 @@
             line-height: 1.5;
         }
 
-        /* Sign-in window */
+        /* Universal sign-in window */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -439,15 +439,19 @@
             margin-bottom: 7px;
         }
 
-        .login-field input {
+        .login-field input,
+        .login-field select {
             width: 100%;
             padding: 12px;
             border: 1px solid #d0d5dd;
             border-radius: 7px;
             outline: none;
+            background: white;
+            color: #344054;
         }
 
-        .login-field input:focus {
+        .login-field input:focus,
+        .login-field select:focus {
             border-color: var(--green);
             box-shadow: 0 0 0 3px #16845b20;
         }
@@ -519,12 +523,12 @@
 
 <body>
     <header class="navbar">
-        <a class="brand" href="#">Rum<span>CHUO</span></a>
+        <a class="brand" href="/">Rum<span>CHUO</span></a>
 
         <nav class="nav-links">
             <a href="#rooms">Find a room</a>
             <a href="#how-it-works">How it works</a>
-            <button class="nav-button" type="button" onclick="openLogin()">
+            <button class="nav-button" type="button" onclick="openLogin('student')">
                 Sign in
             </button>
         </nav>
@@ -645,7 +649,7 @@
                         <h3>Connect through agents</h3>
                         <p>
                             Room enquiries are intended to go through
-                            authorized agents, not directly to landlords.
+                            authorized agents, not directly to Owners.
                         </p>
                     </div>
 
@@ -666,16 +670,14 @@
                 <div>
                     <h2>Are you an Agent?</h2>
                     <p>
-                        RumCHUO is being built to help agents manage
-                        authorized room listings and connect with students.
-                        Agent accounts will require platform approval,
-                        and permission from a landlord will be required
-                        before advertising that landlord's room.
+                        RumCHUO helps Agents manage authorized room listings
+                        and connect with students. Agent accounts require
+                        platform approval, and permission from the Owner
+                        is required before advertising an Owner's property.
                     </p>
                 </div>
 
-                <!-- Agent sign-in now opens the dedicated Agent login page -->
-                <button type="button" onclick="goToAgentLogin()">
+                <button type="button" onclick="openLogin('agent')">
                     Agent sign in
                 </button>
             </div>
@@ -688,7 +690,7 @@
         © 2026 RumCHUO. Student accommodation made simpler.
     </footer>
 
-    <!-- SIGN-IN WINDOW -->
+    <!-- UNIVERSAL SIGN-IN WINDOW -->
     <div class="modal-overlay" id="loginOverlay"
          role="dialog" aria-modal="true" aria-labelledby="loginTitle">
 
@@ -698,16 +700,25 @@
                 &times;
             </button>
 
-            <h2 id="loginTitle">Welcome back</h2>
-            <p>Sign in to your RumCHUO account.</p>
+            <h2 id="loginTitle">Student Login</h2>
+            <p id="loginDescription">Sign in to your RumCHUO student account.</p>
 
             <div class="login-error" id="loginError" role="alert"></div>
 
             <form id="loginForm">
                 <div class="login-field">
+                    <label for="loginRole">LOGIN AS</label>
+                    <select id="loginRole" required>
+                        <option value="student">Student</option>
+                        <option value="owner">Owner</option>
+                        <option value="agent">Agent</option>
+                    </select>
+                </div>
+
+                <div class="login-field">
                     <label for="loginEmail">Email address</label>
                     <input id="loginEmail" type="email"
-                           placeholder="Enter your email"
+                           placeholder="Enter your student email"
                            autocomplete="username" required>
                 </div>
 
@@ -720,12 +731,13 @@
 
                 <button class="login-submit" id="loginSubmit"
                         type="submit">
-                    Sign in
+                    Login as Student
                 </button>
             </form>
 
-            <p class="login-help">
-                Use the email and password registered with your RumCHUO account.
+            <p class="login-help" id="loginHelp">
+                Choose Student, Owner, or Agent. Use the email address and
+                password registered for that account.
             </p>
         </div>
     </div>
@@ -750,21 +762,70 @@
         const loginForm = document.getElementById("loginForm");
         const loginError = document.getElementById("loginError");
         const loginSubmit = document.getElementById("loginSubmit");
+        const loginRole = document.getElementById("loginRole");
+        const loginTitle = document.getElementById("loginTitle");
+        const loginDescription = document.getElementById("loginDescription");
+        const loginHelp = document.getElementById("loginHelp");
+        const loginEmail = document.getElementById("loginEmail");
 
         let allRooms = [];
         let requestNumber = 0;
 
-        // Dedicated Agent login page
-        function goToAgentLogin() {
-            window.location.href = "/agent/login";
+        /* UNIVERSAL LOGIN */
+
+        function updateLoginRole() {
+            const selectedRole = loginRole.value;
+
+            const roleSettings = {
+                student: {
+                    title: "Student Login",
+                    description: "Sign in to your RumCHUO student account.",
+                    button: "Login as Student",
+                    emailPlaceholder: "Enter your student email"
+                },
+                owner: {
+                    title: "Owner Login",
+                    description: "Sign in to manage your property listings.",
+                    button: "Login as Owner",
+                    emailPlaceholder: "Enter your owner email"
+                },
+                agent: {
+                    title: "Agent Login",
+                    description: "Sign in to manage your authorized room listings.",
+                    button: "Login as Agent",
+                    emailPlaceholder: "Enter your agent email"
+                }
+            };
+
+            const settings = roleSettings[selectedRole] || roleSettings.student;
+            loginTitle.textContent = settings.title;
+            loginDescription.textContent = settings.description;
+            loginSubmit.textContent = settings.button;
+            loginEmail.placeholder = settings.emailPlaceholder;
+            loginHelp.textContent =
+                "You selected " + selectedRole.charAt(0).toUpperCase() +
+                selectedRole.slice(1) +
+                ". Enter the email address and password registered for this account.";
         }
 
-        function openLogin() {
+        function openLogin(role = "student") {
+            const allowedRoles = ["student", "owner", "agent"];
+            loginRole.value = allowedRoles.includes(String(role).toLowerCase())
+                ? String(role).toLowerCase()
+                : "student";
+
+            updateLoginRole();
             loginError.style.display = "none";
             loginError.textContent = "";
             loginOverlay.classList.add("open");
-            document.getElementById("loginEmail").focus();
+            loginEmail.focus();
         }
+
+        loginRole.addEventListener("change", () => {
+            updateLoginRole();
+            loginError.style.display = "none";
+            loginError.textContent = "";
+        });
 
         function closeLogin() {
             loginOverlay.classList.remove("open");
@@ -782,23 +843,17 @@
             }
         });
 
-        function showNotice(message) {
-            notice.textContent = message;
-            notice.style.display = "block";
-            notice.scrollIntoView({
-                behavior: "smooth",
-                block: "nearest"
-            });
-        }
-
-        function hideNotice() {
-            notice.style.display = "none";
-            notice.textContent = "";
-        }
-
         function showLoginError(message) {
             loginError.textContent = message;
             loginError.style.display = "block";
+        }
+
+        function clearSavedSession() {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("tokenType");
+            localStorage.removeItem("userRole");
+            localStorage.removeItem("userId");
+            localStorage.removeItem("userName");
         }
 
         function getDashboardForRole(role) {
@@ -810,27 +865,61 @@
             const destinations = {
                 admin: "/admin/dashboard",
                 landlord: "/landlord/dashboard",
+                owner: "/landlord/dashboard",
                 agent: "/agent/dashboard",
-                student: "/"
+                student: "/student/dashboard"
             };
 
             return destinations[normalisedRole] || null;
+        }
+
+        async function readJsonResponse(response) {
+            try {
+                return await response.json();
+            } catch {
+                throw new Error(
+                    "The server returned an invalid response. Please try again."
+                );
+            }
+        }
+
+        function getServerError(data, fallback) {
+            const detail = data && data.detail;
+
+            if (typeof detail === "string") {
+                return detail;
+            }
+
+            if (Array.isArray(detail)) {
+                return detail.map(item => item.msg || "Invalid input").join(", ");
+            }
+
+            return fallback;
         }
 
         loginForm.addEventListener("submit", async event => {
             event.preventDefault();
 
             loginError.style.display = "none";
+            loginError.textContent = "";
+
             loginSubmit.disabled = true;
+            updateLoginRole();
+            const originalButtonText = loginSubmit.textContent;
             loginSubmit.textContent = "Signing in...";
 
-            const email = document.getElementById("loginEmail")
-                .value.trim();
+            const selectedRole = loginRole.value;
+            const email = loginEmail.value.trim();
+            const password = document.getElementById("loginPassword").value;
 
-            const password = document.getElementById("loginPassword")
-                .value;
+            let temporaryToken = null;
+            let loginCompleted = false;
 
             try {
+                // Remove any incomplete or old session before starting.
+                clearSavedSession();
+
+                // STEP 1: Authenticate using the existing RumCHUO login endpoint.
                 const response = await fetch(
                     API_BASE_URL + "/students/login",
                     {
@@ -845,64 +934,97 @@
                     }
                 );
 
-                let data;
-
-                try {
-                    data = await response.json();
-                } catch {
-                    throw new Error("The server returned an invalid response.");
-                }
+                const data = await readJsonResponse(response);
 
                 if (!response.ok) {
-                    const detail = data.detail;
-
-                    if (typeof detail === "string") {
-                        throw new Error(detail);
-                    }
-
-                    if (Array.isArray(detail)) {
-                        throw new Error(
-                            detail.map(item => item.msg || "Invalid input")
-                                .join(", ")
-                        );
-                    }
-
-                    throw new Error("Sign-in failed. Check your email and password.");
+                    throw new Error(
+                        getServerError(
+                            data,
+                            "Sign-in failed. Check your email and password."
+                        )
+                    );
                 }
 
                 if (!data.access_token) {
                     throw new Error(
-                        "The server did not return an access token. Please contact the administrator."
+                        "The server did not return an access token."
                     );
                 }
 
-                const account = data.student || data.user || data.account || {};
-                const role = account.role || data.role;
+                temporaryToken = data.access_token;
 
-                if (!role) {
+                // STEP 2: Ask the backend which role owns this account.
+                const accountResponse = await fetch(
+                    API_BASE_URL + "/students/me",
+                    {
+                        method: "GET",
+                        headers: {
+                            "Authorization": "Bearer " + temporaryToken
+                        }
+                    }
+                );
+
+                const account = await readJsonResponse(accountResponse);
+
+                if (!accountResponse.ok) {
                     throw new Error(
-                        "Your account role was not included in the login response. Please contact the administrator."
+                        getServerError(
+                            account,
+                            "Login succeeded, but your account information could not be verified."
+                        )
                     );
                 }
 
-                const destination = getDashboardForRole(role);
+                if (!account || !account.role) {
+                    throw new Error(
+                        "Your account does not have a recognised role. " +
+                        "Please contact the RumCHUO administrator."
+                    );
+                }
+
+                // STEP 3: Confirm that the selected login page matches the account.
+                const actualRole = String(account.role)
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[\s-]+/g, "_");
+
+                const selectedRoleAliases = {
+                    student: ["student"],
+                    owner: ["owner", "landlord"],
+                    agent: ["agent"]
+                };
+
+                if (!selectedRoleAliases[selectedRole] ||
+                    !selectedRoleAliases[selectedRole].includes(actualRole)) {
+                    const actualRoleLabel = actualRole === "landlord"
+                        ? "Owner"
+                        : actualRole.charAt(0).toUpperCase() + actualRole.slice(1);
+
+                    throw new Error(
+                        "This account is registered as " + actualRoleLabel +
+                        ". Please choose Login as " + actualRoleLabel +
+                        " from the dropdown."
+                    );
+                }
+
+                // STEP 4: Find the dashboard using the verified account role.
+                const destination = getDashboardForRole(actualRole);
 
                 if (!destination) {
                     throw new Error(
-                        "Your account role (" + role +
-                        ") does not have a configured dashboard."
+                        "Your account role does not have a configured dashboard."
                     );
                 }
 
-                localStorage.setItem("accessToken", data.access_token);
+                // STEP 5: Save the verified session.
+                localStorage.setItem("accessToken", temporaryToken);
+                localStorage.setItem(
+                    "tokenType",
+                    data.token_type || "bearer"
+                );
+                localStorage.setItem("userRole", actualRole);
 
-                if (data.token_type) {
-                    localStorage.setItem("tokenType", data.token_type);
-                }
-
-                localStorage.setItem("userRole", String(role).toLowerCase());
-
-                if (account.id !== undefined) {
+                if (account.id !== undefined && account.id !== null) {
                     localStorage.setItem("userId", String(account.id));
                 }
 
@@ -910,26 +1032,47 @@
                     localStorage.setItem("userName", account.full_name);
                 }
 
-                if (destination === "/") {
-                    closeLogin();
-                    loginForm.reset();
-                    showNotice("Welcome to RumCHUO! You are signed in successfully.");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                    return;
-                }
+                loginCompleted = true;
 
+                // STEP 6: Open the correct dashboard without another login.
                 window.location.assign(destination);
 
             } catch (error) {
+                if (!loginCompleted) {
+                    clearSavedSession();
+                }
+
                 showLoginError(
                     error.message ||
                     "Unable to sign in. Please check your connection and try again."
                 );
+
             } finally {
                 loginSubmit.disabled = false;
-                loginSubmit.textContent = "Sign in";
+                updateLoginRole();
+                if (loginSubmit.textContent === "Signing in...") {
+                    loginSubmit.textContent = originalButtonText;
+                }
             }
         });
+
+        /* HOMEPAGE NOTICES */
+
+        function showNotice(message) {
+            notice.textContent = message;
+            notice.style.display = "block";
+            notice.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest"
+            });
+        }
+
+        function hideNotice() {
+            notice.style.display = "none";
+            notice.textContent = "";
+        }
+
+        /* ROOM LISTING FUNCTIONS */
 
         function formatPrice(price) {
             const amount = Number(price);
@@ -1175,10 +1318,12 @@
                 resultCount.textContent = "Room listings could not be loaded.";
 
                 errorMessage.textContent =
-                    "Please make sure the RumCHUO API is running at " +
+                    "Please make sure the RumCHUO backend is running at " +
                     API_BASE_URL + ". Details: " + error.message;
             }
         }
+
+        /* SEARCH AND FILTERS */
 
         searchForm.addEventListener("submit", event => {
             event.preventDefault();
@@ -1211,6 +1356,8 @@
 
         document.getElementById("retryButton")
             .addEventListener("click", loadRooms);
+
+        /* START HOMEPAGE */
 
         loadRooms();
     </script>

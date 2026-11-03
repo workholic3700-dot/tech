@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="referrer" content="same-origin">
-  <title>RumCHUO | Landlord Dashboard</title>
+  <title>RumCHUO | Owner Dashboard</title>
 
   <style>
     :root {
@@ -233,8 +233,6 @@
 
     th { color: var(--muted); background: #f8fafc; }
 
-    /* PROPERTY PHOTO GALLERY */
-
     .photo-gallery {
       display: flex;
       flex-wrap: wrap;
@@ -289,8 +287,6 @@
       font-size: 12px;
       overflow-wrap: anywhere;
     }
-
-    /* ENLARGED PHOTO VIEWER */
 
     .photo-modal {
       position: fixed;
@@ -374,7 +370,7 @@
 
 <header>
   <div>
-    <h1>RumCHUO Landlord Portal</h1>
+    <h1>RumCHUO Owner Portal</h1>
     <p>Manage your properties, Agent permissions and rental reports</p>
   </div>
 
@@ -384,8 +380,8 @@
 <main>
 
   <section id="loginPanel" class="panel login-panel">
-    <h2>Landlord sign in</h2>
-    <p class="muted">Sign in using your RumCHUO landlord account.</p>
+    <h2>Owner sign in</h2>
+    <p class="muted">Sign in using your RumCHUO Owner account.</p>
 
     <form id="loginForm">
       <label for="email">Email address</label>
@@ -405,7 +401,7 @@
   <section id="dashboardPanel" class="hidden">
 
     <section class="panel">
-      <h2>Landlord overview</h2>
+      <h2>Owner overview</h2>
       <p id="welcome" class="muted"></p>
 
       <div class="toolbar">
@@ -419,12 +415,10 @@
           <span>My properties</span>
           <strong id="totalRooms">—</strong>
         </div>
-
         <div class="stat">
           <span>Ownership applications</span>
           <strong id="totalApplications">—</strong>
         </div>
-
         <div class="stat">
           <span>Pending Agent requests</span>
           <strong id="pendingRequests">—</strong>
@@ -432,7 +426,7 @@
       </div>
     </section>
 
-    <nav class="tabs" aria-label="Landlord sections">
+    <nav class="tabs" aria-label="Owner sections">
       <button class="active" data-section="roomsSection" type="button">My properties</button>
       <button data-section="submitSection" type="button">Submit property</button>
       <button data-section="claimSection" type="button">Claim existing room</button>
@@ -441,20 +435,16 @@
       <button data-section="reportsSection" type="button">Rental reports</button>
     </nav>
 
-    <!-- MY PROPERTIES -->
     <section id="roomsSection" class="panel dashboard-section">
       <h2>My properties</h2>
-      <p class="muted">Properties assigned to your landlord account.</p>
-
+      <p class="muted">Properties assigned to your Owner account.</p>
       <div class="toolbar">
         <button id="refreshRoomsButton" type="button">Refresh properties</button>
       </div>
-
       <div id="roomsMessage" role="status" aria-live="polite"></div>
       <div id="roomsArea"></div>
     </section>
 
-    <!-- SUBMIT PROPERTY -->
     <section id="submitSection" class="panel dashboard-section hidden">
       <h2>Submit a new property</h2>
 
@@ -477,7 +467,7 @@
           </div>
 
           <div>
-            <label for="propertyPhone">Landlord phone number</label>
+            <label for="propertyPhone">Owner phone number</label>
             <input id="propertyPhone" type="tel" required placeholder="Example: 0765696771">
           </div>
 
@@ -506,81 +496,62 @@
         </div>
 
         <div id="propertyFormMessage" role="status" aria-live="polite"></div>
-
         <button id="submitPropertyButton" type="submit">Submit property for verification</button>
       </form>
     </section>
 
-    <!-- CLAIM EXISTING ROOM -->
     <section id="claimSection" class="panel dashboard-section hidden">
       <h2>Claim an existing room</h2>
-
       <p class="muted">
         If a property already exists on RumCHUO but is not assigned to you,
         you can submit an ownership claim for administrator review.
       </p>
-
       <div class="toolbar">
         <button id="refreshClaimableButton" type="button">Find claimable rooms</button>
       </div>
-
       <div id="claimableMessage" role="status" aria-live="polite"></div>
       <div id="claimableRooms"></div>
     </section>
 
-    <!-- OWNERSHIP APPLICATIONS -->
     <section id="applicationsSection" class="panel dashboard-section hidden">
       <h2>My ownership applications</h2>
-
       <div class="toolbar">
         <button id="refreshApplicationsButton" type="button">Refresh applications</button>
       </div>
-
       <p class="muted">
         View the photographs you submitted with each ownership application.
         Select any photograph to enlarge it.
       </p>
-
       <div id="applicationsArea"></div>
     </section>
 
-    <!-- AGENT REQUESTS -->
     <section id="agentsSection" class="panel dashboard-section hidden">
       <h2>Agent advertising permission requests</h2>
-
       <p class="muted">
         Review requests from Agents who want permission to advertise your approved properties.
       </p>
-
       <div class="toolbar">
         <button id="refreshAgentsButton" type="button">Refresh Agent requests</button>
       </div>
-
       <div id="agentsArea"></div>
     </section>
 
-    <!-- RENTAL REPORTS -->
     <section id="reportsSection" class="panel dashboard-section hidden">
       <h2>Rental reports</h2>
-
       <p class="muted">
         Review rental reports submitted by Agents and confirm reports when the rental information is correct.
       </p>
-
       <div class="toolbar">
         <button id="refreshReportsButton" type="button">Refresh rental reports</button>
       </div>
-
       <div id="reportsArea"></div>
     </section>
 
   </section>
-
 </main>
 
-<footer>RumCHUO Landlord Portal</footer>
+<footer>RumCHUO Owner Portal</footer>
 
-<!-- ENLARGED PHOTO VIEWER -->
 <div id="photoModal" class="photo-modal hidden" role="dialog" aria-modal="true" aria-label="Property photograph viewer">
   <div class="photo-modal-content">
     <button id="closePhotoModal" class="photo-modal-close" type="button" aria-label="Close photograph viewer">×</button>
@@ -593,12 +564,34 @@
 "use strict";
 
 (() => {
-  let accessToken = null;
+  const API_BASE_URL = window.location.origin;
 
-  // Temporary URLs created for authenticated property photographs.
+  // Reuse the homepage session.
+  let accessToken = localStorage.getItem("accessToken");
+
   const photoObjectUrls = new Set();
 
+  const SESSION_KEYS = [
+    "accessToken",
+    "tokenType",
+    "userRole",
+    "userId",
+    "userName"
+  ];
+
   const $ = (id) => document.getElementById(id);
+
+  function normaliseRole(role) {
+    return String(role || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+  }
+
+  function isOwnerRole(role) {
+    const value = normaliseRole(role);
+    return value === "owner" || value === "landlord";
+  }
 
   function showMessage(element, message, type = "") {
     element.textContent = message;
@@ -700,14 +693,11 @@
   }
 
   // -------------------------------------------------------
-  // PROPERTY PHOTO URL CLEANUP
+  // PHOTO URL CLEANUP AND VIEWER
   // -------------------------------------------------------
 
   function clearPhotoObjectUrls() {
-    photoObjectUrls.forEach((url) => {
-      URL.revokeObjectURL(url);
-    });
-
+    photoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
     photoObjectUrls.clear();
   }
 
@@ -726,16 +716,52 @@
   $("closePhotoModal").addEventListener("click", closePhotoViewer);
 
   $("photoModal").addEventListener("click", (event) => {
-    if (event.target === $("photoModal")) {
-      closePhotoViewer();
-    }
+    if (event.target === $("photoModal")) closePhotoViewer();
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closePhotoViewer();
-    }
+    if (event.key === "Escape") closePhotoViewer();
   });
+
+  // -------------------------------------------------------
+  // SESSION AND DASHBOARD DISPLAY
+  // -------------------------------------------------------
+
+  function saveSession(token, account) {
+    accessToken = token;
+
+    localStorage.setItem("accessToken", token);
+    localStorage.setItem("tokenType", "bearer");
+    localStorage.setItem("userRole", normaliseRole(account.role));
+
+    if (account.id !== undefined && account.id !== null) {
+      localStorage.setItem("userId", String(account.id));
+    }
+
+    if (account.full_name) {
+      localStorage.setItem("userName", account.full_name);
+    }
+  }
+
+  function clearStoredSession() {
+    SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
+    accessToken = null;
+  }
+
+  function showOwnerDashboard(account) {
+    $("loginPanel").classList.add("hidden");
+    $("dashboardPanel").classList.remove("hidden");
+    $("logoutButton").classList.remove("hidden");
+
+    const name =
+      account.full_name ||
+      localStorage.getItem("userName") ||
+      "Owner";
+
+    $("welcome").textContent = "Welcome, " + name + ".";
+
+    refreshDashboard();
+  }
 
   // -------------------------------------------------------
   // API
@@ -759,7 +785,7 @@
       headers["Content-Type"] = "application/json";
     }
 
-    const response = await fetch(path, {
+    const response = await fetch(API_BASE_URL + path, {
       ...options,
       headers,
       cache: "no-store"
@@ -777,10 +803,112 @@
     }
 
     if (!response.ok) {
-      throw new Error(data.detail || "The request failed.");
+      throw new Error(
+        typeof data.detail === "string"
+          ? data.detail
+          : "The request failed."
+      );
     }
 
     return data;
+  }
+
+  // -------------------------------------------------------
+  // GET CURRENT ACCOUNT
+  // -------------------------------------------------------
+
+  async function getCurrentAccount(token) {
+    const response = await fetch(API_BASE_URL + "/students/me", {
+      method: "GET",
+      headers: {
+        "Authorization": "Bearer " + token
+      },
+      cache: "no-store"
+    });
+
+    let account = {};
+
+    try {
+      account = await response.json();
+    } catch (_) {}
+
+    if (!response.ok) {
+      const message =
+        typeof account.detail === "string"
+          ? account.detail
+          : "Could not verify your account.";
+
+      const error = new Error(message);
+      error.status = response.status;
+      throw error;
+    }
+
+    return account;
+  }
+
+  // -------------------------------------------------------
+  // RESTORE HOMEPAGE SESSION
+  // -------------------------------------------------------
+
+  async function initializeOwnerDashboard() {
+    // Hide the login panel while checking an existing session.
+    $("loginPanel").classList.add("hidden");
+    $("dashboardPanel").classList.add("hidden");
+
+    if (!accessToken) {
+      $("loginPanel").classList.remove("hidden");
+      return;
+    }
+
+    showMessage($("loginMessage"), "Checking your existing RumCHUO session…");
+
+    try {
+      const account = await getCurrentAccount(accessToken);
+
+      // Accept both role names used by RumCHUO.
+      if (!isOwnerRole(account.role)) {
+        clearStoredSession();
+
+        $("loginPanel").classList.remove("hidden");
+
+        showMessage(
+          $("loginMessage"),
+          "This account does not have Owner access. Please sign in with your Owner account.",
+          "error"
+        );
+
+        return;
+      }
+
+      // Keep the homepage and dashboard session consistent.
+      saveSession(accessToken, account);
+
+      $("loginMessage").textContent = "";
+      showOwnerDashboard(account);
+
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        clearStoredSession();
+        $("loginPanel").classList.remove("hidden");
+
+        showMessage(
+          $("loginMessage"),
+          "Your session has expired. Please sign in again.",
+          "error"
+        );
+
+        return;
+      }
+
+      // A temporary network/server error should not erase the token.
+      $("loginPanel").classList.remove("hidden");
+
+      showMessage(
+        $("loginMessage"),
+        error.message || "Could not verify your session. Please try again.",
+        "error"
+      );
+    }
   }
 
   // -------------------------------------------------------
@@ -818,6 +946,7 @@
       }
 
       const url =
+        API_BASE_URL +
         "/landlord/me/ownership-applications/" +
         encodeURIComponent(applicationId) +
         "/photos/" +
@@ -880,9 +1009,7 @@
       item.replaceChildren(thumbnailButton, name);
 
     } catch (error) {
-      if (error.message === "Your session has expired.") {
-        return;
-      }
+      if (error.message === "Your session has expired.") return;
 
       const errorBox = document.createElement("div");
       errorBox.className = "photo-error";
@@ -893,7 +1020,7 @@
   }
 
   // -------------------------------------------------------
-  // LOGIN
+  // LOGIN FALLBACK
   // -------------------------------------------------------
 
   $("loginForm").addEventListener("submit", async (event) => {
@@ -903,7 +1030,7 @@
     showMessage($("loginMessage"), "Signing in…");
 
     try {
-      const response = await fetch("/students/login", {
+      const response = await fetch(API_BASE_URL + "/students/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -920,32 +1047,37 @@
       } catch (_) {}
 
       if (!response.ok) {
-        throw new Error(data.detail || "Sign in failed.");
+        throw new Error(
+          typeof data.detail === "string"
+            ? data.detail
+            : "Sign in failed."
+        );
       }
 
-      if (
-        !data.access_token ||
-        !data.student ||
-        data.student.role !== "landlord"
-      ) {
-        throw new Error("This account does not have landlord access.");
+      if (!data.access_token) {
+        throw new Error("The server did not return an access token.");
       }
 
-      accessToken = data.access_token;
+      // Use the same account-verification method as homepage sign-in.
+      const account = await getCurrentAccount(data.access_token);
+
+      if (!isOwnerRole(account.role)) {
+        throw new Error("This account does not have Owner access.");
+      }
+
+      saveSession(data.access_token, account);
 
       $("password").value = "";
-      $("loginPanel").classList.add("hidden");
-      $("dashboardPanel").classList.remove("hidden");
-      $("logoutButton").classList.remove("hidden");
+      $("loginMessage").textContent = "";
 
-      $("welcome").textContent =
-        "Welcome, " + (data.student.full_name || "Landlord") + ".";
-
-      await refreshDashboard();
+      showOwnerDashboard(account);
 
     } catch (error) {
-      accessToken = null;
-      showMessage($("loginMessage"), error.message, "error");
+      showMessage(
+        $("loginMessage"),
+        error.message || "Unable to sign in. Please try again.",
+        "error"
+      );
     } finally {
       $("loginButton").disabled = false;
     }
@@ -972,7 +1104,7 @@
   });
 
   // -------------------------------------------------------
-  // MY ROOMS
+  // MY PROPERTIES
   // -------------------------------------------------------
 
   async function loadRooms() {
@@ -1046,9 +1178,7 @@
     }
 
     for (const photo of photos) {
-      if (
-        !["image/jpeg", "image/png", "image/webp"].includes(photo.type)
-      ) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
         showMessage($("propertyFormMessage"), "Only JPEG, PNG and WebP images are allowed.", "error");
         return;
       }
@@ -1245,7 +1375,6 @@
   async function loadApplications() {
     const area = $("applicationsArea");
 
-    // Remove old temporary image URLs before refreshing the gallery.
     closePhotoViewer();
     clearPhotoObjectUrls();
 
@@ -1272,7 +1401,6 @@
 
         const heading = document.createElement("h3");
         heading.textContent = "Application #" + valueOrDash(applicationId);
-
         card.appendChild(heading);
 
         const statusLine = document.createElement("p");
@@ -1323,10 +1451,8 @@
         } else {
           const gallery = document.createElement("div");
           gallery.className = "photo-gallery";
-
           card.appendChild(gallery);
 
-          // Load each image with the landlord's authentication token.
           for (const photo of photos) {
             loadApplicationPhoto(applicationId, photo, gallery);
           }
@@ -1553,7 +1679,7 @@
   }
 
   // -------------------------------------------------------
-  // REFRESH
+  // REFRESH DASHBOARD
   // -------------------------------------------------------
 
   async function refreshDashboard() {
@@ -1633,7 +1759,7 @@
   // -------------------------------------------------------
 
   function logout(notice = "") {
-    accessToken = null;
+    clearStoredSession();
 
     closePhotoViewer();
     clearPhotoObjectUrls();
@@ -1666,6 +1792,9 @@
   }
 
   $("logoutButton").addEventListener("click", () => logout());
+
+  // Restore the homepage login session when this page opens.
+  initializeOwnerDashboard();
 
 })();
 </script>
