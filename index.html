@@ -492,6 +492,131 @@
             margin: 16px 0 0;
         }
 
+        .nav-links a.nav-button { color: white; }
+
+        .agent-banner .nav-button {
+            display: inline-block;
+            background: var(--green);
+            color: white;
+            border-radius: 8px;
+            padding: 13px 17px;
+            text-decoration: none;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .signup-section {
+            max-width: 920px;
+            margin: 42px auto;
+            padding: 34px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 12px 35px rgba(16, 44, 75, 0.07);
+        }
+
+        .signup-heading { margin-bottom: 24px; }
+        .signup-heading h2 { color: var(--navy); margin: 0 0 8px; }
+        .signup-heading p { color: var(--muted); margin: 0; line-height: 1.6; }
+
+        .signup-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 17px;
+        }
+
+        .signup-field label, .signup-role-title {
+            display: block;
+            color: #344054;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 7px;
+        }
+
+        .signup-field input {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            outline: none;
+            background: #fff;
+        }
+
+        .signup-field input:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px #16845b20;
+        }
+
+        .signup-role-wrap { margin-top: 22px; }
+        .signup-role-options {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .signup-role-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: #fbfcfe;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .signup-role-option:has(input:checked) {
+            border-color: var(--green);
+            background: #edf8f2;
+            color: #145c40;
+        }
+
+        .signup-role-option input { accent-color: var(--green); }
+
+        .owner-declaration {
+            display: none;
+            margin-top: 17px;
+            padding: 13px;
+            background: #fff8e8;
+            border: 1px solid #f2d28b;
+            border-radius: 8px;
+            color: #674b10;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .owner-declaration label { display: flex; gap: 9px; align-items: flex-start; }
+        .owner-declaration input { margin-top: 3px; accent-color: var(--green); }
+
+        .signup-submit {
+            width: 100%;
+            margin-top: 22px;
+            padding: 14px;
+            border: 0;
+            border-radius: 8px;
+            background: var(--green);
+            color: white;
+            font-weight: 800;
+        }
+
+        .signup-submit:disabled { opacity: .65; cursor: wait; }
+
+        .signup-message {
+            display: none;
+            margin-top: 16px;
+            padding: 13px 15px;
+            border-radius: 8px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .signup-message.success { display: block; color: #145c40; background: #e9f5ef; border: 1px solid #cde9da; }
+        .signup-message.error { display: block; color: #b42318; background: #fff0ed; border: 1px solid #fecdca; }
+
+        .signup-signin { text-align: center; margin: 18px 0 0; color: var(--muted); font-size: 14px; }
+        .signup-signin a { color: var(--green); font-weight: 700; }
+
         @media (max-width: 800px) {
             .search-panel { grid-template-columns: 1fr 1fr; }
             .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -528,9 +653,8 @@
         <nav class="nav-links">
             <a href="#rooms">Find a room</a>
             <a href="#how-it-works">How it works</a>
-            <button class="nav-button" type="button" onclick="openLogin('student')">
-                Sign in
-            </button>
+            <a href="#create-account">Create account</a>
+            <a class="nav-button" href="/login.html">Sign in</a>
         </nav>
     </header>
 
@@ -580,6 +704,84 @@
     </section>
 
     <main>
+        <section class="signup-section" id="create-account">
+            <div class="signup-heading">
+                <h2>Create your RumCHUO account</h2>
+                <p>Join the RumCHUO community and get started with one account.</p>
+            </div>
+
+            <form id="registrationForm" novalidate>
+                <div class="signup-grid">
+                    <div class="signup-field">
+                        <label for="registerFullName">Full name</label>
+                        <input id="registerFullName" name="full_name" type="text"
+                               placeholder="Enter your full name" autocomplete="name"
+                               minlength="2" maxlength="100" required>
+                    </div>
+
+                    <div class="signup-field">
+                        <label for="registerEmail">Email address</label>
+                        <input id="registerEmail" name="email" type="email"
+                               placeholder="Enter your email address" autocomplete="email" required>
+                    </div>
+
+                    <div class="signup-field">
+                        <label for="registerPhone">Phone number</label>
+                        <input id="registerPhone" name="phone" type="tel"
+                               placeholder="e.g. +255 7XX XXX XXX" autocomplete="tel"
+                               minlength="5" maxlength="25" required>
+                    </div>
+
+                    <div class="signup-field">
+                        <label for="registerPassword">Password</label>
+                        <input id="registerPassword" name="password" type="password"
+                               placeholder="At least 8 characters" autocomplete="new-password"
+                               minlength="8" maxlength="128" required>
+                    </div>
+
+                    <div class="signup-field">
+                        <label for="confirmPassword">Confirm password</label>
+                        <input id="confirmPassword" name="confirm_password" type="password"
+                               placeholder="Enter your password again" autocomplete="new-password"
+                               minlength="8" maxlength="128" required>
+                    </div>
+                </div>
+
+                <div class="signup-role-wrap">
+                    <span class="signup-role-title">I'm joining as</span>
+                    <div class="signup-role-options">
+                        <label class="signup-role-option">
+                            <input type="radio" name="joining_as" value="student" checked>
+                            <span>Student</span>
+                        </label>
+                        <label class="signup-role-option">
+                            <input type="radio" name="joining_as" value="agent">
+                            <span>Agent</span>
+                        </label>
+                        <label class="signup-role-option">
+                            <input type="radio" name="joining_as" value="owner">
+                            <span>Owner</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="owner-declaration" id="ownerDeclaration">
+                    <label>
+                        <input id="ownerDeclarationConfirmed" type="checkbox">
+                        <span>I confirm that I am the property owner and that the information I provide to RumCHUO is accurate.</span>
+                    </label>
+                </div>
+
+                <button class="signup-submit" id="registerSubmit" type="submit">
+                    Create account
+                </button>
+
+                <div class="signup-message" id="registrationMessage" role="status" aria-live="polite"></div>
+            </form>
+
+            <p class="signup-signin">Already have an account? <a href="/login.html">Sign in</a></p>
+        </section>
+
         <section class="container" id="rooms">
             <div class="section-heading">
                 <div>
@@ -677,9 +879,7 @@
                     </p>
                 </div>
 
-                <button type="button" onclick="openLogin('agent')">
-                    Agent sign in
-                </button>
+                <a class="nav-button" href="/login.html?role=agent">Agent sign in</a>
             </div>
         </section>
     </main>
@@ -690,60 +890,108 @@
         © 2026 RumCHUO. Student accommodation made simpler.
     </footer>
 
-    <!-- UNIVERSAL SIGN-IN WINDOW -->
-    <div class="modal-overlay" id="loginOverlay"
-         role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-
-        <div class="login-modal">
-            <button class="modal-close" type="button"
-                    onclick="closeLogin()" aria-label="Close sign in">
-                &times;
-            </button>
-
-            <h2 id="loginTitle">Student Login</h2>
-            <p id="loginDescription">Sign in to your RumCHUO student account.</p>
-
-            <div class="login-error" id="loginError" role="alert"></div>
-
-            <form id="loginForm">
-                <div class="login-field">
-                    <label for="loginRole">LOGIN AS</label>
-                    <select id="loginRole" required>
-                        <option value="student">Student</option>
-                        <option value="owner">Owner</option>
-                        <option value="agent">Agent</option>
-                    </select>
-                </div>
-
-                <div class="login-field">
-                    <label for="loginEmail">Email address</label>
-                    <input id="loginEmail" type="email"
-                           placeholder="Enter your student email"
-                           autocomplete="username" required>
-                </div>
-
-                <div class="login-field">
-                    <label for="loginPassword">Password</label>
-                    <input id="loginPassword" type="password"
-                           placeholder="Enter your password"
-                           autocomplete="current-password" required>
-                </div>
-
-                <button class="login-submit" id="loginSubmit"
-                        type="submit">
-                    Login as Student
-                </button>
-            </form>
-
-            <p class="login-help" id="loginHelp">
-                Choose Student, Owner, or Agent. Use the email address and
-                password registered for that account.
-            </p>
-        </div>
-    </div>
-
     <script>
-        const API_BASE_URL = window.location.origin;
+        const API_BASE_URL = ["3000", "3001", "5500", "5501"].includes(window.location.port)
+            ? window.location.protocol + "//" + window.location.hostname + ":8000"
+            : window.location.origin;
+
+        const registrationForm = document.getElementById("registrationForm");
+        const registrationMessage = document.getElementById("registrationMessage");
+        const registerSubmit = document.getElementById("registerSubmit");
+        const ownerDeclaration = document.getElementById("ownerDeclaration");
+        const ownerDeclarationConfirmed = document.getElementById("ownerDeclarationConfirmed");
+
+        function selectedJoiningRole() {
+            const selected = document.querySelector('input[name="joining_as"]:checked');
+            return selected ? selected.value : "student";
+        }
+
+        function updateOwnerDeclaration() {
+            const isOwner = selectedJoiningRole() === "owner";
+            ownerDeclaration.style.display = isOwner ? "block" : "none";
+            ownerDeclarationConfirmed.required = isOwner;
+            if (!isOwner) ownerDeclarationConfirmed.checked = false;
+        }
+
+        document.querySelectorAll('input[name="joining_as"]').forEach(input => {
+            input.addEventListener("change", updateOwnerDeclaration);
+        });
+        updateOwnerDeclaration();
+
+        function showRegistrationMessage(message, type) {
+            registrationMessage.textContent = message;
+            registrationMessage.className = "signup-message " + type;
+        }
+
+        registrationForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            registrationMessage.className = "signup-message";
+            registrationMessage.textContent = "";
+
+            if (!registrationForm.reportValidity()) return;
+
+            const password = document.getElementById("registerPassword").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+            const joiningAs = selectedJoiningRole();
+
+            if (password !== confirmPassword) {
+                showRegistrationMessage("Your passwords do not match.", "error");
+                document.getElementById("confirmPassword").focus();
+                return;
+            }
+
+            if (joiningAs === "owner" && !ownerDeclarationConfirmed.checked) {
+                showRegistrationMessage("Please confirm that you are the property owner.", "error");
+                return;
+            }
+
+            registerSubmit.disabled = true;
+            registerSubmit.textContent = "Creating account...";
+
+            const payload = {
+                full_name: document.getElementById("registerFullName").value.trim(),
+                email: document.getElementById("registerEmail").value.trim(),
+                phone: document.getElementById("registerPhone").value.trim(),
+                password: password,
+                joining_as: joiningAs,
+                owner_declaration_confirmed: joiningAs === "owner" && ownerDeclarationConfirmed.checked
+            };
+
+            try {
+                const response = await fetch(API_BASE_URL + "/students/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch {
+                    throw new Error("The server returned an invalid response. Please try again.");
+                }
+
+                if (!response.ok) {
+                    const detail = data.detail;
+                    const message = typeof detail === "string"
+                        ? detail
+                        : Array.isArray(detail)
+                            ? detail.map(item => item.msg || "Invalid input").join(", ")
+                            : "Account creation failed. Please check your details.";
+                    throw new Error(message);
+                }
+
+                showRegistrationMessage(data.message || "Account created. Check your email to verify your account.", "success");
+                registrationForm.reset();
+                updateOwnerDeclaration();
+
+            } catch (error) {
+                showRegistrationMessage(error.message || "Could not create your account. Please try again.", "error");
+            } finally {
+                registerSubmit.disabled = false;
+                registerSubmit.textContent = "Create account";
+            }
+        });
 
         const searchForm = document.getElementById("searchForm");
         const areaInput = document.getElementById("area");
@@ -758,303 +1006,8 @@
         const errorMessage = document.getElementById("errorMessage");
         const notice = document.getElementById("notice");
 
-        const loginOverlay = document.getElementById("loginOverlay");
-        const loginForm = document.getElementById("loginForm");
-        const loginError = document.getElementById("loginError");
-        const loginSubmit = document.getElementById("loginSubmit");
-        const loginRole = document.getElementById("loginRole");
-        const loginTitle = document.getElementById("loginTitle");
-        const loginDescription = document.getElementById("loginDescription");
-        const loginHelp = document.getElementById("loginHelp");
-        const loginEmail = document.getElementById("loginEmail");
-
         let allRooms = [];
         let requestNumber = 0;
-
-        /* UNIVERSAL LOGIN */
-
-        function updateLoginRole() {
-            const selectedRole = loginRole.value;
-
-            const roleSettings = {
-                student: {
-                    title: "Student Login",
-                    description: "Sign in to your RumCHUO student account.",
-                    button: "Login as Student",
-                    emailPlaceholder: "Enter your student email"
-                },
-                owner: {
-                    title: "Owner Login",
-                    description: "Sign in to manage your property listings.",
-                    button: "Login as Owner",
-                    emailPlaceholder: "Enter your owner email"
-                },
-                agent: {
-                    title: "Agent Login",
-                    description: "Sign in to manage your authorized room listings.",
-                    button: "Login as Agent",
-                    emailPlaceholder: "Enter your agent email"
-                }
-            };
-
-            const settings = roleSettings[selectedRole] || roleSettings.student;
-            loginTitle.textContent = settings.title;
-            loginDescription.textContent = settings.description;
-            loginSubmit.textContent = settings.button;
-            loginEmail.placeholder = settings.emailPlaceholder;
-            loginHelp.textContent =
-                "You selected " + selectedRole.charAt(0).toUpperCase() +
-                selectedRole.slice(1) +
-                ". Enter the email address and password registered for this account.";
-        }
-
-        function openLogin(role = "student") {
-            const allowedRoles = ["student", "owner", "agent"];
-            loginRole.value = allowedRoles.includes(String(role).toLowerCase())
-                ? String(role).toLowerCase()
-                : "student";
-
-            updateLoginRole();
-            loginError.style.display = "none";
-            loginError.textContent = "";
-            loginOverlay.classList.add("open");
-            loginEmail.focus();
-        }
-
-        loginRole.addEventListener("change", () => {
-            updateLoginRole();
-            loginError.style.display = "none";
-            loginError.textContent = "";
-        });
-
-        function closeLogin() {
-            loginOverlay.classList.remove("open");
-        }
-
-        loginOverlay.addEventListener("click", event => {
-            if (event.target === loginOverlay) {
-                closeLogin();
-            }
-        });
-
-        document.addEventListener("keydown", event => {
-            if (event.key === "Escape") {
-                closeLogin();
-            }
-        });
-
-        function showLoginError(message) {
-            loginError.textContent = message;
-            loginError.style.display = "block";
-        }
-
-        function clearSavedSession() {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("tokenType");
-            localStorage.removeItem("userRole");
-            localStorage.removeItem("userId");
-            localStorage.removeItem("userName");
-        }
-
-        function getDashboardForRole(role) {
-            const normalisedRole = String(role || "")
-                .trim()
-                .toLowerCase()
-                .replace(/[\s-]+/g, "_");
-
-            const destinations = {
-                admin: "/admin/dashboard",
-                landlord: "/landlord/dashboard",
-                owner: "/landlord/dashboard",
-                agent: "/agent/dashboard",
-                student: "/student/dashboard"
-            };
-
-            return destinations[normalisedRole] || null;
-        }
-
-        async function readJsonResponse(response) {
-            try {
-                return await response.json();
-            } catch {
-                throw new Error(
-                    "The server returned an invalid response. Please try again."
-                );
-            }
-        }
-
-        function getServerError(data, fallback) {
-            const detail = data && data.detail;
-
-            if (typeof detail === "string") {
-                return detail;
-            }
-
-            if (Array.isArray(detail)) {
-                return detail.map(item => item.msg || "Invalid input").join(", ");
-            }
-
-            return fallback;
-        }
-
-        loginForm.addEventListener("submit", async event => {
-            event.preventDefault();
-
-            loginError.style.display = "none";
-            loginError.textContent = "";
-
-            loginSubmit.disabled = true;
-            updateLoginRole();
-            const originalButtonText = loginSubmit.textContent;
-            loginSubmit.textContent = "Signing in...";
-
-            const selectedRole = loginRole.value;
-            const email = loginEmail.value.trim();
-            const password = document.getElementById("loginPassword").value;
-
-            let temporaryToken = null;
-            let loginCompleted = false;
-
-            try {
-                // Remove any incomplete or old session before starting.
-                clearSavedSession();
-
-                // STEP 1: Authenticate using the existing RumCHUO login endpoint.
-                const response = await fetch(
-                    API_BASE_URL + "/students/login",
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            email: email,
-                            password: password
-                        })
-                    }
-                );
-
-                const data = await readJsonResponse(response);
-
-                if (!response.ok) {
-                    throw new Error(
-                        getServerError(
-                            data,
-                            "Sign-in failed. Check your email and password."
-                        )
-                    );
-                }
-
-                if (!data.access_token) {
-                    throw new Error(
-                        "The server did not return an access token."
-                    );
-                }
-
-                temporaryToken = data.access_token;
-
-                // STEP 2: Ask the backend which role owns this account.
-                const accountResponse = await fetch(
-                    API_BASE_URL + "/students/me",
-                    {
-                        method: "GET",
-                        headers: {
-                            "Authorization": "Bearer " + temporaryToken
-                        }
-                    }
-                );
-
-                const account = await readJsonResponse(accountResponse);
-
-                if (!accountResponse.ok) {
-                    throw new Error(
-                        getServerError(
-                            account,
-                            "Login succeeded, but your account information could not be verified."
-                        )
-                    );
-                }
-
-                if (!account || !account.role) {
-                    throw new Error(
-                        "Your account does not have a recognised role. " +
-                        "Please contact the RumCHUO administrator."
-                    );
-                }
-
-                // STEP 3: Confirm that the selected login page matches the account.
-                const actualRole = String(account.role)
-                    .trim()
-                    .toLowerCase()
-                    .replace(/[\s-]+/g, "_");
-
-                const selectedRoleAliases = {
-                    student: ["student"],
-                    owner: ["owner", "landlord"],
-                    agent: ["agent"]
-                };
-
-                if (!selectedRoleAliases[selectedRole] ||
-                    !selectedRoleAliases[selectedRole].includes(actualRole)) {
-                    const actualRoleLabel = actualRole === "landlord"
-                        ? "Owner"
-                        : actualRole.charAt(0).toUpperCase() + actualRole.slice(1);
-
-                    throw new Error(
-                        "This account is registered as " + actualRoleLabel +
-                        ". Please choose Login as " + actualRoleLabel +
-                        " from the dropdown."
-                    );
-                }
-
-                // STEP 4: Find the dashboard using the verified account role.
-                const destination = getDashboardForRole(actualRole);
-
-                if (!destination) {
-                    throw new Error(
-                        "Your account role does not have a configured dashboard."
-                    );
-                }
-
-                // STEP 5: Save the verified session.
-                localStorage.setItem("accessToken", temporaryToken);
-                localStorage.setItem(
-                    "tokenType",
-                    data.token_type || "bearer"
-                );
-                localStorage.setItem("userRole", actualRole);
-
-                if (account.id !== undefined && account.id !== null) {
-                    localStorage.setItem("userId", String(account.id));
-                }
-
-                if (account.full_name) {
-                    localStorage.setItem("userName", account.full_name);
-                }
-
-                loginCompleted = true;
-
-                // STEP 6: Open the correct dashboard without another login.
-                window.location.assign(destination);
-
-            } catch (error) {
-                if (!loginCompleted) {
-                    clearSavedSession();
-                }
-
-                showLoginError(
-                    error.message ||
-                    "Unable to sign in. Please check your connection and try again."
-                );
-
-            } finally {
-                loginSubmit.disabled = false;
-                updateLoginRole();
-                if (loginSubmit.textContent === "Signing in...") {
-                    loginSubmit.textContent = originalButtonText;
-                }
-            }
-        });
 
         /* HOMEPAGE NOTICES */
 

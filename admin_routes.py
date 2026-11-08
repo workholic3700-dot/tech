@@ -822,13 +822,13 @@ def register_admin_routes(app: FastAPI, get_connection, get_current_student):
 
     @app.get("/admin/accounts")
     def list_accounts(admin=Depends(require_admin)):
-
         with get_connection() as c:
             rows = c.execute("""
-                SELECT id,full_name,email,role,email_verified,
-                       account_status,created_at
+                SELECT id, full_name, email, phone, role, email_verified,
+                       account_status, created_at
                 FROM students
-                ORDER BY id DESC LIMIT 200
+                ORDER BY id DESC
+                LIMIT 200
             """).fetchall()
 
         return {"accounts": [dict(r) for r in rows]}

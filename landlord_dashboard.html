@@ -130,7 +130,7 @@
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
     }
 
@@ -371,7 +371,7 @@
 <header>
   <div>
     <h1>RumCHUO Owner Portal</h1>
-    <p>Manage your properties, Agent permissions and rental reports</p>
+    <p>Manage your properties and Agent advertising permissions</p>
   </div>
 
   <button id="logoutButton" class="light hidden" type="button">Log out</button>
@@ -419,20 +419,14 @@
           <span>Ownership applications</span>
           <strong id="totalApplications">—</strong>
         </div>
-        <div class="stat">
-          <span>Pending Agent requests</span>
-          <strong id="pendingRequests">—</strong>
-        </div>
       </div>
     </section>
 
     <nav class="tabs" aria-label="Owner sections">
       <button class="active" data-section="roomsSection" type="button">My properties</button>
       <button data-section="submitSection" type="button">Submit property</button>
-      <button data-section="claimSection" type="button">Claim existing room</button>
       <button data-section="applicationsSection" type="button">Ownership applications</button>
       <button data-section="agentsSection" type="button">Agent requests</button>
-      <button data-section="reportsSection" type="button">Rental reports</button>
     </nav>
 
     <section id="roomsSection" class="panel dashboard-section">
@@ -500,19 +494,6 @@
       </form>
     </section>
 
-    <section id="claimSection" class="panel dashboard-section hidden">
-      <h2>Claim an existing room</h2>
-      <p class="muted">
-        If a property already exists on RumCHUO but is not assigned to you,
-        you can submit an ownership claim for administrator review.
-      </p>
-      <div class="toolbar">
-        <button id="refreshClaimableButton" type="button">Find claimable rooms</button>
-      </div>
-      <div id="claimableMessage" role="status" aria-live="polite"></div>
-      <div id="claimableRooms"></div>
-    </section>
-
     <section id="applicationsSection" class="panel dashboard-section hidden">
       <h2>My ownership applications</h2>
       <div class="toolbar">
@@ -534,17 +515,6 @@
         <button id="refreshAgentsButton" type="button">Refresh Agent requests</button>
       </div>
       <div id="agentsArea"></div>
-    </section>
-
-    <section id="reportsSection" class="panel dashboard-section hidden">
-      <h2>Rental reports</h2>
-      <p class="muted">
-        Review rental reports submitted by Agents and confirm reports when the rental information is correct.
-      </p>
-      <div class="toolbar">
-        <button id="refreshReportsButton" type="button">Refresh rental reports</button>
-      </div>
-      <div id="reportsArea"></div>
     </section>
 
   </section>
@@ -1117,7 +1087,7 @@
     $("totalRooms").textContent = rooms.length;
 
     if (!rooms.length) {
-      emptyMessage(area, "You do not have any assigned properties yet.");
+      emptyMessage(area, "You do not have any properties yet.");
       return;
     }
 
@@ -1127,13 +1097,17 @@
       "Room type",
       "Monthly rent",
       "Availability",
-      "Status"
+      "Admin approval status",
+      "Property photos"
     ]);
 
     rooms.forEach((room) => {
       const row = document.createElement("tr");
+      const roomId = getValue(room, ["id", "room_id"]);
+      const applicationId = getValue(room, ["application_id"]);
+      const photos = Array.isArray(room.photos) ? room.photos : [];
 
-      addCell(row, getValue(room, ["id", "room_id"]));
+      addCell(row, roomId);
       addCell(row, room.location);
       addCell(row, room.room_type);
 
@@ -1147,11 +1121,47 @@
           : (room.available ? "Available" : "Not available")
       );
 
+      // Use the actual backend ownership_status. Never assume approval just
+      // because a property is present in this response.
+      const ownershipStatus = String(room.ownership_status || "unassigned").toLowerCase();
+      const statusLabels = {
+        pending: "Pending Admin Approval",
+        assigned: "Approved",
+        rejected: "Rejected",
+        unassigned: "Not submitted for approval"
+      };
       const statusCell = document.createElement("td");
-      statusCell.appendChild(statusPill(room.status || room.verification_status || "approved"));
+      const pill = statusPill(ownershipStatus === "assigned" ? "approved" : ownershipStatus);
+      pill.textContent = statusLabels[ownershipStatus] || "Not approved";
+      statusCell.appendChild(pill);
       row.appendChild(statusCell);
 
+      const photoCell = document.createElement("td");
+      const galleryRow = document.createElement("tr");
+      const galleryCell = document.createElement("td");
+      galleryCell.colSpan = 7;
+      const gallery = document.createElement("div");
+      gallery.className = "photo-gallery";
+      galleryCell.appendChild(gallery);
+      galleryRow.appendChild(galleryCell);
+      galleryRow.hidden = true;
+
+      if (photos.length && applicationId !== null) {
+        const viewButton = makeButton("View photos (" + photos.length + ")", "", () => {
+          galleryRow.hidden = !galleryRow.hidden;
+          if (!galleryRow.hidden && gallery.dataset.loaded !== "true") {
+            gallery.dataset.loaded = "true";
+            photos.forEach((photo) => loadApplicationPhoto(applicationId, photo, gallery));
+          }
+        });
+        photoCell.appendChild(viewButton);
+      } else {
+        photoCell.textContent = "No photos";
+      }
+
+      row.appendChild(photoCell);
       tbody.appendChild(row);
+      tbody.appendChild(galleryRow);
     });
 
     area.replaceChildren(table);
@@ -1422,7 +1432,6 @@
           price === null ? null : "TZS " + Number(price).toLocaleString()
         );
 
-        addDetail(details, "Application type", application.application_type);
         addDetail(details, "Phone number", application.phone_number);
         addDetail(details, "Submitted", application.created_at);
         addDetail(details, "Reviewed", application.reviewed_at);
@@ -1487,9 +1496,6 @@
     const data = await api("/landlord/me/authorization-requests");
     const requests = getList(data, ["requests", "authorization_requests", "applications"]);
 
-    $("pendingRequests").textContent =
-      requests.filter((item) => item.status === "pending").length;
-
     if (!requests.length) {
       emptyMessage(area, "There are no Agent advertising permission requests.");
       return;
@@ -1516,9 +1522,27 @@
 
       addDetail(details, "Agent", getValue(request, ["agent_name", "full_name"]));
       addDetail(details, "Agent email", getValue(request, ["agent_email", "email"]));
+
+      const phoneDetail = document.createElement("div");
+      phoneDetail.className = "detail";
+      const phoneLabel = document.createElement("small");
+      phoneLabel.textContent = "Agent phone number";
+      const phoneValue = document.createElement("strong");
+      const agentPhone = getValue(request, ["agent_phone", "phone"]);
+      if (agentPhone) {
+        const phoneLink = document.createElement("a");
+        phoneLink.href = "tel:" + String(agentPhone).replace(/[^0-9+]/g, "");
+        phoneLink.textContent = String(agentPhone);
+        phoneValue.appendChild(phoneLink);
+      } else {
+        phoneValue.textContent = "Not provided";
+      }
+      phoneDetail.append(phoneLabel, phoneValue);
+      details.appendChild(phoneDetail);
+
       addDetail(details, "Room ID", request.room_id);
       addDetail(details, "Property location", request.location);
-      addDetail(details, "Requested", request.created_at);
+      addDetail(details, "Requested", getValue(request, ["requested_at", "created_at"]));
 
       card.appendChild(details);
 
@@ -1688,8 +1712,7 @@
     const tasks = await Promise.allSettled([
       loadRooms(),
       loadApplications(),
-      loadAgentRequests(),
-      loadRentalReports()
+      loadAgentRequests()
     ]);
 
     const errors = tasks
@@ -1722,14 +1745,6 @@
     }
   });
 
-  $("refreshClaimableButton").addEventListener("click", async () => {
-    try {
-      await loadClaimableRooms();
-    } catch (error) {
-      showMessage($("claimableMessage"), error.message, "error");
-    }
-  });
-
   $("refreshApplicationsButton").addEventListener("click", async () => {
     try {
       await loadApplications();
@@ -1743,14 +1758,6 @@
       await loadAgentRequests();
     } catch (error) {
       showMessage($("agentsArea"), error.message, "error");
-    }
-  });
-
-  $("refreshReportsButton").addEventListener("click", async () => {
-    try {
-      await loadRentalReports();
-    } catch (error) {
-      showMessage($("reportsArea"), error.message, "error");
     }
   });
 
@@ -1772,15 +1779,12 @@
 
     [
       "roomsArea",
-      "claimableRooms",
       "applicationsArea",
-      "agentsArea",
-      "reportsArea"
+      "agentsArea"
     ].forEach((id) => $(id).replaceChildren());
 
     $("totalRooms").textContent = "—";
     $("totalApplications").textContent = "—";
-    $("pendingRequests").textContent = "—";
 
     showMessage(
       $("loginMessage"),

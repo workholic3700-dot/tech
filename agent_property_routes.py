@@ -98,11 +98,13 @@ def register_agent_property_routes(
 
     def validate_phone(phone):
         phone = re.sub(r"[\s()-]", "", phone or "")
+
         if not re.fullmatch(r"\+?[0-9]{9,15}", phone):
             raise HTTPException(
                 400,
                 "Enter a valid contact phone number."
             )
+
         return phone
 
     async def save_photos(application_id, photos):
@@ -177,8 +179,10 @@ def register_agent_property_routes(
         except Exception:
             for item in saved:
                 path = AGENT_PHOTO_DIR / item["stored_name"]
+
                 if path.exists():
                     path.unlink()
+
             raise
 
     def application_photos(c, application_id):
@@ -249,12 +253,14 @@ def register_agent_property_routes(
 
         try:
             await save_photos(application_id, photos)
+
         except Exception:
             with get_connection() as c:
                 c.execute("""
                     DELETE FROM agent_property_applications
                     WHERE id=? AND agent_id=?
                 """, (application_id, agent["id"]))
+
             raise
 
         return {
@@ -339,6 +345,7 @@ def register_agent_property_routes(
                     WHERE a.status=?
                     ORDER BY a.id DESC
                 """, (status_filter,)).fetchall()
+
             else:
                 rows = c.execute("""
                     SELECT

@@ -1,9 +1,14 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RumCHUO | Student Dashboard</title>
+
+<!-- Leaflet map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
 <style>
 :root {
     --bg: #f4f6fa;
@@ -20,15 +25,33 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
 body.no-scroll { overflow: hidden; }
+
 .layout { display: flex; min-height: 100vh; }
+
 .sidebar {
-    width: 255px; background: var(--sidebar); color: white;
+    width: 285px; max-width: 86vw; background: var(--sidebar); color: white;
     padding: 25px 17px; position: fixed; inset: 0 auto 0 0;
-    display: flex; flex-direction: column; z-index: 20;
+    display: flex; flex-direction: column; z-index: 60;
+    transform: translateX(-105%); transition: transform .28s ease;
+    overflow-y: auto; box-shadow: 5px 0 24px rgba(0,0,0,.22);
 }
+.sidebar.open { transform: translateX(0); }
+
+.sidebar-overlay {
+    position: fixed; inset: 0; background: rgba(8,18,32,.58);
+    z-index: 55; opacity: 0; visibility: hidden;
+    transition: opacity .28s ease, visibility .28s ease;
+}
+.sidebar-overlay.show { opacity: 1; visibility: visible; }
+
 .brand { font-size: 25px; font-weight: 800; padding: 5px 13px 35px; letter-spacing: 1px; }
 .brand span { color: #65a0ff; }
-.side-label { color: #91a2b9; font-size: 11px; font-weight: bold; padding: 12px 13px; letter-spacing: 1.5px; }
+
+.side-label {
+    color: #91a2b9; font-size: 11px; font-weight: bold;
+    padding: 12px 13px; letter-spacing: 1.5px;
+}
+
 .nav-link {
     width: 100%; border: 0; background: transparent; color: #c6d1df;
     padding: 14px 13px; border-radius: 9px; text-align: left;
@@ -38,13 +61,16 @@ body.no-scroll { overflow: hidden; }
 .nav-link:hover, .nav-link.active { background: var(--sidebar-light); color: white; }
 .nav-link.active { border-left: 3px solid #65a0ff; }
 .sidebar-bottom { margin-top: auto; }
-.main { margin-left: 255px; width: calc(100% - 255px); min-height: 100vh; }
+
+.main { margin-left: 0; width: 100%; min-height: 100vh; }
+
 .topbar {
     height: 76px; background: white; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 35px; position: sticky; top: 0; z-index: 10;
 }
 .topbar h2 { font-size: 18px; }
+
 .user-area { display: flex; align-items: center; gap: 12px; }
 .avatar {
     width: 39px; height: 39px; border-radius: 50%; background: #e5edff;
@@ -52,29 +78,54 @@ body.no-scroll { overflow: hidden; }
 }
 .user-name { font-size: 13px; font-weight: bold; }
 .user-role { color: var(--muted); font-size: 11px; margin-top: 3px; }
-.menu-btn { display: none; background: none; border: 0; font-size: 25px; cursor: pointer; }
+
+.menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; background: #eef3fb; color: var(--sidebar);
+    border: 1px solid var(--border); border-radius: 9px;
+    font-size: 24px; cursor: pointer; flex: 0 0 auto;
+}
+.menu-btn:hover { background: #e2ebfa; }
+
+.menu-btn:focus-visible, .nav-link:focus-visible {
+    outline: 3px solid #65a0ff; outline-offset: 2px;
+}
+
 .content { padding: 32px 35px; max-width: 1500px; margin: auto; }
 .page { display: none; }
 .page.active { display: block; }
+
 .welcome {
     background: linear-gradient(120deg, #1c4382, #2864e8);
     color: white; padding: 30px; border-radius: 15px; margin-bottom: 25px;
 }
 .welcome h1 { font-size: 25px; margin-bottom: 9px; }
 .welcome p { color: #dce8ff; font-size: 14px; line-height: 1.6; }
-.section-heading { display: flex; align-items: center; justify-content: space-between; margin: 28px 0 17px; }
-.section-heading h2 { font-size: 19px; }
-.muted { color: var(--muted); font-size: 13px; line-height: 1.6; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 17px; }
-.stat-card, .panel, .room-card, .match-card {
-    background: white; border: 1px solid var(--border); border-radius: 12px; padding: 22px;
+
+.section-heading {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 28px 0 17px; gap: 12px; flex-wrap: wrap;
 }
+.section-heading h2 { font-size: 19px; }
+
+.muted { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 17px; }
+
+.stat-card, .panel, .room-card, .match-card, .agent-discovery-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px;
+}
+
 .stat-label { color: var(--muted); font-size: 13px; }
 .stat-number { font-size: 28px; font-weight: 800; margin-top: 12px; }
 .stat-icon { font-size: 23px; margin-bottom: 15px; }
+
 .panel { margin-bottom: 20px; }
 .panel h3 { font-size: 16px; margin-bottom: 18px; }
+
 .grid-two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
 .btn {
     background: var(--primary); color: white; border: 0; border-radius: 8px;
     padding: 11px 17px; cursor: pointer; font-weight: bold; font-size: 13px;
@@ -85,60 +136,210 @@ body.no-scroll { overflow: hidden; }
 .btn-danger { background: var(--red); }
 .btn-green { background: var(--green); }
 .btn-small { padding: 9px 14px; font-size: 12px; }
+
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
+
 .field { margin-bottom: 17px; }
 .field label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
-.field input, .field select {
+
+.field input, .field select, .field textarea {
     width: 100%; padding: 12px; border: 1px solid #dce3ed;
     border-radius: 8px; outline: none; font-size: 14px; background: white;
+    font-family: Arial, sans-serif;
 }
-.field input:focus, .field select:focus { border-color: var(--primary); }
-.search-row { display: flex; gap: 12px; margin-bottom: 20px; }
+.field textarea { min-height: 110px; resize: vertical; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary); }
+
+.search-row {
+    display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+}
 .search-row input, .search-row select {
     padding: 12px; border: 1px solid var(--border); border-radius: 8px;
     background: white; flex: 1; min-width: 0;
 }
+
 .cards-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
+
 .room-card, .match-card { padding: 0; overflow: hidden; }
 .card-body { padding: 20px 22px 22px; }
 .match-card { padding: 22px; }
 .room-card h3, .match-card h3 { margin: 0 0 8px; }
 .match-card h3 { margin: 12px 0 8px; }
+
 .room-location { color: var(--muted); font-size: 13px; }
 .room-price { color: var(--primary); font-size: 21px; font-weight: bold; margin: 14px 0; }
+
 .tag {
     display: inline-block; background: #eaf1ff; color: #2864e8;
     padding: 6px 9px; border-radius: 20px; font-size: 11px; margin: 3px 3px 3px 0;
 }
 .tag.available { background: #e7f8f0; color: #08764c; }
 .tag.unavailable { background: #fff0f0; color: #b52e38; }
+
 .match-score { color: var(--green); font-weight: bold; font-size: 13px; }
+
 .match-reasons {
     margin-top: 12px; padding: 11px 13px; background: #f3f7ff;
     border-radius: 8px; color: #405574; font-size: 12px; line-height: 1.6;
 }
+
 .empty {
     background: white; border: 1px dashed #cbd5e1; border-radius: 12px;
     padding: 35px; text-align: center; color: var(--muted);
     line-height: 1.7; grid-column: 1 / -1;
 }
-.notice { padding: 12px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; display: none; line-height: 1.6; }
+
+.notice {
+    padding: 12px 14px; border-radius: 8px; margin-bottom: 15px;
+    font-size: 13px; display: none; line-height: 1.6;
+}
 .notice.success { background: #e7f8f0; color: #08764c; }
 .notice.error { background: #fff0f0; color: #b52e38; }
+
 .loading { color: var(--muted); padding: 20px 0; }
+
 .profile-summary { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+
 .big-avatar {
     width: 65px; height: 65px; border-radius: 50%; display: grid;
     place-items: center; background: #e5edff; color: var(--primary);
     font-size: 25px; font-weight: bold;
 }
+
 .matching-rules { padding: 14px 16px; background: #f3f7ff; border-radius: 9px; margin: 12px 0 17px; }
 .matching-rules ul { padding-left: 20px; margin-top: 8px; }
 .matching-rules li { margin: 5px 0; font-size: 13px; line-height: 1.5; color: #405574; }
 .required-note { font-size: 12px; color: var(--muted); margin: 0 0 15px; }
 .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
 
+/* MY ENQUIRIES */
+
+.enquiries-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.enquiry-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.enquiry-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.enquiry-agent {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.enquiry-location {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.enquiry-message {
+    background: #f4f6fa;
+    border-radius: 9px;
+    padding: 14px;
+    margin: 14px 0;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.enquiry-label {
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 14px 0 6px;
+}
+
+.enquiry-reply {
+    background: #e7f8f0;
+    border-left: 4px solid var(--green);
+    border-radius: 9px;
+    padding: 14px;
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.enquiry-reply-meta {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #2f7457;
+    white-space: normal;
+}
+
+.enquiry-awaiting {
+    background: #fff8e6;
+    border-radius: 9px;
+    padding: 12px 14px;
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #966300;
+}
+
+.enquiry-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.enquiry-status {
+    display: inline-block;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+.enquiry-status.status-new {
+    background: #eaf1ff;
+    color: #2864e8;
+}
+
+.enquiry-status.status-read {
+    background: #fff5df;
+    color: #966300;
+}
+
+.enquiry-status.status-replied {
+    background: #e7f8f0;
+    color: #08764c;
+}
+
+.enquiry-status.status-closed {
+    background: #f0f1f4;
+    color: #657084;
+}
+
 /* Room photos and details */
+
 .room-photo {
     position: relative; width: 100%; aspect-ratio: 16 / 10;
     background: #e9edf3; cursor: zoom-in; overflow: hidden;
@@ -146,24 +347,33 @@ body.no-scroll { overflow: hidden; }
 }
 .room-photo.no-photo { cursor: default; }
 .room-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .photo-badge {
     position: absolute; right: 10px; bottom: 10px;
     background: rgba(20, 36, 58, .8); color: white;
     font-size: 11px; padding: 5px 9px; border-radius: 20px; pointer-events: none;
 }
+
 .card-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+
 .modal-backdrop {
     position: fixed; inset: 0; background: rgba(12, 22, 38, .6);
     z-index: 50; display: none; align-items: flex-start; justify-content: center;
     overflow-y: auto; padding: 30px 15px;
 }
 .modal-backdrop.open { display: flex; }
-.modal { background: white; border-radius: 14px; width: 100%; max-width: 820px; position: relative; overflow: hidden; }
+
+.modal {
+    background: white; border-radius: 14px; width: 100%;
+    max-width: 820px; position: relative; overflow: hidden;
+}
+
 .modal-close {
     position: absolute; top: 12px; right: 12px; z-index: 3;
     width: 36px; height: 36px; border-radius: 50%; border: 0;
     background: rgba(20, 36, 58, .75); color: white; font-size: 20px; cursor: pointer;
 }
+
 .gallery-main {
     position: relative; width: 100%; aspect-ratio: 16 / 9;
     background: #e9edf3; display: grid; place-items: center;
@@ -171,7 +381,9 @@ body.no-scroll { overflow: hidden; }
 }
 .gallery-main.no-photo { cursor: default; }
 .gallery-main img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .thumbs { display: flex; gap: 8px; padding: 10px 22px 0; overflow-x: auto; }
+
 .thumb {
     flex: 0 0 auto; width: 76px; height: 56px; border-radius: 8px;
     border: 2px solid transparent; background: #e9edf3; padding: 0;
@@ -179,13 +391,20 @@ body.no-scroll { overflow: hidden; }
 }
 .thumb.active { border-color: var(--primary); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .modal-body { padding: 22px; }
 .modal-body h2 { font-size: 21px; margin-bottom: 6px; }
-.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0 6px; }
+
+.detail-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px; margin: 18px 0 6px;
+}
 .detail-item { background: var(--bg); border-radius: 10px; padding: 12px 14px; }
 .detail-item .k { color: var(--muted); font-size: 11px; margin-bottom: 5px; }
 .detail-item .v { font-size: 14px; font-weight: bold; }
+
 .modal-body h3 { font-size: 16px; margin: 22px 0 12px; }
+
 .agent-card {
     display: flex; align-items: center; gap: 14px;
     border: 1px solid var(--border); border-radius: 12px;
@@ -200,12 +419,14 @@ body.no-scroll { overflow: hidden; }
 .agent-name { font-weight: bold; font-size: 14px; }
 .agent-phone { font-size: 14px; margin-top: 4px; }
 .agent-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
 .lightbox {
     position: fixed; inset: 0; background: rgba(5, 10, 18, .94);
     z-index: 100; display: none; align-items: center; justify-content: center;
 }
 .lightbox.open { display: flex; }
 .lightbox img { max-width: 92vw; max-height: 86vh; object-fit: contain; border-radius: 6px; }
+
 .lb-btn {
     position: absolute; background: rgba(255, 255, 255, .15);
     color: white; border: 0; border-radius: 50%; width: 46px;
@@ -218,48 +439,121 @@ body.no-scroll { overflow: hidden; }
 .lb-count { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); color: #dbe4f0; font-size: 13px; }
 .lb-status { color: #dbe4f0; font-size: 14px; position: absolute; }
 
+/* ACTIVE AGENTS */
+
+.agents-intro {
+    background: linear-gradient(120deg, #1c4382, #2864e8);
+    color: white; border-radius: 13px; padding: 23px; margin-bottom: 20px;
+}
+.agents-intro h2 { font-size: 20px; margin-bottom: 8px; }
+.agents-intro p { color: #e0eaff; font-size: 13px; line-height: 1.7; }
+
+.agent-search {
+    display: grid; grid-template-columns: 1fr 1fr auto;
+    gap: 12px; margin: 18px 0;
+}
+.agent-search input, .agent-search select {
+    width: 100%; padding: 12px; border: 1px solid var(--border);
+    border-radius: 8px; background: white; font-size: 13px;
+}
+
+.agent-map-wrap {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 15px; margin-bottom: 20px;
+}
+.agent-map-wrap h3 { font-size: 15px; margin-bottom: 6px; }
+#agentsMap {
+    width: 100%; height: 360px; border-radius: 9px;
+    background: #e9edf3; z-index: 1; margin-top: 12px;
+}
+.map-note { font-size: 11px; color: var(--muted); margin-top: 9px; line-height: 1.5; }
+
+.agent-discovery-card {
+    padding: 20px; display: flex; flex-direction: column;
+    gap: 12px; min-width: 0;
+}
+.agent-discovery-top { display: flex; align-items: center; gap: 13px; }
+.agent-discovery-avatar {
+    width: 55px; height: 55px; border-radius: 50%;
+    background: #e5edff; color: var(--primary);
+    display: grid; place-items: center; font-weight: bold;
+    font-size: 21px; flex: 0 0 auto; overflow: hidden;
+}
+.agent-discovery-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.agent-discovery-name { font-size: 15px; font-weight: bold; }
+.agent-online { color: var(--green); font-size: 11px; margin-top: 5px; font-weight: bold; }
+.agent-meta { font-size: 12px; color: var(--muted); line-height: 1.7; }
+.agent-count {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 11px; border-radius: 8px;
+    background: #e7f8f0; color: #08764c;
+    font-size: 12px; font-weight: bold; width: fit-content;
+}
+.agent-card-footer { display: flex; gap: 9px; flex-wrap: wrap; margin-top: auto; }
+
+.agent-area-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.agent-area-list .tag { margin: 0; }
+
+.agent-enquiry-modal {
+    max-width: 560px; padding: 25px;
+}
+.agent-enquiry-modal h2 { font-size: 20px; margin-bottom: 8px; }
+.agent-enquiry-modal p { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 18px; }
+
 @media(max-width: 900px) {
-    .sidebar { transform: translateX(-100%); transition: .25s; }
-    .sidebar.open { transform: translateX(0); }
-    .main { margin-left: 0; width: 100%; }
-    .menu-btn { display: block; }
     .topbar { padding: 0 18px; }
     .content { padding: 22px 18px; }
 }
+
 @media(max-width: 650px) {
-    .stats, .grid-two, .cards-grid, .form-grid, .detail-grid { grid-template-columns: 1fr; }
+    .stats, .grid-two, .cards-grid, .form-grid, .detail-grid {
+        grid-template-columns: 1fr;
+    }
     .search-row { flex-direction: column; }
+    .agent-search { grid-template-columns: 1fr; }
     .welcome h1 { font-size: 21px; }
     .content { padding: 17px 13px; }
     .user-name { display: none; }
     .modal-backdrop { padding: 0; }
     .modal { border-radius: 0; min-height: 100vh; }
+    #agentsMap { height: 300px; }
 }
 </style>
 </head>
+
 <body>
 <div class="layout">
 
 <aside class="sidebar" id="sidebar">
     <div class="brand">Rum<span>CHUO</span></div>
     <div class="side-label">STUDENT MENU</div>
-    <button class="nav-link active" data-page="overview">▦ &nbsp; Overview</button>
-    <button class="nav-link" data-page="rooms">⌂ &nbsp; Find Accommodation</button>
-    <button class="nav-link" data-page="matches">♧ &nbsp; Roommate Matching</button>
+
+    <button class="nav-link active" data-page="overview">▦   Overview</button>
+    <button class="nav-link" data-page="rooms">⌂   Find Accommodation</button>
+    <button class="nav-link" data-page="matches">♧   Roommate Matching</button>
+    <button class="nav-link" data-page="agents">◎   Active Agents</button>
+
     <div class="side-label">MY ACCOUNT</div>
-    <button class="nav-link" data-page="profile">◉ &nbsp; My Profile</button>
-    <button class="nav-link" data-page="preferences">⚙ &nbsp; Preferences</button>
+    <button class="nav-link" data-page="enquiries">✉   My Enquiries</button>
+    <button class="nav-link" data-page="profile">◉   My Profile</button>
+    <button class="nav-link" data-page="preferences">⚙   Preferences</button>
+
     <div class="sidebar-bottom">
-        <button class="nav-link" id="logoutButton">↪ &nbsp; Logout</button>
+        <button class="nav-link" id="logoutButton">↪   Logout</button>
     </div>
 </aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <main class="main">
 <header class="topbar">
     <div style="display:flex;align-items:center;gap:15px">
-        <button class="menu-btn" id="menuButton">☰</button>
+        <button class="menu-btn" id="menuButton" type="button"
+            aria-label="Open navigation menu" aria-expanded="false"
+            aria-controls="sidebar">☰</button>
         <h2 id="pageTitle">Student Overview</h2>
     </div>
+
     <div class="user-area">
         <div class="avatar" id="topAvatar">S</div>
         <div>
@@ -271,42 +565,64 @@ body.no-scroll { overflow: hidden; }
 
 <div class="content">
 
+<!-- OVERVIEW -->
+
 <section class="page active" id="overview">
     <div class="welcome">
         <h1>Welcome back, <span id="welcomeName">Student</span>!</h1>
         <p>Your accommodation journey starts here. Find a room, connect with compatible roommates and manage your student profile.</p>
     </div>
+
     <div class="stats">
         <div class="stat-card">
             <div class="stat-icon">⌂</div>
             <div class="stat-label">Available Accommodation</div>
             <div class="stat-number" id="roomCount">—</div>
         </div>
+
         <div class="stat-card">
             <div class="stat-icon">♧</div>
             <div class="stat-label">Roommate Matches</div>
             <div class="stat-number" id="matchCount">—</div>
         </div>
+
         <div class="stat-card">
             <div class="stat-icon">◉</div>
             <div class="stat-label">Profile Status</div>
             <div class="stat-number" id="profileStatus" style="font-size:19px">Loading</div>
         </div>
     </div>
+
     <div class="section-heading"><h2>Quick Actions</h2></div>
+
     <div class="grid-two">
         <div class="panel">
             <h3>Find your accommodation</h3>
             <p class="muted">Explore available rooms and discover accommodation options.</p>
             <br><button class="btn" data-go="rooms">Explore Rooms</button>
         </div>
+
         <div class="panel">
             <h3>Find a roommate</h3>
             <p class="muted">Find students who meet the essential compatibility requirements and share similar preferences.</p>
             <br><button class="btn" data-go="matches">Find Roommates</button>
         </div>
+
+        <div class="panel">
+            <h3>Connect with active agents</h3>
+            <p class="muted">Find approved RumCHUO agents who are currently available in your preferred areas.</p>
+            <br><button class="btn" data-go="agents">Find Active Agents</button>
+        </div>
+
+        <div class="panel">
+            <h3>Track your enquiries</h3>
+            <p class="muted">Check the messages you have sent to agents and read their replies.</p>
+            <br><button class="btn" data-go="enquiries">View My Enquiries</button>
+        </div>
     </div>
 </section>
+
+<!-- FIND ACCOMMODATION -->
 
 <section class="page" id="rooms">
     <div class="section-heading">
@@ -316,6 +632,7 @@ body.no-scroll { overflow: hidden; }
         </div>
         <button class="btn btn-outline" id="refreshRooms">↻ Refresh</button>
     </div>
+
     <div class="search-row">
         <input id="roomSearch" placeholder="Search by location...">
         <select id="roomTypeFilter">
@@ -325,10 +642,13 @@ body.no-scroll { overflow: hidden; }
             <option value="self-contained">Self-contained</option>
         </select>
     </div>
+
     <div class="cards-grid" id="roomsList">
         <div class="loading">Loading accommodation...</div>
     </div>
 </section>
+
+<!-- ROOMMATE MATCHING -->
 
 <section class="page" id="matches">
     <div class="section-heading">
@@ -359,6 +679,7 @@ body.no-scroll { overflow: hidden; }
             After these requirements are met, RumCHUO uses the following details
             to improve the match score:
         </p>
+
         <div class="matching-rules">
             <ul>
                 <li>Preferred accommodation location.</li>
@@ -383,6 +704,90 @@ body.no-scroll { overflow: hidden; }
     </div>
 </section>
 
+<!-- ACTIVE AGENTS -->
+
+<section class="page" id="agents">
+
+    <div class="agents-intro">
+        <h2>Find Active RumCHUO Agents</h2>
+        <p>
+            Connect with approved agents who are currently available to help students
+            find accommodation. Explore the areas they serve and the universities they cover.
+        </p>
+    </div>
+
+    <div class="section-heading">
+        <div>
+            <h2>Available Agents</h2>
+            <p class="muted">Only approved, verified agents who have switched on their availability are shown.</p>
+        </div>
+        <button class="btn btn-outline" id="refreshAgents">↻ Refresh</button>
+    </div>
+
+    <div class="agent-search">
+        <input id="agentSearch" type="search" placeholder="Search agent, location or university...">
+        <select id="agentUniversityFilter">
+            <option value="">All universities</option>
+        </select>
+        <button class="btn" id="clearAgentSearch" type="button">Clear filters</button>
+    </div>
+
+    <div class="agent-map-wrap">
+        <h3>Agent service areas map</h3>
+        <p class="muted">
+            Map markers show service areas, not an agent's exact position,
+            unless the agent has explicitly chosen to share their location.
+        </p>
+        <div id="agentsMap"></div>
+        <p class="map-note">
+            Map locations for service areas are approximate. Exact agent locations
+            are hidden unless the agent has chosen to share them.
+        </p>
+    </div>
+
+    <div class="section-heading">
+        <div>
+            <h2>Agent Directory</h2>
+            <p class="muted" id="agentResultsText">Loading available agents...</p>
+        </div>
+    </div>
+
+    <div class="cards-grid" id="agentsList">
+        <div class="loading">Loading active agents...</div>
+    </div>
+</section>
+
+<!-- MY ENQUIRIES -->
+
+<section class="page" id="enquiries">
+    <div class="section-heading">
+        <div>
+            <h2>My Enquiries</h2>
+            <p class="muted">
+                View the enquiries you have sent to RumCHUO agents and read their replies.
+            </p>
+        </div>
+        <button class="btn btn-outline" id="refreshEnquiries" type="button">
+            ↻ Refresh
+        </button>
+    </div>
+
+    <div class="panel">
+        <h3>Your Agent Enquiries</h3>
+        <p class="muted">
+            Each enquiry shows the agent you contacted, your message, the date it was sent
+            and the agent's reply once they respond. Your name, phone number and email are
+            shared only with the agent you send an enquiry to.
+        </p>
+    </div>
+
+    <div class="enquiries-list" id="enquiriesList">
+        <div class="loading">Loading your enquiries...</div>
+    </div>
+</section>
+
+<!-- MY PROFILE -->
+
 <section class="page" id="profile">
     <div class="section-heading">
         <div>
@@ -390,6 +795,7 @@ body.no-scroll { overflow: hidden; }
             <p class="muted">Manage your personal and academic information. Accurate details help RumCHUO find compatible roommates.</p>
         </div>
     </div>
+
     <div class="panel">
         <div class="profile-summary">
             <div class="big-avatar" id="profileAvatar">S</div>
@@ -398,6 +804,7 @@ body.no-scroll { overflow: hidden; }
                 <p class="muted">Student profile</p>
             </div>
         </div>
+
         <div id="profileNotice" class="notice"></div>
         <p class="required-note">Fields marked with * are important for roommate matching.</p>
 
@@ -407,22 +814,33 @@ body.no-scroll { overflow: hidden; }
                     <label for="fullName">Full Name *</label>
                     <input id="fullName" required>
                 </div>
+
                 <div class="field">
                     <label for="email">Email Address</label>
                     <input id="email" type="email" disabled>
                 </div>
+
+                <div class="field">
+                    <label for="phone">Phone Number *</label>
+                    <input id="phone" type="tel" placeholder="e.g. 07XXXXXXXX"
+                        autocomplete="tel" required>
+                </div>
+
                 <div class="field">
                     <label for="university">University *</label>
                     <input id="university" placeholder="Enter your university" required>
                 </div>
+
                 <div class="field">
                     <label for="campus">Campus</label>
                     <input id="campus" placeholder="e.g. Main Campus">
                 </div>
+
                 <div class="field">
                     <label for="course">Course / Programme</label>
                     <input id="course" placeholder="e.g. Computer Science">
                 </div>
+
                 <div class="field">
                     <label for="yearOfStudy">Year of Study</label>
                     <select id="yearOfStudy">
@@ -431,9 +849,9 @@ body.no-scroll { overflow: hidden; }
                         <option value="2">Year 2</option>
                         <option value="3">Year 3</option>
                         <option value="4">Year 4</option>
-                    
                     </select>
                 </div>
+
                 <div class="field">
                     <label for="gender">Gender *</label>
                     <select id="gender" required>
@@ -444,10 +862,13 @@ body.no-scroll { overflow: hidden; }
                     </select>
                 </div>
             </div>
+
             <button class="btn" type="submit">Save Profile</button>
         </form>
     </div>
 </section>
+
+<!-- PREFERENCES -->
 
 <section class="page" id="preferences">
     <div class="section-heading">
@@ -456,13 +877,16 @@ body.no-scroll { overflow: hidden; }
             <p class="muted">Tell us what kind of accommodation you are looking for.</p>
         </div>
     </div>
+
     <div class="panel">
         <div id="preferencesNotice" class="notice"></div>
+
         <form id="preferencesForm">
             <div class="field">
                 <label for="preferredLocation">Preferred Location</label>
                 <input id="preferredLocation" placeholder="e.g. Near UDSM, Mlimani, Mwenge">
             </div>
+
             <div class="field">
                 <label for="preferredRoomType">Preferred Room Type</label>
                 <select id="preferredRoomType">
@@ -472,10 +896,12 @@ body.no-scroll { overflow: hidden; }
                     <option value="any">Any Room Type</option>
                 </select>
             </div>
+
             <p class="muted" style="margin-bottom:15px">
                 To receive roommate matches, select Shared Room. Budget is not used
                 in roommate matching.
             </p>
+
             <button class="btn" type="submit">Save Preferences</button>
         </form>
     </div>
@@ -485,7 +911,8 @@ body.no-scroll { overflow: hidden; }
 </main>
 </div>
 
-<!-- Room details modal -->
+<!-- ROOM DETAILS MODAL -->
+
 <div class="modal-backdrop" id="roomModal" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <button class="modal-close" id="modalClose" aria-label="Close">×</button>
@@ -493,7 +920,38 @@ body.no-scroll { overflow: hidden; }
     </div>
 </div>
 
-<!-- Full-screen image preview -->
+<!-- AGENT ENQUIRY MODAL -->
+
+<div class="modal-backdrop" id="agentEnquiryModal" aria-hidden="true">
+    <div class="modal agent-enquiry-modal" role="dialog" aria-modal="true"
+        aria-labelledby="agentEnquiryTitle">
+
+        <button class="modal-close" id="agentEnquiryClose" aria-label="Close">×</button>
+
+        <h2 id="agentEnquiryTitle">Contact Agent</h2>
+        <p id="agentEnquiryDescription">
+            Send an enquiry to this agent through RumCHUO.
+        </p>
+
+        <div id="agentEnquiryNotice" class="notice"></div>
+
+        <form id="agentEnquiryForm">
+            <div class="field">
+                <label for="agentEnquiryMessage">Your message</label>
+                <textarea id="agentEnquiryMessage"
+                    minlength="5" maxlength="2000" required
+                    placeholder="Hello, I am looking for accommodation. Please let me know how you can assist me."></textarea>
+            </div>
+
+            <button class="btn" type="submit" id="sendAgentEnquiryButton">
+                Send Enquiry
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- FULL-SCREEN IMAGE PREVIEW -->
+
 <div class="lightbox" id="lightbox" aria-hidden="true">
     <button class="lb-btn lb-close" id="lbClose" aria-label="Close preview">×</button>
     <button class="lb-btn lb-prev" id="lbPrev" aria-label="Previous photo">‹</button>
@@ -502,6 +960,9 @@ body.no-scroll { overflow: hidden; }
     <img id="lbImage" alt="Property photograph" style="display:none">
     <div class="lb-count" id="lbCount"></div>
 </div>
+
+<!-- Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 const API_BASE = "";
@@ -518,11 +979,18 @@ const headers = {
 
 let currentStudent = null;
 let allRooms = [];
+let activeAgents = [];
+let agentsMap = null;
+let agentMapMarkers = [];
+let enquiryAgentId = null;
+let enquiryRoomId = null;
 
 const pageTitles = {
     overview: "Student Overview",
     rooms: "Find Accommodation",
     matches: "Roommate Matching",
+    agents: "Active Agents",
+    enquiries: "My Enquiries",
     profile: "My Profile",
     preferences: "Accommodation Preferences"
 };
@@ -579,13 +1047,23 @@ function showPage(page) {
     document.getElementById(page)?.classList.add("active");
     document.querySelector(`.nav-link[data-page="${page}"]`)?.classList.add("active");
 
-    document.getElementById("pageTitle").textContent = pageTitles[page] || "Student Dashboard";
-    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("pageTitle").textContent =
+        pageTitles[page] || "Student Dashboard";
+
+    closeSidebar();
 
     if (page === "rooms") loadRooms();
     if (page === "matches") loadMatches();
     if (page === "profile") loadProfile();
     if (page === "preferences") loadPreferences();
+    if (page === "enquiries") loadStudentEnquiries();
+
+    if (page === "agents") {
+        loadActiveAgents();
+        setTimeout(() => {
+            if (agentsMap) agentsMap.invalidateSize();
+        }, 250);
+    }
 }
 
 document.querySelectorAll(".nav-link[data-page]").forEach(button => {
@@ -596,11 +1074,37 @@ document.querySelectorAll("[data-go]").forEach(button => {
     button.addEventListener("click", () => showPage(button.dataset.go));
 });
 
-document.getElementById("menuButton").addEventListener("click", () => {
-    document.getElementById("sidebar").classList.toggle("open");
+/* SIDEBAR */
+
+const sidebar = document.getElementById("sidebar");
+const menuButton = document.getElementById("menuButton");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+function openSidebar() {
+    sidebar.classList.add("open");
+    sidebarOverlay.classList.add("show");
+    document.body.classList.add("no-scroll");
+    menuButton.setAttribute("aria-expanded", "true");
+    menuButton.setAttribute("aria-label", "Close navigation menu");
+}
+
+function closeSidebar() {
+    sidebar.classList.remove("open");
+    sidebarOverlay.classList.remove("show");
+    document.body.classList.remove("no-scroll");
+    menuButton.setAttribute("aria-expanded", "false");
+    menuButton.setAttribute("aria-label", "Open navigation menu");
+}
+
+menuButton.addEventListener("click", () => {
+    if (sidebar.classList.contains("open")) closeSidebar();
+    else openSidebar();
 });
 
+sidebarOverlay.addEventListener("click", closeSidebar);
 document.getElementById("logoutButton").addEventListener("click", logout);
+
+/* STUDENT PROFILE */
 
 function displayName(student) {
     return student?.full_name || localStorage.getItem("userName") || "Student";
@@ -620,6 +1124,7 @@ function setStudentHeader(student) {
 function updateProfileStatus(student) {
     const requiredFields = [
         student.full_name,
+        student.phone,
         student.university,
         student.gender
     ];
@@ -640,6 +1145,7 @@ async function loadProfile() {
 
         document.getElementById("fullName").value = student.full_name || "";
         document.getElementById("email").value = student.email || "";
+        document.getElementById("phone").value = student.phone || "";
         document.getElementById("university").value = student.university || "";
         document.getElementById("campus").value = student.campus || "";
         document.getElementById("course").value = student.course || "";
@@ -657,6 +1163,7 @@ document.getElementById("profileForm").addEventListener("submit", async event =>
 
     const payload = {
         full_name: document.getElementById("fullName").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
         university: document.getElementById("university").value.trim(),
         campus: document.getElementById("campus").value.trim() || null,
         course: document.getElementById("course").value.trim() || null,
@@ -681,12 +1188,15 @@ document.getElementById("profileForm").addEventListener("submit", async event =>
     }
 });
 
+/* STUDENT PREFERENCES */
+
 async function loadPreferences() {
     try {
         const preferences = await api("/students/me/preferences");
 
         document.getElementById("preferredLocation").value =
             preferences.preferred_location || "";
+
         document.getElementById("preferredRoomType").value =
             preferences.room_type || "";
     } catch (error) {
@@ -707,6 +1217,7 @@ document.getElementById("preferencesForm").addEventListener("submit", async even
             method: "PUT",
             body: JSON.stringify(payload)
         });
+
         showNotice("preferencesNotice", "Your preferences have been saved.");
     } catch (error) {
         showNotice("preferencesNotice", error.message, "error");
@@ -744,6 +1255,7 @@ function loadImageInto(container, roomId, photoId, alt) {
             const img = document.createElement("img");
             img.src = url;
             img.alt = alt || "Property photograph";
+
             container.querySelectorAll("img").forEach(i => i.remove());
             container.querySelector(".photo-placeholder")?.remove();
             container.prepend(img);
@@ -758,8 +1270,10 @@ const lazyObserver = ("IntersectionObserver" in window)
     ? new IntersectionObserver(entries => {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
+
             const el = entry.target;
             lazyObserver.unobserve(el);
+
             loadImageInto(
                 el,
                 Number(el.dataset.roomId),
@@ -775,11 +1289,8 @@ function lazyLoadImage(container, roomId, photoId, alt) {
     container.dataset.photoId = photoId;
     container.dataset.alt = alt;
 
-    if (lazyObserver) {
-        lazyObserver.observe(container);
-    } else {
-        loadImageInto(container, roomId, photoId, alt);
-    }
+    if (lazyObserver) lazyObserver.observe(container);
+    else loadImageInto(container, roomId, photoId, alt);
 }
 
 /* FULL-SCREEN IMAGE PREVIEW */
@@ -788,14 +1299,17 @@ const lightbox = document.getElementById("lightbox");
 const lbImage = document.getElementById("lbImage");
 const lbStatus = document.getElementById("lbStatus");
 const lbCount = document.getElementById("lbCount");
+
 let lbState = { roomId: null, ids: [], index: 0 };
 
 function openLightbox(roomId, photoIds, startIndex = 0) {
     if (!photoIds.length) return;
+
     lbState = { roomId, ids: photoIds, index: startIndex };
     lightbox.classList.add("open");
     lightbox.setAttribute("aria-hidden", "false");
     document.body.classList.add("no-scroll");
+
     showLightboxPhoto();
 }
 
@@ -826,6 +1340,7 @@ function showLightboxPhoto() {
     getPhotoUrl(roomId, ids[index])
         .then(url => {
             if (lbState.index !== expected || !lightbox.classList.contains("open")) return;
+
             lbImage.src = url;
             lbImage.style.display = "block";
             lbStatus.textContent = "";
@@ -839,31 +1354,41 @@ function showLightboxPhoto() {
 function stepLightbox(direction) {
     const total = lbState.ids.length;
     if (total < 2) return;
+
     lbState.index = (lbState.index + direction + total) % total;
     showLightboxPhoto();
 }
 
 document.getElementById("lbClose").addEventListener("click", closeLightbox);
+
 document.getElementById("lbPrev").addEventListener("click", event => {
     event.stopPropagation();
     stepLightbox(-1);
 });
+
 document.getElementById("lbNext").addEventListener("click", event => {
     event.stopPropagation();
     stepLightbox(1);
 });
+
 lightbox.addEventListener("click", event => {
     if (event.target === lightbox) closeLightbox();
 });
 
 document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeSidebar();
+
     if (lightbox.classList.contains("open")) {
         if (event.key === "Escape") closeLightbox();
         if (event.key === "ArrowLeft") stepLightbox(-1);
         if (event.key === "ArrowRight") stepLightbox(1);
         return;
     }
-    if (event.key === "Escape") closeRoomModal();
+
+    if (event.key === "Escape") {
+        closeRoomModal();
+        closeAgentEnquiryModal();
+    }
 });
 
 /* ROOM LIST */
@@ -874,10 +1399,16 @@ async function loadRooms() {
 
     try {
         const data = await api("/rooms?available_only=false&limit=100");
-        allRooms = Array.isArray(data) ? data : (data.rooms || data.items || []);
+
+        allRooms = Array.isArray(data)
+            ? data
+            : (data.rooms || data.items || []);
+
         renderRooms();
+
         document.getElementById("roomCount").textContent =
             allRooms.filter(room => room.available).length;
+
     } catch (error) {
         container.textContent = error.message;
     }
@@ -907,13 +1438,15 @@ function renderRooms() {
     const rooms = allRooms.filter(room => {
         const location = (room.location || "").toLowerCase();
         const roomType = (room.room_type || "").toLowerCase();
+
         return location.includes(search) && (!type || roomType === type);
     });
 
     container.innerHTML = "";
 
     if (!rooms.length) {
-        container.innerHTML = '<div class="empty">No accommodation listings found for this search.</div>';
+        container.innerHTML =
+            '<div class="empty">No accommodation listings found for this search.</div>';
         return;
     }
 
@@ -929,6 +1462,7 @@ function renderRooms() {
         const placeholder = document.createElement("span");
         placeholder.className = "photo-placeholder";
         placeholder.textContent = photoIds.length ? "Loading photo..." : "No photo uploaded yet";
+
         photoBox.appendChild(placeholder);
 
         if (photoIds.length) {
@@ -942,7 +1476,9 @@ function renderRooms() {
             }
 
             photoBox.title = "Click to preview";
-            photoBox.addEventListener("click", () => openLightbox(room.id, photoIds, 0));
+            photoBox.addEventListener("click", () =>
+                openLightbox(room.id, photoIds, 0)
+            );
         }
 
         const body = document.createElement("div");
@@ -966,6 +1502,7 @@ function renderRooms() {
             prox.className = "tag";
             prox.textContent = room.nearest_campus + ": " +
                 (proximityLabels[room.proximity_tier] || room.proximity_tier);
+
             body.appendChild(prox);
         }
 
@@ -975,6 +1512,7 @@ function renderRooms() {
             agent.style.marginTop = "12px";
             agent.textContent = "Listed by: " +
                 room.agents.map(a => a.agent_name || "Approved agent").join(", ");
+
             body.appendChild(agent);
         }
 
@@ -1012,6 +1550,7 @@ function closeRoomModal() {
 }
 
 document.getElementById("modalClose").addEventListener("click", closeRoomModal);
+
 roomModal.addEventListener("click", event => {
     if (event.target === roomModal) closeRoomModal();
 });
@@ -1032,6 +1571,7 @@ function detailItem(label, valueNode) {
 
     const value = document.createElement("div");
     value.className = "v";
+
     if (typeof valueNode === "string") value.textContent = valueNode;
     else value.appendChild(valueNode);
 
@@ -1040,7 +1580,9 @@ function detailItem(label, valueNode) {
 }
 
 async function openRoomModal(roomId) {
-    modalContent.innerHTML = '<div class="modal-body"><div class="loading">Loading room details...</div></div>';
+    modalContent.innerHTML =
+        '<div class="modal-body"><div class="loading">Loading room details...</div></div>';
+
     roomModal.classList.add("open");
     roomModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("no-scroll");
@@ -1050,9 +1592,11 @@ async function openRoomModal(roomId) {
         renderRoomModal(room);
     } catch (error) {
         modalContent.innerHTML = "";
+
         const body = document.createElement("div");
         body.className = "modal-body";
         body.textContent = error.message;
+
         modalContent.appendChild(body);
     }
 }
@@ -1069,7 +1613,10 @@ function renderRoomModal(room) {
 
     const mainPlaceholder = document.createElement("span");
     mainPlaceholder.className = "photo-placeholder";
-    mainPlaceholder.textContent = photoIds.length ? "Loading photo..." : "No photo uploaded yet";
+    mainPlaceholder.textContent = photoIds.length
+        ? "Loading photo..."
+        : "No photo uploaded yet";
+
     main.appendChild(mainPlaceholder);
     modalContent.appendChild(main);
 
@@ -1083,7 +1630,9 @@ function renderRoomModal(room) {
 
     if (photoIds.length) {
         main.title = "Click to enlarge";
-        main.addEventListener("click", () => openLightbox(room.id, photoIds, activeIndex));
+        main.addEventListener("click", () =>
+            openLightbox(room.id, photoIds, activeIndex)
+        );
 
         if (photoIds.length > 1) {
             const strip = document.createElement("div");
@@ -1095,6 +1644,7 @@ function renderRoomModal(room) {
                 button.className = "thumb";
                 button.setAttribute("aria-label", "Show photo " + (index + 1));
                 button.addEventListener("click", () => selectPhoto(index));
+
                 thumbButtons.push(button);
                 strip.appendChild(button);
 
@@ -1126,6 +1676,7 @@ function renderRoomModal(room) {
 
     const grid = document.createElement("div");
     grid.className = "detail-grid";
+
     grid.appendChild(detailItem("Location", room.location || "Not specified"));
     grid.appendChild(detailItem("Rent", formatPrice(room.price) + " / month"));
     grid.appendChild(detailItem("Room type", formatRoomType(room.room_type)));
@@ -1134,6 +1685,7 @@ function renderRoomModal(room) {
     if (room.nearest_campus) {
         grid.appendChild(detailItem("Nearest campus", room.nearest_campus));
     }
+
     if (room.proximity_tier) {
         grid.appendChild(detailItem(
             "Distance to campus",
@@ -1225,18 +1777,24 @@ function formatMatchReasons(reasons) {
     }
 
     if (typeof reasons === "string") return reasons;
-
     return "";
 }
 
 async function loadMatches() {
     const container = document.getElementById("matchesList");
-    container.innerHTML = '<div class="loading">Finding compatible roommates...</div>';
+    container.innerHTML =
+        '<div class="loading">Finding compatible roommates...</div>';
 
     try {
         const sameYear = document.getElementById("sameYear").checked;
-        const data = await api("/students/matches" + (sameYear ? "?same_year=true" : ""));
-        const matches = Array.isArray(data) ? data : (data.matches || data.items || []);
+
+        const data = await api(
+            "/students/matches" + (sameYear ? "?same_year=true" : "")
+        );
+
+        const matches = Array.isArray(data)
+            ? data
+            : (data.matches || data.items || []);
 
         document.getElementById("matchCount").textContent = matches.length;
         container.innerHTML = "";
@@ -1246,6 +1804,7 @@ async function loadMatches() {
             empty.className = "empty";
             empty.textContent =
                 "No roommate matches found yet. To receive matches, make sure your university and gender are set in your profile and your preferred room type is Shared Room. Adding your course and preferred location can improve your match score.";
+
             container.appendChild(empty);
             return;
         }
@@ -1259,12 +1818,12 @@ async function loadMatches() {
 
             const score = document.createElement("p");
             score.className = "match-score";
-            score.textContent = "Match score: " +
-                (match.match_score ?? "—");
+            score.textContent = "Match score: " + (match.match_score ?? "—");
 
             const details = document.createElement("p");
             details.className = "muted";
             details.style.marginTop = "12px";
+
             details.textContent = [
                 match.university,
                 match.campus ? "Campus: " + match.campus : "",
@@ -1276,7 +1835,41 @@ async function loadMatches() {
 
             card.append(name, score, details);
 
-            const reasonsText = formatMatchReasons(match.reasons);
+            const contact = document.createElement("div");
+            contact.className = "muted";
+            contact.style.marginTop = "10px";
+
+            if (match.phone) {
+                contact.textContent = "Phone: " + match.phone;
+                card.appendChild(contact);
+
+                const actions = document.createElement("div");
+                actions.className = "card-actions";
+                actions.style.marginTop = "12px";
+
+                const call = document.createElement("a");
+                call.className = "btn btn-small";
+                call.href = "tel:" + String(match.phone).replace(/[^\d+]/g, "");
+                call.textContent = "Call";
+
+                const whatsapp = document.createElement("a");
+                whatsapp.className = "btn btn-small btn-green";
+                whatsapp.href = "https://wa.me/" + phoneForWhatsApp(match.phone);
+                whatsapp.target = "_blank";
+                whatsapp.rel = "noopener noreferrer";
+                whatsapp.textContent = "WhatsApp";
+
+                actions.append(call, whatsapp);
+                card.appendChild(actions);
+            } else {
+                contact.textContent = "Phone number not provided";
+                card.appendChild(contact);
+            }
+
+            const reasonsText = formatMatchReasons(
+                match.matching_reasons || match.reasons
+            );
+
             if (reasonsText) {
                 const reasons = document.createElement("div");
                 reasons.className = "match-reasons";
@@ -1286,6 +1879,7 @@ async function loadMatches() {
 
             container.appendChild(card);
         });
+
     } catch (error) {
         container.innerHTML = "";
 
@@ -1294,8 +1888,8 @@ async function loadMatches() {
         message.textContent =
             error.message +
             " Check that your university and gender are saved in your profile and that your preferred room type is Shared Room.";
-        container.appendChild(message);
 
+        container.appendChild(message);
         document.getElementById("matchCount").textContent = "—";
     }
 }
@@ -1303,13 +1897,795 @@ async function loadMatches() {
 document.getElementById("refreshMatches").addEventListener("click", loadMatches);
 document.getElementById("sameYear").addEventListener("change", loadMatches);
 
+/* ACTIVE AGENTS */
+
+function agentValue(agent, ...keys) {
+    for (const key of keys) {
+        if (agent[key] !== undefined && agent[key] !== null) {
+            return agent[key];
+        }
+    }
+    return "";
+}
+
+function agentAreas(agent) {
+    const areas = agentValue(agent, "service_areas", "areas");
+
+    if (Array.isArray(areas)) return areas;
+
+    if (typeof areas === "string" && areas.trim()) {
+        try {
+            const parsed = JSON.parse(areas);
+            return Array.isArray(parsed) ? parsed : [areas];
+        } catch {
+            return areas.split(",").map(x => x.trim()).filter(Boolean);
+        }
+    }
+
+    return [];
+}
+
+function agentUniversities(agent) {
+    const universities = agentValue(
+        agent,
+        "universities_covered",
+        "universities"
+    );
+
+    if (Array.isArray(universities)) return universities;
+
+    if (typeof universities === "string" && universities.trim()) {
+        try {
+            const parsed = JSON.parse(universities);
+            return Array.isArray(parsed) ? parsed : [universities];
+        } catch {
+            return universities.split(",").map(x => x.trim()).filter(Boolean);
+        }
+    }
+
+    return [];
+}
+
+function agentName(agent) {
+    return agentValue(agent, "full_name", "agent_name", "name") || "RumCHUO Agent";
+}
+
+function agentId(agent) {
+    return agentValue(agent, "agent_id", "id");
+}
+
+function renderAgentUniversityFilter() {
+    const select = document.getElementById("agentUniversityFilter");
+    const previous = select.value;
+
+    const universities = new Set();
+
+    activeAgents.forEach(agent => {
+        agentUniversities(agent).forEach(university => {
+            if (university) universities.add(String(university));
+        });
+    });
+
+    select.innerHTML = '<option value="">All universities</option>';
+
+    [...universities].sort().forEach(university => {
+        const option = document.createElement("option");
+        option.value = university;
+        option.textContent = university;
+        select.appendChild(option);
+    });
+
+    if ([...universities].includes(previous)) {
+        select.value = previous;
+    }
+}
+
+function renderActiveAgents() {
+    const container = document.getElementById("agentsList");
+    const search = document.getElementById("agentSearch").value.toLowerCase().trim();
+    const universityFilter = document.getElementById("agentUniversityFilter").value;
+
+    const filtered = activeAgents.filter(agent => {
+        const searchable = [
+            agentName(agent),
+            ...agentAreas(agent),
+            ...agentUniversities(agent)
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = !search || searchable.includes(search);
+
+        const matchesUniversity = !universityFilter ||
+            agentUniversities(agent).some(
+                university => String(university) === universityFilter
+            );
+
+        return matchesSearch && matchesUniversity;
+    });
+
+    container.innerHTML = "";
+
+    document.getElementById("agentResultsText").textContent =
+        filtered.length + (filtered.length === 1
+            ? " active agent found"
+            : " active agents found");
+
+    if (!filtered.length) {
+        container.innerHTML =
+            '<div class="empty">No active agents match your search. Try another location or university.</div>';
+        return;
+    }
+
+    filtered.forEach(agent => {
+        const card = document.createElement("article");
+        card.className = "agent-discovery-card";
+
+        const top = document.createElement("div");
+        top.className = "agent-discovery-top";
+
+        const avatar = document.createElement("div");
+        avatar.className = "agent-discovery-avatar";
+
+        const photo = agentValue(agent, "profile_photo_url", "photo_url", "avatar_url");
+
+        if (photo) {
+            const img = document.createElement("img");
+            img.src = photo;
+            img.alt = agentName(agent);
+            img.onerror = () => {
+                avatar.textContent = agentName(agent).charAt(0).toUpperCase();
+            };
+            avatar.appendChild(img);
+        } else {
+            avatar.textContent = agentName(agent).charAt(0).toUpperCase();
+        }
+
+        const identity = document.createElement("div");
+
+        const name = document.createElement("div");
+        name.className = "agent-discovery-name";
+        name.textContent = agentName(agent);
+
+        const status = document.createElement("div");
+        status.className = "agent-online";
+        status.textContent = "● AVAILABLE NOW";
+
+        identity.append(name, status);
+        top.append(avatar, identity);
+        card.appendChild(top);
+
+        const areas = agentAreas(agent);
+        const universities = agentUniversities(agent);
+
+        if (agent.university && !universities.includes(agent.university)) {
+            universities.push(agent.university);
+        }
+
+        const areaHeading = document.createElement("div");
+        areaHeading.className = "agent-meta";
+        areaHeading.textContent = "Service areas";
+        card.appendChild(areaHeading);
+
+        const areaList = document.createElement("div");
+        areaList.className = "agent-area-list";
+
+        if (areas.length) {
+            areas.forEach(area => {
+                const tag = document.createElement("span");
+                tag.className = "tag";
+                tag.textContent = area;
+                areaList.appendChild(tag);
+            });
+        } else {
+            areaList.textContent = "Service areas not provided";
+            areaList.className = "agent-meta";
+        }
+
+        card.appendChild(areaList);
+
+        const universityHeading = document.createElement("div");
+        universityHeading.className = "agent-meta";
+        universityHeading.textContent = "Universities covered";
+        card.appendChild(universityHeading);
+
+        const universityList = document.createElement("div");
+        universityList.className = "agent-area-list";
+
+        if (universities.length) {
+            universities.forEach(university => {
+                const tag = document.createElement("span");
+                tag.className = "tag";
+                tag.textContent = university;
+                universityList.appendChild(tag);
+            });
+        } else {
+            universityList.textContent = "Not specified";
+            universityList.className = "agent-meta";
+        }
+
+        card.appendChild(universityList);
+
+        const propertyCount = Number(agentValue(
+            agent,
+            "property_count",
+            "verified_property_count",
+            "available_properties"
+        ) || 0);
+
+        const count = document.createElement("div");
+        count.className = "agent-count";
+        count.textContent = propertyCount + (
+            propertyCount === 1
+                ? " verified available property"
+                : " verified available properties"
+        );
+
+        card.appendChild(count);
+
+        const footer = document.createElement("div");
+        footer.className = "agent-card-footer";
+
+        const enquiryButton = document.createElement("button");
+        enquiryButton.className = "btn";
+        enquiryButton.type = "button";
+        enquiryButton.textContent = "Send Enquiry";
+        enquiryButton.addEventListener("click", () => {
+            openAgentEnquiry(agentId(agent), agentName(agent));
+        });
+
+        footer.appendChild(enquiryButton);
+
+        const mapButton = document.createElement("button");
+        mapButton.className = "btn btn-outline";
+        mapButton.type = "button";
+        mapButton.textContent = "View Service Areas";
+        mapButton.addEventListener("click", () => focusAgentOnMap(agent));
+
+        footer.appendChild(mapButton);
+        card.appendChild(footer);
+
+        container.appendChild(card);
+    });
+}
+
+async function loadActiveAgents() {
+    const container = document.getElementById("agentsList");
+
+    container.innerHTML =
+        '<div class="loading">Loading approved and available agents...</div>';
+
+    try {
+        const data = await api("/students/active-agents");
+
+        activeAgents = Array.isArray(data)
+            ? data
+            : (data.agents || data.items || []);
+
+        renderAgentUniversityFilter();
+        renderActiveAgents();
+
+        await renderAgentMap();
+
+    } catch (error) {
+        container.innerHTML = "";
+
+        const message = document.createElement("div");
+        message.className = "empty";
+        message.textContent =
+            "Unable to load active agents. " + error.message;
+
+        container.appendChild(message);
+
+        document.getElementById("agentResultsText").textContent =
+            "Agent directory could not be loaded.";
+
+        if (agentsMap) {
+            agentsMap.remove();
+            agentsMap = null;
+        }
+    }
+}
+
+document.getElementById("refreshAgents").addEventListener("click", loadActiveAgents);
+document.getElementById("agentSearch").addEventListener("input", renderActiveAgents);
+document.getElementById("agentUniversityFilter").addEventListener("change", renderActiveAgents);
+
+document.getElementById("clearAgentSearch").addEventListener("click", () => {
+    document.getElementById("agentSearch").value = "";
+    document.getElementById("agentUniversityFilter").value = "";
+    renderActiveAgents();
+});
+
+/* AGENT MAP */
+
+function initializeAgentsMap() {
+    if (agentsMap) return;
+
+    const mapElement = document.getElementById("agentsMap");
+
+    if (!mapElement || typeof L === "undefined") {
+        mapElement.textContent = "The map could not be loaded. Check your internet connection.";
+        return;
+    }
+
+    agentsMap = L.map("agentsMap").setView([-6.7924, 39.2083], 11);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(agentsMap);
+}
+
+function clearAgentMapMarkers() {
+    agentMapMarkers.forEach(marker => marker.remove());
+    agentMapMarkers = [];
+}
+
+function addAgentMapMarker(latitude, longitude, label, agent) {
+    if (!agentsMap) return;
+
+    const marker = L.marker([latitude, longitude]).addTo(agentsMap);
+
+    const popup = document.createElement("div");
+    const strong = document.createElement("strong");
+    strong.textContent = agentName(agent);
+
+    const description = document.createElement("div");
+    description.textContent = label;
+
+    popup.append(strong, description);
+    marker.bindPopup(popup);
+
+    agentMapMarkers.push(marker);
+}
+
+async function geocodeServiceArea(area) {
+    const cacheKey = "rumchuo_geo_" + area.toLowerCase().trim();
+
+    try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) return JSON.parse(cached);
+    } catch {}
+
+    try {
+        const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
+            encodeURIComponent(area + ", Tanzania");
+
+        const response = await fetch(url, {
+            headers: { "Accept": "application/json" }
+        });
+
+        if (!response.ok) return null;
+
+        const results = await response.json();
+
+        if (!results.length) return null;
+
+        const point = {
+            lat: Number(results[0].lat),
+            lon: Number(results[0].lon)
+        };
+
+        try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(point));
+        } catch {}
+
+        return point;
+
+    } catch {
+        return null;
+    }
+}
+
+async function renderAgentMap() {
+    initializeAgentsMap();
+
+    if (!agentsMap) return;
+
+    clearAgentMapMarkers();
+
+    const allPoints = [];
+
+    for (const agent of activeAgents) {
+
+        /*
+         * Exact agent coordinates are only used if the agent has
+         * explicitly enabled exact-location sharing.
+         */
+        const sharingEnabled =
+            agent.share_exact_location === true ||
+            agent.share_exact_location === 1;
+
+        const latitude = Number(agent.latitude);
+        const longitude = Number(agent.longitude);
+
+        if (
+            sharingEnabled &&
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude) &&
+            latitude >= -90 && latitude <= 90 &&
+            longitude >= -180 && longitude <= 180
+        ) {
+            addAgentMapMarker(
+                latitude,
+                longitude,
+                "Agent's voluntarily shared location",
+                agent
+            );
+
+            allPoints.push([latitude, longitude]);
+            continue;
+        }
+
+        /*
+         * If exact location is not shared, only service-area labels
+         * are geocoded. The resulting marker represents the area,
+         * not the agent's home or personal location.
+         */
+        const areas = agentAreas(agent).slice(0, 3);
+
+        for (const area of areas) {
+            const point = await geocodeServiceArea(area);
+
+            if (!point) continue;
+
+            addAgentMapMarker(
+                point.lat,
+                point.lon,
+                "Service area: " + area,
+                agent
+            );
+
+            allPoints.push([point.lat, point.lon]);
+
+            // Avoid sending too many requests to the public geocoder.
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+
+    if (allPoints.length === 1) {
+        agentsMap.setView(allPoints[0], 13);
+    } else if (allPoints.length > 1) {
+        agentsMap.fitBounds(allPoints, { padding: [30, 30] });
+    } else {
+        agentsMap.setView([-6.7924, 39.2083], 11);
+    }
+
+    setTimeout(() => agentsMap.invalidateSize(), 150);
+}
+
+function focusAgentOnMap(agent) {
+    showPage("agents");
+
+    setTimeout(async () => {
+        initializeAgentsMap();
+
+        if (!agentsMap) return;
+
+        const sharingEnabled =
+            agent.share_exact_location === true ||
+            agent.share_exact_location === 1;
+
+        const latitude = Number(agent.latitude);
+        const longitude = Number(agent.longitude);
+
+        if (
+            sharingEnabled &&
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude)
+        ) {
+            agentsMap.setView([latitude, longitude], 14);
+            return;
+        }
+
+        const areas = agentAreas(agent);
+
+        if (!areas.length) {
+            alert("This agent has not provided service areas yet.");
+            return;
+        }
+
+        const point = await geocodeServiceArea(areas[0]);
+
+        if (point) {
+            agentsMap.setView([point.lat, point.lon], 13);
+        } else {
+            alert("The service area could not be located on the map.");
+        }
+
+    }, 350);
+}
+
+/* MY ENQUIRIES */
+
+function formatEnquiryDate(value) {
+    if (!value) return "Date not available";
+
+    // Database timestamps are stored in UTC without a timezone marker.
+    let text = String(value).replace(" ", "T");
+    if (!/(Z|[+-]\d{2}:?\d{2})$/.test(text)) text += "Z";
+
+    const date = new Date(text);
+
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleString([], {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+function createEnquiryCard(enquiry) {
+    const card = document.createElement("article");
+    card.className = "enquiry-card";
+
+    const top = document.createElement("div");
+    top.className = "enquiry-card-top";
+
+    const identity = document.createElement("div");
+
+    const agent = document.createElement("div");
+    agent.className = "enquiry-agent";
+    agent.textContent = enquiry.agent_name || "RumCHUO Agent";
+
+    const location = document.createElement("div");
+    location.className = "enquiry-location";
+
+    if (enquiry.property_location) {
+        location.textContent = "Property: " + enquiry.property_location;
+    } else if (enquiry.room_id) {
+        location.textContent = "Room ID: " + enquiry.room_id;
+    } else {
+        location.textContent = "General agent enquiry";
+    }
+
+    identity.append(agent, location);
+
+    const status = document.createElement("span");
+    const statusValue = String(enquiry.status || "new").toLowerCase();
+
+    const allowedStatuses = ["new", "read", "replied", "closed"];
+    const safeStatus = allowedStatuses.includes(statusValue)
+        ? statusValue
+        : "new";
+
+    status.className = "enquiry-status status-" + safeStatus;
+    status.textContent = safeStatus;
+
+    top.append(identity, status);
+
+    const messageLabel = document.createElement("div");
+    messageLabel.className = "enquiry-label";
+    messageLabel.textContent = "Your message";
+
+    const message = document.createElement("div");
+    message.className = "enquiry-message";
+    message.style.marginTop = "0";
+    message.textContent = enquiry.message || "No message recorded.";
+
+    card.append(top, messageLabel, message);
+
+    // Agent reply
+    if (enquiry.reply_message) {
+        const replyLabel = document.createElement("div");
+        replyLabel.className = "enquiry-label";
+        replyLabel.style.marginTop = "0";
+        replyLabel.textContent = "Reply from " + (enquiry.agent_name || "the agent");
+
+        const reply = document.createElement("div");
+        reply.className = "enquiry-reply";
+        reply.textContent = enquiry.reply_message;
+
+        const replyMeta = document.createElement("span");
+        replyMeta.className = "enquiry-reply-meta";
+        replyMeta.textContent = "Replied: " + formatEnquiryDate(enquiry.replied_at);
+
+        reply.appendChild(replyMeta);
+        card.append(replyLabel, reply);
+
+    } else if (safeStatus === "closed") {
+        const closed = document.createElement("div");
+        closed.className = "enquiry-awaiting";
+        closed.style.background = "#f0f1f4";
+        closed.style.color = "#657084";
+        closed.textContent = "The agent closed this enquiry without a reply.";
+        card.appendChild(closed);
+
+    } else {
+        const awaiting = document.createElement("div");
+        awaiting.className = "enquiry-awaiting";
+        awaiting.textContent = safeStatus === "read"
+            ? "The agent has seen your message and has not replied yet."
+            : "Awaiting reply from the agent.";
+        card.appendChild(awaiting);
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "enquiry-meta";
+
+    const sentDate = document.createElement("span");
+    sentDate.textContent = "Sent: " + formatEnquiryDate(enquiry.created_at);
+
+    const updatedDate = document.createElement("span");
+    updatedDate.textContent = "Last updated: " +
+        formatEnquiryDate(enquiry.updated_at || enquiry.created_at);
+
+    meta.append(sentDate, updatedDate);
+
+    card.appendChild(meta);
+
+    return card;
+}
+
+async function loadStudentEnquiries() {
+    const container = document.getElementById("enquiriesList");
+
+    container.innerHTML =
+        '<div class="loading">Loading your enquiries...</div>';
+
+    try {
+        const data = await api("/students/me/agent-enquiries");
+
+        const enquiries = Array.isArray(data)
+            ? data
+            : (data.enquiries || data.items || []);
+
+        container.innerHTML = "";
+
+        if (!enquiries.length) {
+            const empty = document.createElement("div");
+            empty.className = "empty";
+            empty.textContent =
+                "You have not sent any enquiries yet. When you contact an agent about accommodation, your enquiries will appear here.";
+            container.appendChild(empty);
+            return;
+        }
+
+        enquiries.forEach(enquiry => {
+            container.appendChild(createEnquiryCard(enquiry));
+        });
+
+    } catch (error) {
+        container.innerHTML = "";
+
+        const message = document.createElement("div");
+        message.className = "empty";
+        message.textContent =
+            "Unable to load your enquiries. " + error.message;
+
+        container.appendChild(message);
+    }
+}
+
+document.getElementById("refreshEnquiries").addEventListener(
+    "click",
+    loadStudentEnquiries
+);
+
+/* AGENT ENQUIRIES */
+
+const agentEnquiryModal = document.getElementById("agentEnquiryModal");
+
+function openAgentEnquiry(id, name) {
+    if (!id) {
+        alert("This agent cannot currently receive enquiries.");
+        return;
+    }
+
+    enquiryAgentId = id;
+    enquiryRoomId = null;
+
+    document.getElementById("agentEnquiryTitle").textContent =
+        "Contact " + name;
+
+    document.getElementById("agentEnquiryDescription").textContent =
+        "Send your message through RumCHUO. Your name, phone number and email will be shared with this agent so they can reply to you.";
+
+    document.getElementById("agentEnquiryMessage").value = "";
+
+    document.getElementById("agentEnquiryNotice").style.display = "none";
+
+    agentEnquiryModal.classList.add("open");
+    agentEnquiryModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("no-scroll");
+}
+
+function closeAgentEnquiryModal() {
+    agentEnquiryModal.classList.remove("open");
+    agentEnquiryModal.setAttribute("aria-hidden", "true");
+
+    enquiryAgentId = null;
+    enquiryRoomId = null;
+
+    if (!roomModal.classList.contains("open") &&
+        !lightbox.classList.contains("open")) {
+        document.body.classList.remove("no-scroll");
+    }
+}
+
+document.getElementById("agentEnquiryClose").addEventListener(
+    "click",
+    closeAgentEnquiryModal
+);
+
+agentEnquiryModal.addEventListener("click", event => {
+    if (event.target === agentEnquiryModal) {
+        closeAgentEnquiryModal();
+    }
+});
+
+document.getElementById("agentEnquiryForm").addEventListener(
+    "submit",
+    async event => {
+        event.preventDefault();
+
+        if (!enquiryAgentId) return;
+
+        const message = document.getElementById("agentEnquiryMessage")
+            .value.trim();
+
+        if (message.length < 5) {
+            showNotice(
+                "agentEnquiryNotice",
+                "Please enter a message of at least 5 characters.",
+                "error"
+            );
+            return;
+        }
+
+        const button = document.getElementById("sendAgentEnquiryButton");
+        button.disabled = true;
+        button.textContent = "Sending...";
+
+        const payload = {
+            agent_id: Number(enquiryAgentId),
+            message: message
+        };
+
+        if (enquiryRoomId) {
+            payload.room_id = Number(enquiryRoomId);
+        }
+
+        try {
+            await api("/students/agent-enquiries", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+
+            showNotice(
+                "agentEnquiryNotice",
+                "Your enquiry has been sent successfully."
+            );
+
+            document.getElementById("agentEnquiryMessage").value = "";
+
+            // Refresh the enquiry list after a successful submission.
+            if (document.getElementById("enquiries").classList.contains("active")) {
+                await loadStudentEnquiries();
+            }
+
+            setTimeout(closeAgentEnquiryModal, 1200);
+
+        } catch (error) {
+            showNotice("agentEnquiryNotice", error.message, "error");
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "Send Enquiry";
+        }
+    }
+);
+
 /* DASHBOARD INITIALIZATION */
 
 async function initializeDashboard() {
     try {
         const student = await api("/students/me");
 
-        // This page is only for student accounts.
         if (student.role && student.role !== "student") {
             alert("This dashboard is only available to student accounts.");
             logout();
@@ -1317,11 +2693,13 @@ async function initializeDashboard() {
         }
 
         currentStudent = student;
+
         setStudentHeader(student);
         updateProfileStatus(student);
 
         await loadRooms();
         await loadMatches();
+
     } catch (error) {
         console.error("Dashboard initialization failed:", error);
     }
@@ -1329,5 +2707,6 @@ async function initializeDashboard() {
 
 initializeDashboard();
 </script>
+
 </body>
 </html>

@@ -1,11 +1,65 @@
-﻿.venv/
-venv/
+﻿# Python
 __pycache__/
 *.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment secrets
 .env
+.env.*
+
+# IDE
+.vscode/
+
+# Backups
+*_backup*
+*_before_*
+*_before_*.py
+*.bak
+
+# Temporary scripts
+fix_*.py
+update_*.py
+
+# Operating system
+.DS_Store
+Thumbs.db# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment secrets
+.env
+.env.*
+
+# IDE
+.vscode/
+
+# Backups
+*_backup*
+*_before_*
+*_before_*.py
+*.bak
+
+# Temporary scripts
+fix_*.py
+update_*.py
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Local database
 *.db
 *.sqlite
 *.sqlite3
 
+# Private uploaded property photos
 private_agent_property_photos/
-private_ownership_photos/

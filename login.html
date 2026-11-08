@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign in to your RumCHUO account.">
+    <title>RumCHUO | Sign In</title>
+    <style>
+        :root { --navy:#123b68; --green:#16845b; --muted:#667085; --border:#e5eaf1; }
+        * { box-sizing:border-box; }
+        body { margin:0; min-height:100vh; display:flex; flex-direction:column; font-family:Arial,Helvetica,sans-serif; background:#f5f7fb; color:#172b4d; }
+        header { background:#fff; border-bottom:1px solid var(--border); padding:17px 6%; }
+        .brand { color:var(--navy); font-size:27px; font-weight:800; text-decoration:none; }
+        .brand span { color:var(--green); }
+        main { flex:1; display:flex; align-items:center; justify-content:center; padding:35px 18px; }
+        .login-card { width:100%; max-width:460px; background:#fff; border:1px solid var(--border); border-radius:16px; padding:34px; box-shadow:0 15px 45px rgba(16,44,75,.08); }
+        h1 { margin:0 0 8px; color:var(--navy); font-size:27px; }
+        .intro { margin:0 0 25px; color:var(--muted); line-height:1.6; font-size:14px; }
+        label { display:block; margin:0 0 7px; color:#344054; font-size:13px; font-weight:700; }
+        .field { margin-bottom:18px; }
+        input, select { width:100%; padding:13px 14px; border:1px solid #d0d5dd; border-radius:8px; background:#fff; font:inherit; outline:none; }
+        input:focus, select:focus { border-color:var(--green); box-shadow:0 0 0 3px #16845b20; }
+        button { width:100%; border:0; border-radius:8px; padding:14px; background:var(--navy); color:#fff; font-weight:800; cursor:pointer; }
+        button:disabled { opacity:.65; cursor:wait; }
+        .message { display:none; margin:0 0 16px; padding:12px 14px; border-radius:8px; font-size:13px; line-height:1.5; }
+        .message.error { display:block; color:#b42318; background:#fff0ed; border:1px solid #fecdca; }
+        .message.info { display:block; color:#145c40; background:#e9f5ef; border:1px solid #cde9da; }
+        .links { margin-top:19px; text-align:center; color:var(--muted); font-size:13px; line-height:1.9; }
+        .links a { color:var(--green); font-weight:700; }
+        .admin-link { display:inline-block; margin-top:8px; }
+        .admin-mode { display:none; padding:11px 13px; margin-bottom:17px; border-radius:8px; background:#eef3f8; color:var(--navy); font-size:13px; font-weight:700; }
+        footer { padding:20px; text-align:center; color:var(--muted); font-size:12px; }
+        @media(max-width:520px) { .login-card { padding:25px 20px; } }
+    </style>
+</head>
+<body>
+    <header><a class="brand" href="/">Rum<span>CHUO</span></a></header>
+    <main>
+        <section class="login-card">
+            <h1 id="pageTitle">Welcome back</h1>
+            <p class="intro" id="pageIntro">Choose your account type and sign in to RumCHUO.</p>
+            <div class="message" id="loginMessage" role="alert" aria-live="polite"></div>
+            <div class="admin-mode" id="adminMode">Administrator sign-in selected</div>
+            <form id="loginForm">
+                <div class="field" id="roleField">
+                    <label for="loginRole">SIGN IN AS</label>
+                    <select id="loginRole" required>
+                        <option value="student">Student</option>
+                        <option value="agent">Agent</option>
+                        <option value="owner">Owner</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="email">Email address</label>
+                    <input id="email" type="email" placeholder="Enter your email address" autocomplete="username" required>
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+                </div>
+                <button id="loginButton" type="submit">Sign in as Student</button>
+            </form>
+            <div class="links">
+                <div>Don't have an account? <a href="/#create-account">Create account</a></div>
+                <a class="admin-link" href="/login.html?role=admin" id="adminLink">Administrator sign in</a>
+                <a class="admin-link" href="/login.html" id="userLink" style="display:none">Back to Student / Agent / Owner sign in</a>
+            </div>
+        </section>
+    </main>
+    <footer>© 2026 RumCHUO · Student accommodation made simpler.</footer>
+    <script>
+        const API_BASE_URL = ["3000", "3001", "5500", "5501"].includes(window.location.port)
+            ? window.location.protocol + "//" + window.location.hostname + ":8000"
+            : window.location.origin;
+        const loginForm = document.getElementById("loginForm");
+        const loginRole = document.getElementById("loginRole");
+        const loginButton = document.getElementById("loginButton");
+        const loginMessage = document.getElementById("loginMessage");
+        const adminMode = document.getElementById("adminMode");
+        const roleField = document.getElementById("roleField");
+        const pageTitle = document.getElementById("pageTitle");
+        const pageIntro = document.getElementById("pageIntro");
+        const requestedRole = new URLSearchParams(window.location.search).get("role");
+        let administratorSignIn = requestedRole === "admin";
+        if (["student", "agent", "owner"].includes(requestedRole)) {
+            loginRole.value = requestedRole;
+        }
+
+        function updateLoginView() {
+            if (administratorSignIn) {
+                roleField.style.display = "none";
+                adminMode.style.display = "block";
+                pageTitle.textContent = "Administrator sign in";
+                pageIntro.textContent = "Sign in to manage the RumCHUO platform.";
+                loginButton.textContent = "Sign in as Administrator";
+                document.getElementById("adminLink").style.display = "none";
+                document.getElementById("userLink").style.display = "inline-block";
+                return;
+            }
+            const role = loginRole.value;
+            const labels = { student:"Student", agent:"Agent", owner:"Owner" };
+            pageTitle.textContent = labels[role] + " sign in";
+            pageIntro.textContent = "Sign in to your RumCHUO " + labels[role].toLowerCase() + " account.";
+            loginButton.textContent = "Sign in as " + labels[role];
+        }
+
+        loginRole.addEventListener("change", () => {
+            loginMessage.className = "message";
+            loginMessage.textContent = "";
+            updateLoginView();
+        });
+
+        function showError(message) {
+            loginMessage.className = "message error";
+            loginMessage.textContent = message;
+        }
+
+        function clearSession() {
+            ["accessToken", "tokenType", "userRole", "userId", "userName"].forEach(key => localStorage.removeItem(key));
+        }
+
+        function dashboardForRole(role) {
+            const destinations = {
+                admin:"/admin/dashboard",
+                agent:"/agent/dashboard",
+                landlord:"/landlord/dashboard",
+                owner:"/landlord/dashboard",
+                student:"/student/dashboard"
+            };
+            return destinations[String(role || "").toLowerCase()] || null;
+        }
+
+        async function readJson(response) {
+            try { return await response.json(); }
+            catch { throw new Error("The server returned an invalid response. Please try again."); }
+        }
+
+        loginForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            loginMessage.className = "message";
+            loginMessage.textContent = "";
+            if (!loginForm.reportValidity()) return;
+
+            loginButton.disabled = true;
+            loginButton.textContent = "Signing in...";
+            clearSession();
+
+            const loginAs = administratorSignIn ? "admin" : loginRole.value;
+            let completed = false;
+
+            try {
+                const response = await fetch(API_BASE_URL + "/students/login", {
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({
+                        email:document.getElementById("email").value.trim(),
+                        password:document.getElementById("password").value,
+                        login_as:loginAs
+                    })
+                });
+                const data = await readJson(response);
+                if (!response.ok) {
+                    const detail = data.detail;
+                    throw new Error(typeof detail === "string" ? detail : "Sign-in failed. Check your details.");
+                }
+                if (!data.access_token) throw new Error("The server did not return an access token.");
+
+                const accountResponse = await fetch(API_BASE_URL + "/students/me", {
+                    headers:{"Authorization":"Bearer " + data.access_token}
+                });
+                const account = await readJson(accountResponse);
+                if (!accountResponse.ok) {
+                    const detail = account.detail;
+                    throw new Error(typeof detail === "string" ? detail : "Could not verify your account.");
+                }
+
+                const destination = dashboardForRole(account.role);
+                if (!destination) throw new Error("Your account does not have a configured dashboard.");
+
+                localStorage.setItem("accessToken", data.access_token);
+                localStorage.setItem("tokenType", data.token_type || "bearer");
+                localStorage.setItem("userRole", account.role);
+                if (account.id !== undefined && account.id !== null) localStorage.setItem("userId", String(account.id));
+                if (account.full_name) localStorage.setItem("userName", account.full_name);
+
+                completed = true;
+                window.location.assign(destination);
+            } catch (error) {
+                if (!completed) clearSession();
+                showError(error.message || "Unable to sign in. Please try again.");
+            } finally {
+                loginButton.disabled = false;
+                updateLoginView();
+            }
+        });
+
+        updateLoginView();
+    </script>
+</body>
+</html>

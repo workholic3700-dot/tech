@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,163 +8,425 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f3f5f9;color:#202938}
-header{background:#123b63;color:white;padding:18px 25px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-header h2{margin:0}
-nav{background:#fff;padding:12px 20px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid #e0e5eb;position:sticky;top:0;z-index:20}
-nav a{color:#123b63;text-decoration:none;font-weight:bold;font-size:13px;padding:9px 12px;border-radius:7px}
-nav a:hover{background:#eef5fc}
+body.menu-open{overflow:hidden}
+
+header{
+    background:#123b63;color:white;padding:16px 22px;
+    display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:12px;position:relative;z-index:50
+}
+.header-left{display:flex;align-items:center;gap:14px}
+header h2{margin:0;font-size:21px}
+
+.menu-toggle{
+    width:43px;height:43px;border:1px solid #ffffff55;
+    border-radius:8px;background:#ffffff15;color:white;
+    font-size:25px;display:flex;align-items:center;
+    justify-content:center;padding:0;cursor:pointer
+}
+.menu-toggle:hover{background:#ffffff30;opacity:1}
+
+nav{
+    position:fixed;top:0;left:0;width:290px;max-width:85vw;
+    height:100vh;background:white;z-index:200;padding:0;
+    display:flex;flex-direction:column;gap:5px;
+    box-shadow:4px 0 20px #00000020;
+    transform:translateX(-110%);transition:transform .28s ease;
+    overflow-y:auto
+}
+nav.open{transform:translateX(0)}
+.menu-header{
+    background:#123b63;color:white;padding:22px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+    min-height:85px
+}
+.menu-header h3{color:white;margin:0;font-size:19px}
+.menu-close{
+    background:#ffffff20;color:white;font-size:21px;
+    width:35px;height:35px;padding:0;border-radius:7px
+}
+.menu-links{padding:15px 12px;display:flex;flex-direction:column;gap:5px}
+nav a{
+    color:#123b63;text-decoration:none;font-weight:bold;font-size:14px;
+    padding:14px 13px;border-radius:8px;display:flex;
+    align-items:center;gap:12px
+}
+nav a:hover,nav a.active{background:#eef5fc;color:#1769aa}
+.nav-icon{width:23px;text-align:center;font-size:19px}
+.menu-overlay{
+    position:fixed;inset:0;background:#0008;z-index:150;
+    opacity:0;visibility:hidden;transition:opacity .28s ease,visibility .28s ease
+}
+.menu-overlay.show{opacity:1;visibility:visible}
+
 main{max-width:1200px;margin:25px auto;padding:0 16px}
-section{background:white;padding:22px;margin-bottom:22px;border-radius:12px;box-shadow:0 2px 9px #00000010;scroll-margin-top:85px}
+section{
+    background:white;padding:22px;margin-bottom:22px;
+    border-radius:12px;box-shadow:0 2px 9px #00000010;
+    scroll-margin-top:20px
+}
 h3{margin-top:0;color:#123b63}
-input,select,textarea{width:100%;padding:11px;margin:7px 0 14px;border:1px solid #ccd3dc;border-radius:7px;font-size:14px}
+
+input,select,textarea{
+    width:100%;padding:11px;margin:7px 0 14px;
+    border:1px solid #ccd3dc;border-radius:7px;font-size:14px
+}
 textarea{min-height:85px;resize:vertical}
-button{border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-weight:bold;background:#1769aa;color:white}
+
+button{
+    border:0;border-radius:7px;padding:10px 15px;
+    cursor:pointer;font-weight:bold;background:#1769aa;color:white
+}
 button:hover{opacity:.88}
 button.secondary{background:#64748b}
 button.danger{background:#bd3030}
 button.success{background:#16834b}
 button:disabled{opacity:.55;cursor:not-allowed}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px}
+
+.grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:15px
+}
 .card{border:1px solid #e0e5eb;border-radius:10px;padding:15px;min-width:0}
 .card h4{margin:0 0 10px;color:#123b63}
 .muted{color:#64748b;font-size:13px}
-.status{display:inline-block;padding:5px 9px;border-radius:20px;background:#e8eef5;font-size:12px;font-weight:bold}
+
+.status{
+    display:inline-block;padding:5px 9px;border-radius:20px;
+    background:#e8eef5;font-size:12px;font-weight:bold
+}
 .pending{background:#fff1c7;color:#855900}
 .approved{background:#d9f5e5;color:#146b3a}
-.rejected{background:#ffe0e0;color:#9b2020}
-.revoked{background:#ffe0e0;color:#9b2020}
+.rejected,.revoked,.closed{background:#ffe0e0;color:#9b2020}
+.new{background:#fff1c7;color:#855900}
+.read{background:#e8eef5;color:#123b63}
+.replied{background:#d9f5e5;color:#146b3a}
+
 .photos{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-.photos img{width:90px;height:75px;object-fit:cover;border-radius:7px;cursor:pointer;border:1px solid #ddd}
+.photos img{
+    width:90px;height:75px;object-fit:cover;border-radius:7px;
+    cursor:pointer;border:1px solid #ddd
+}
 .photos img:hover{opacity:.8}
+
 .notice{padding:12px;border-radius:8px;background:#eef5fc;margin-bottom:15px}
 .warning{padding:12px;border-radius:8px;background:#fff1c7;color:#855900;margin-bottom:15px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-#message{padding:12px;margin-bottom:15px;border-radius:8px;display:none}
-#lightbox{position:fixed;inset:0;background:#000e;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+
+#message{
+    padding:12px;margin-bottom:15px;border-radius:8px;display:none
+}
+#lightbox{
+    position:fixed;inset:0;background:#000e;z-index:1000;
+    display:none;align-items:center;justify-content:center;padding:20px
+}
 #lightbox img{max-width:90vw;max-height:82vh;object-fit:contain}
 #lightbox button{position:absolute}
 #closeLightbox{top:18px;right:20px}
 #previousPhoto{left:15px;top:50%}
 #nextPhoto{right:15px;top:50%}
+
 footer{text-align:center;color:#64748b;padding:20px}
 label{font-weight:bold;font-size:14px}
 .profile-status{font-size:13px;margin:0 0 14px}
+
+.discovery-status{
+    display:flex;align-items:center;gap:9px;margin:12px 0;
+    padding:12px;border-radius:8px;background:#f3f7fb
+}
+.status-dot{width:11px;height:11px;border-radius:50%;background:#999}
+.status-dot.online{background:#16a34a}
+.checkbox-row{display:flex;align-items:center;gap:10px;margin:12px 0}
+.checkbox-row input{width:auto;margin:0}
+.checkbox-row label{font-weight:normal}
+.agent-enquiry{border-left:4px solid #1769aa}
+
+/* ENQUIRY CONTACT AND REPLY */
+.contact-box{
+    background:#f3f7fb;border-radius:8px;padding:11px 13px;margin:0 0 12px
+}
+.contact-box p{margin:5px 0;font-size:14px;overflow-wrap:anywhere}
+.contact-box a{color:#1769aa;font-weight:bold;text-decoration:none}
+.contact-box a:hover{text-decoration:underline}
+.enquiry-message-text{
+    background:#f8f9fb;border-radius:8px;padding:11px 13px;margin:4px 0 12px;
+    font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere
+}
+.reply-box{border-top:1px solid #e0e5eb;margin-top:14px;padding-top:12px}
+.reply-box textarea{margin-bottom:8px}
+.reply-sent{
+    background:#e7f8f0;border-radius:8px;padding:11px 13px;margin-top:12px;
+    font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere
+}
+.reply-sent .muted{display:block;margin-top:6px}
+
+@media(max-width:600px){
+    header{padding:13px 14px}
+    header h2{font-size:17px}
+    main{margin:17px auto;padding:0 11px}
+    section{padding:17px;margin-bottom:16px}
+    .grid{grid-template-columns:1fr}
+    #previousPhoto{left:5px}
+    #nextPhoto{right:5px}
+}
 </style>
 </head>
 
 <body>
 
 <header>
-    <h2>RumCHUO Agent Dashboard</h2>
+    <div class="header-left">
+        <button type="button" class="menu-toggle" id="menuToggle"
+            aria-label="Open navigation menu" aria-expanded="false"
+            aria-controls="agentNavigation">☰</button>
+        <h2>RumCHUO Agent Dashboard</h2>
+    </div>
     <button class="secondary" onclick="logout()">Logout</button>
 </header>
 
-<nav>
-    <a href="#profileSection">My Profile</a>
-    <a href="#submitPropertySection">Submit Property</a>
-    <a href="#myPropertiesSection">My Submitted Properties</a>
-    <a href="#availableRoomsSection">Available Properties</a>
-    <a href="#myRoomsSection">My Advertising Properties</a>
+<nav id="agentNavigation" aria-label="Agent dashboard navigation">
+    <div class="menu-header">
+        <h3>Agent Menu</h3>
+        <button type="button" class="menu-close" id="menuClose"
+            aria-label="Close navigation menu">✕</button>
+    </div>
+
+    <div class="menu-links">
+        <a href="#profileSection"><span class="nav-icon">👤</span>My Profile</a>
+        <a href="#discoverySection"><span class="nav-icon">📍</span>Active Agent Profile</a>
+        <a href="#enquiriesSection"><span class="nav-icon">✉️</span>Student Enquiries</a>
+        <a href="#submitPropertySection"><span class="nav-icon">➕</span>Submit Property</a>
+        <a href="#myPropertiesSection"><span class="nav-icon">🏠</span>My Submitted Properties</a>
+        <a href="#availableRoomsSection"><span class="nav-icon">🔍</span>Available Properties</a>
+        <a href="#myRoomsSection"><span class="nav-icon">📢</span>My Advertising Properties</a>
+    </div>
 </nav>
 
+<div class="menu-overlay" id="menuOverlay"></div>
+
 <main>
-    <div id="message"></div>
 
-    <section>
-        <h3>Welcome, Agent</h3>
-        <p class="muted">Manage your advertising requests and submit your own properties for Admin verification.</p>
-    </section>
+<div id="message"></div>
 
-    <!-- AGENT PROFILE -->
-    <section id="profileSection">
-        <h3>My Profile</h3>
+<section>
+    <h3>Welcome, Agent</h3>
+    <p class="muted">
+        Manage your advertising requests, submit properties for Admin verification,
+        and make yourself discoverable to students looking for accommodation.
+    </p>
+</section>
 
-        <div id="profileWarning" class="warning" style="display:none">
-            Your phone number is missing. Please add your phone number so students can contact you about properties.
+<!-- AGENT PROFILE -->
+<section id="profileSection">
+    <h3>My Profile</h3>
+
+    <div id="profileWarning" class="warning" style="display:none">
+        Your phone number is missing. Please add your phone number so students can contact you.
+    </div>
+
+    <p class="muted">
+        Keep your contact information updated.
+    </p>
+
+    <form id="profileForm">
+        <label>Full Name</label>
+        <input id="profileFullName" type="text" disabled>
+
+        <label>Email Address</label>
+        <input id="profileEmail" type="email" disabled>
+
+        <label>Phone Number</label>
+        <input id="profilePhone" name="phone" type="tel"
+            placeholder="e.g. 0712345678" maxlength="20" required>
+
+        <p id="profileStatus" class="profile-status muted"></p>
+
+        <button type="submit" id="saveProfileButton">Save Profile</button>
+    </form>
+</section>
+
+<!-- ACTIVE AGENT DISCOVERY PROFILE -->
+<section id="discoverySection">
+    <h3>Active Agent Profile</h3>
+
+    <div class="notice">
+        <b>Get discovered by students.</b>
+        <p class="muted">
+            When you activate your profile, students can find you in the Active Agents
+            section of their dashboard. You must be an approved and verified Agent
+            before your profile can appear.
+        </p>
+    </div>
+
+    <div class="discovery-status">
+        <span id="availabilityDot" class="status-dot"></span>
+        <div>
+            <b id="availabilityText">Availability is currently off</b>
+            <div class="muted">Your student discovery status</div>
+        </div>
+    </div>
+
+    <form id="discoveryForm">
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="agentAvailable">
+            <label for="agentAvailable">
+                I am currently available to assist students
+            </label>
+        </div>
+
+        <label>Service Areas</label>
+        <textarea id="serviceAreas"
+            placeholder="Enter areas where you provide services, one per line.&#10;Example: Mlimani&#10;Sinza&#10;Mwenge"></textarea>
+        <p class="muted">
+            Enter the neighbourhoods or areas you serve. Add one area per line.
+        </p>
+
+        <label>Universities Covered</label>
+        <textarea id="universitiesCovered"
+            placeholder="Enter universities you serve, one per line.&#10;Example: University of Dar es Salaam&#10;Ardhi University"></textarea>
+        <p class="muted">
+            Enter the universities whose students you can assist.
+        </p>
+
+        <div class="notice">
+            <b>Exact Location Sharing</b>
+            <p class="muted">
+                This is optional. You can be discovered using your service areas
+                without sharing your exact coordinates. Exact location sharing is
+                disabled by default.
+            </p>
+
+            <div class="checkbox-row">
+                <input type="checkbox" id="shareExactLocation">
+                <label for="shareExactLocation">
+                    Allow students to see my exact location
+                </label>
+            </div>
+
+            <div id="exactLocationFields" style="display:none">
+                <label>Latitude</label>
+                <input id="agentLatitude" type="number" step="any"
+                    placeholder="Example: -6.7924">
+
+                <label>Longitude</label>
+                <input id="agentLongitude" type="number" step="any"
+                    placeholder="Example: 39.2083">
+
+                <p class="muted">
+                    Only enter these coordinates if you want students to see your
+                    exact location. Leave sharing disabled if you prefer privacy.
+                </p>
+            </div>
         </div>
 
         <p class="muted">
-            Keep your contact information updated. Your phone number is used by students who want to enquire about properties you advertise or own.
+            All Active Agent discovery features are currently free.
         </p>
 
-        <form id="profileForm">
-            <label>Full Name</label>
-            <input id="profileFullName" type="text" disabled>
+        <button type="submit" id="saveDiscoveryButton">
+            Save Active Agent Profile
+        </button>
+    </form>
+</section>
 
-            <label>Email Address</label>
-            <input id="profileEmail" type="email" disabled>
+<!-- STUDENT ENQUIRIES -->
+<section id="enquiriesSection">
+    <h3>Student Enquiries</h3>
+    <p class="muted">
+        View messages from students who contacted you. A student's contact details
+        are shown only for enquiries they have sent to you. Replies you send appear
+        in the student's dashboard under My Enquiries.
+    </p>
 
-            <label>Phone Number</label>
-            <input id="profilePhone" name="phone" type="tel" placeholder="e.g. 0712345678" maxlength="20" required>
+    <div class="actions">
+        <button type="button" onclick="loadAgentEnquiries()">Refresh Enquiries</button>
+    </div>
 
-            <p id="profileStatus" class="profile-status muted"></p>
+    <div id="agentEnquiries" class="grid" style="margin-top:15px">
+        Loading enquiries...
+    </div>
+</section>
 
-            <button type="submit" id="saveProfileButton">Save Profile</button>
-        </form>
-    </section>
+<!-- SUBMIT PROPERTY -->
+<section id="submitPropertySection">
+    <h3>Submit Your Own Property</h3>
 
-    <section id="submitPropertySection">
-        <h3>Submit Your Own Property</h3>
-        <div class="notice">
-            Your property will be registered under your Agent account and must be approved by Admin before it becomes publicly available.
-        </div>
+    <div class="notice">
+        Your property will be registered under your Agent account and must be approved
+        by Admin before it becomes publicly available.
+    </div>
 
-        <form id="propertyForm">
-            <label>Property Location</label>
-            <input name="location" placeholder="Enter property location" required>
+    <form id="propertyForm">
+        <label>Property Location</label>
+        <input name="location" placeholder="Enter property location" required>
 
-            <label>Room Type</label>
-            <select name="room_type" required>
-                <option value="">Select room type</option>
-                <option value="single">Single Room</option>
-                <option value="shared">Shared Room</option>
-                <option value="self-contained">Self Contained</option>
-            </select>
+        <label>Room Type</label>
+        <select name="room_type" required>
+            <option value="">Select room type</option>
+            <option value="single">Single Room</option>
+            <option value="shared">Shared Room</option>
+            <option value="self-contained">Self Contained</option>
+        </select>
 
-            <label>Description</label>
-            <textarea name="description" placeholder="Describe the property"></textarea>
+        <label>Description</label>
+        <textarea name="description" placeholder="Describe the property"></textarea>
 
-            <label>Monthly Rent (TZS)</label>
-            <input name="price" type="number" min="1" step="1" placeholder="Monthly rent" required>
+        <label>Monthly Rent (TZS)</label>
+        <input name="price" type="number" min="1" step="1"
+            placeholder="Monthly rent" required>
 
-            <label>Contact Phone Number</label>
-            <input name="phone_number" type="tel" placeholder="e.g. 0712345678" required>
+        <label>Contact Phone Number</label>
+        <input name="phone_number" type="tel"
+            placeholder="e.g. 0712345678" required>
 
-            <label>Availability</label>
-            <select name="available">
-                <option value="true">Available</option>
-                <option value="false">Not Available</option>
-            </select>
+        <label>Availability</label>
+        <select name="available">
+            <option value="true">Available</option>
+            <option value="false">Not Available</option>
+        </select>
 
-            <label>Property Photos (maximum 6, JPG/PNG/WEBP, 5MB each)</label>
-            <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple required>
+        <label>Property Photos (maximum 6, JPG/PNG/WEBP, 5MB each)</label>
+        <input name="photos" type="file"
+            accept="image/jpeg,image/png,image/webp" multiple required>
 
-            <button type="submit" id="submitProperty">Submit Property</button>
-        </form>
-    </section>
+        <button type="submit" id="submitProperty">Submit Property</button>
+    </form>
+</section>
 
-    <section id="myPropertiesSection">
-        <h3>My Submitted Properties</h3>
-        <div id="myProperties" class="grid">Loading properties...</div>
-    </section>
+<!-- MY SUBMITTED PROPERTIES -->
+<section id="myPropertiesSection">
+    <h3>My Submitted Properties</h3>
+    <div id="myProperties" class="grid">Loading properties...</div>
+</section>
 
-    <section id="availableRoomsSection">
-        <h3>Available Owner Properties</h3>
-        <p class="muted">Browse approved properties and request permission from the Owner to advertise them.</p>
+<!-- AVAILABLE OWNER PROPERTIES -->
+<section id="availableRoomsSection">
+    <h3>Available Owner Properties</h3>
 
-        <input id="locationFilter" placeholder="Filter by location">
-        <input id="priceFilter" type="number" placeholder="Maximum monthly rent">
+    <p class="muted">
+        Browse approved properties and request permission from the Owner to advertise them.
+    </p>
 
-        <button onclick="loadAvailableRooms()">Search Properties</button>
-        <div id="availableRooms" class="grid" style="margin-top:15px">Loading properties...</div>
-    </section>
+    <input id="locationFilter" placeholder="Filter by location">
+    <input id="priceFilter" type="number" placeholder="Maximum monthly rent">
 
-    <section id="myRoomsSection">
-        <h3>My Advertising Properties</h3>
-        <div id="myRooms" class="grid">Loading properties...</div>
-    </section>
+    <button onclick="loadAvailableRooms()">Search Properties</button>
+
+    <div id="availableRooms" class="grid" style="margin-top:15px">
+        Loading properties...
+    </div>
+</section>
+
+<!-- MY ADVERTISING PROPERTIES -->
+<section id="myRoomsSection">
+    <h3>My Advertising Properties</h3>
+    <div id="myRooms" class="grid">Loading properties...</div>
+</section>
+
 </main>
 
+<!-- PHOTO LIGHTBOX -->
 <div id="lightbox">
     <button id="closeLightbox" class="danger" onclick="closeLightbox()">Close ✕</button>
     <button id="previousPhoto" onclick="changePhoto(-1)">❮</button>
@@ -176,6 +437,7 @@ label{font-weight:bold;font-size:14px}
 <footer>RumCHUO Property Management</footer>
 
 <script>
+/* GLOBAL VARIABLES */
 let accessToken = localStorage.getItem("accessToken");
 let galleryImages = [];
 let galleryIndex = 0;
@@ -185,10 +447,60 @@ if (!accessToken) {
     window.location.href = "/";
 }
 
-function getErrorMessage(detail, fallback = "Request failed") {
-    if (typeof detail === "string") {
-        return detail;
+/* SIDEBAR */
+const menuToggle = document.getElementById("menuToggle");
+const menuClose = document.getElementById("menuClose");
+const agentNavigation = document.getElementById("agentNavigation");
+const menuOverlay = document.getElementById("menuOverlay");
+
+function openAgentMenu() {
+    agentNavigation.classList.add("open");
+    menuOverlay.classList.add("show");
+    document.body.classList.add("menu-open");
+    menuToggle.setAttribute("aria-expanded", "true");
+    menuToggle.setAttribute("aria-label", "Close navigation menu");
+}
+
+function closeAgentMenu() {
+    agentNavigation.classList.remove("open");
+    menuOverlay.classList.remove("show");
+    document.body.classList.remove("menu-open");
+    menuToggle.setAttribute("aria-expanded", "false");
+    menuToggle.setAttribute("aria-label", "Open navigation menu");
+}
+
+function toggleAgentMenu() {
+    agentNavigation.classList.contains("open")
+        ? closeAgentMenu()
+        : openAgentMenu();
+}
+
+menuToggle.addEventListener("click", toggleAgentMenu);
+menuClose.addEventListener("click", closeAgentMenu);
+menuOverlay.addEventListener("click", closeAgentMenu);
+
+document.querySelectorAll("#agentNavigation a").forEach(link => {
+    link.addEventListener("click", function() {
+        closeAgentMenu();
+
+        document.querySelectorAll("#agentNavigation a").forEach(item => {
+            item.classList.remove("active");
+        });
+
+        this.classList.add("active");
+    });
+});
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+        closeAgentMenu();
+        closeLightbox();
     }
+});
+
+/* ERROR HANDLING */
+function getErrorMessage(detail, fallback = "Request failed") {
+    if (typeof detail === "string") return detail;
 
     if (Array.isArray(detail)) {
         return detail.map(item => {
@@ -204,6 +516,7 @@ function getErrorMessage(detail, fallback = "Request failed") {
     return fallback;
 }
 
+/* API REQUEST */
 async function apiRequest(url, options = {}) {
     options.headers = options.headers || {};
     options.headers["Authorization"] = "Bearer " + accessToken;
@@ -216,6 +529,7 @@ async function apiRequest(url, options = {}) {
     }
 
     let data = {};
+
     try {
         data = await response.json();
     } catch (_) {}
@@ -229,20 +543,25 @@ async function apiRequest(url, options = {}) {
     return data;
 }
 
+/* MESSAGE DISPLAY */
 function showMessage(message, error = false) {
     const box = document.getElementById("message");
+
     box.textContent = message;
     box.style.display = "block";
     box.style.background = error ? "#ffe0e0" : "#d9f5e5";
     box.style.color = error ? "#9b2020" : "#146b3a";
-    window.scrollTo({top: 0, behavior: "smooth"});
+
+    window.scrollTo({top:0,behavior:"smooth"});
 }
 
+/* LOGOUT */
 function logout() {
     localStorage.removeItem("accessToken");
     window.location.href = "/";
 }
 
+/* HTML ESCAPING */
 function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, char => ({
         "&":"&amp;",
@@ -253,17 +572,48 @@ function escapeHTML(value) {
     })[char]);
 }
 
+/* MONEY */
 function money(value) {
     return "TZS " + Number(value || 0).toLocaleString();
 }
 
+/* STATUS BADGE */
 function statusBadge(status) {
     const value = String(status || "unknown").toLowerCase();
     return `<span class="status ${escapeHTML(value)}">${escapeHTML(value.toUpperCase())}</span>`;
 }
 
-/* AGENT PROFILE FUNCTIONS */
+/* DATE FORMATTING (database timestamps are stored in UTC) */
+function formatDateTime(value) {
+    if (!value) return "Not available";
 
+    let text = String(value).replace(" ", "T");
+    if (!/(Z|[+-]\d{2}:?\d{2})$/.test(text)) text += "Z";
+
+    const date = new Date(text);
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return date.toLocaleString([], {
+        year:"numeric",
+        month:"short",
+        day:"numeric",
+        hour:"2-digit",
+        minute:"2-digit"
+    });
+}
+
+/* PHONE HELPERS */
+function phoneForTel(phone) {
+    return String(phone || "").replace(/[^\d+]/g, "");
+}
+
+function phoneForWhatsApp(phone) {
+    let digits = String(phone || "").replace(/\D/g, "");
+    if (digits.startsWith("0")) digits = "255" + digits.slice(1);
+    return digits;
+}
+
+/* AGENT PROFILE */
 async function loadAgentProfile() {
     const status = document.getElementById("profileStatus");
 
@@ -277,7 +627,6 @@ async function loadAgentProfile() {
         document.getElementById("profilePhone").value = account.phone || "";
 
         updateProfileWarning(account.phone);
-
         status.textContent = "Your profile information has been loaded.";
 
     } catch (error) {
@@ -287,10 +636,11 @@ async function loadAgentProfile() {
 }
 
 function updateProfileWarning(phone) {
-    const warning = document.getElementById("profileWarning");
-    warning.style.display = phone && String(phone).trim() ? "none" : "block";
+    document.getElementById("profileWarning").style.display =
+        phone && String(phone).trim() ? "none" : "block";
 }
 
+/* SAVE PROFILE */
 document.getElementById("profileForm").addEventListener("submit", async event => {
     event.preventDefault();
 
@@ -309,36 +659,375 @@ document.getElementById("profileForm").addEventListener("submit", async event =>
 
     try {
         const result = await apiRequest("/students/me/profile", {
-            method: "PUT",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                phone: phone
-            })
+            method:"PUT",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({phone})
         });
 
         updateProfileWarning(phone);
         status.textContent = "Profile updated successfully.";
-
         showMessage(result.message || "Your profile has been updated successfully.");
-
         await loadAgentProfile();
 
     } catch (error) {
         status.textContent = error.message;
         showMessage(error.message, true);
-
     } finally {
         button.disabled = false;
         button.textContent = "Save Profile";
     }
 });
 
-/* PROPERTY PHOTO GALLERY */
+/* ACTIVE AGENT DISCOVERY PROFILE */
+const shareLocationCheckbox = document.getElementById("shareExactLocation");
+const exactLocationFields = document.getElementById("exactLocationFields");
 
+shareLocationCheckbox.addEventListener("change", () => {
+    exactLocationFields.style.display =
+        shareLocationCheckbox.checked ? "block" : "none";
+});
+
+function listToTextarea(value) {
+    if (Array.isArray(value)) return value.join("\n");
+    return "";
+}
+
+function textareaToList(value) {
+    return value
+        .split(/[\n,]+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+}
+
+function updateAvailabilityDisplay(available) {
+    const dot = document.getElementById("availabilityDot");
+    const text = document.getElementById("availabilityText");
+
+    dot.classList.toggle("online", Boolean(available));
+    text.textContent = available
+        ? "Your Active Agent profile is ON"
+        : "Availability is currently off";
+}
+
+async function loadDiscoveryProfile() {
+    try {
+        const profile = await apiRequest("/agents/me/discovery-profile");
+
+        document.getElementById("agentAvailable").checked =
+            Boolean(profile.is_available);
+
+        document.getElementById("serviceAreas").value =
+            listToTextarea(profile.service_areas);
+
+        document.getElementById("universitiesCovered").value =
+            listToTextarea(profile.universities_covered);
+
+        shareLocationCheckbox.checked =
+            Boolean(profile.share_exact_location);
+
+        exactLocationFields.style.display =
+            shareLocationCheckbox.checked ? "block" : "none";
+
+        document.getElementById("agentLatitude").value =
+            profile.latitude ?? "";
+
+        document.getElementById("agentLongitude").value =
+            profile.longitude ?? "";
+
+        updateAvailabilityDisplay(profile.is_available);
+
+    } catch (error) {
+        showMessage(
+            "Could not load your Active Agent profile: " + error.message,
+            true
+        );
+    }
+}
+
+document.getElementById("agentAvailable").addEventListener("change", event => {
+    updateAvailabilityDisplay(event.target.checked);
+});
+
+document.getElementById("discoveryForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const button = document.getElementById("saveDiscoveryButton");
+
+    const available = document.getElementById("agentAvailable").checked;
+    const serviceAreas = textareaToList(
+        document.getElementById("serviceAreas").value
+    );
+    const universities = textareaToList(
+        document.getElementById("universitiesCovered").value
+    );
+    const shareExactLocation = shareLocationCheckbox.checked;
+
+    const latitudeValue = document.getElementById("agentLatitude").value.trim();
+    const longitudeValue = document.getElementById("agentLongitude").value.trim();
+
+    if (available && serviceAreas.length === 0) {
+        showMessage(
+            "Please enter at least one service area before activating your profile.",
+            true
+        );
+        return;
+    }
+
+    if (shareExactLocation && (!latitudeValue || !longitudeValue)) {
+        showMessage(
+            "Enter both latitude and longitude, or turn off exact location sharing.",
+            true
+        );
+        return;
+    }
+
+    const latitude = shareExactLocation ? Number(latitudeValue) : null;
+    const longitude = shareExactLocation ? Number(longitudeValue) : null;
+
+    if (
+        shareExactLocation &&
+        (
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude) ||
+            latitude < -90 ||
+            latitude > 90 ||
+            longitude < -180 ||
+            longitude > 180
+        )
+    ) {
+        showMessage("Please enter valid latitude and longitude coordinates.", true);
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+        const result = await apiRequest("/agents/me/discovery-profile", {
+            method:"PUT",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                is_available:available,
+                service_areas:serviceAreas,
+                universities_covered:universities,
+                share_exact_location:shareExactLocation,
+                latitude,
+                longitude
+            })
+        });
+
+        updateAvailabilityDisplay(available);
+
+        showMessage(
+            result.message || "Your Active Agent profile has been saved."
+        );
+
+    } catch (error) {
+        showMessage(error.message, true);
+    } finally {
+        button.disabled = false;
+        button.textContent = "Save Active Agent Profile";
+    }
+});
+
+/* STUDENT ENQUIRIES */
+function enquiryReplyHTML(enquiry) {
+    const id = Number(enquiry.id);
+    const status = String(enquiry.status || "").toLowerCase();
+
+    if (enquiry.reply_message) {
+        return `
+            <div class="reply-sent">
+                <b>Your reply</b><br>
+                ${escapeHTML(enquiry.reply_message)}
+                <span class="muted">Sent: ${escapeHTML(formatDateTime(enquiry.replied_at))}</span>
+            </div>
+        `;
+    }
+
+    if (status === "closed") {
+        return `<p class="muted">This enquiry is closed.</p>`;
+    }
+
+    return `
+        <div class="reply-box">
+            <label for="replyText${id}">Your reply to the student</label>
+            <textarea id="replyText${id}" maxlength="2000"
+                placeholder="Type your reply here. The student will see it in their dashboard under My Enquiries."></textarea>
+            <button type="button" id="replyButton${id}"
+                onclick="sendEnquiryReply(${id})">Send Reply</button>
+        </div>
+    `;
+}
+
+async function loadAgentEnquiries() {
+    const container = document.getElementById("agentEnquiries");
+
+    container.textContent = "Loading student enquiries...";
+
+    try {
+        const response = await apiRequest("/agents/me/enquiries");
+
+        const enquiries = Array.isArray(response)
+            ? response
+            : (response.enquiries || []);
+
+        if (!enquiries.length) {
+            container.innerHTML = "<p>No student enquiries yet.</p>";
+            return;
+        }
+
+        container.innerHTML = enquiries.map(enquiry => {
+            const id = Number(enquiry.id);
+            const status = String(enquiry.status || "new").toLowerCase();
+
+            const phone = enquiry.student_phone;
+            const email = enquiry.student_email;
+
+            const studentDetails = [
+                enquiry.student_university,
+                enquiry.student_course
+            ].filter(Boolean).join(" • ");
+
+            return `
+            <div class="card agent-enquiry">
+                <h4>${escapeHTML(enquiry.student_name || "Student")}</h4>
+
+                <div class="contact-box">
+                    <p><b>Phone:</b> ${
+                        phone
+                        ? `<a href="tel:${escapeHTML(phoneForTel(phone))}">${escapeHTML(phone)}</a>
+                           &nbsp;·&nbsp;
+                           <a href="https://wa.me/${escapeHTML(phoneForWhatsApp(phone))}"
+                              target="_blank" rel="noopener noreferrer">WhatsApp</a>`
+                        : "Not provided"
+                    }</p>
+                    <p><b>Email:</b> ${
+                        email
+                        ? `<a href="mailto:${escapeHTML(email)}">${escapeHTML(email)}</a>`
+                        : "Not provided"
+                    }</p>
+                    ${studentDetails
+                        ? `<p class="muted">${escapeHTML(studentDetails)}</p>`
+                        : ""}
+                </div>
+
+                <p><b>Property:</b>
+                   ${escapeHTML(enquiry.property_location || "General enquiry")}
+                </p>
+
+                <p><b>Message:</b></p>
+                <div class="enquiry-message-text">${escapeHTML(enquiry.message)}</div>
+
+                <p><b>Received:</b>
+                    ${escapeHTML(formatDateTime(enquiry.created_at))}
+                </p>
+
+                <p><b>Status:</b>
+                    ${statusBadge(status)}
+                </p>
+
+                ${enquiryReplyHTML(enquiry)}
+
+                <div class="actions">
+                    ${status === "new"
+                        ? `<button type="button" class="secondary"
+                               onclick="updateEnquiryStatus(${id}, 'read')">
+                               Mark as Read
+                           </button>`
+                        : ""}
+                    ${status !== "closed"
+                        ? `<button type="button" class="danger"
+                               onclick="updateEnquiryStatus(${id}, 'closed')">
+                               Close Enquiry
+                           </button>`
+                        : ""}
+                </div>
+            </div>
+            `;
+        }).join("");
+
+    } catch (error) {
+        container.innerHTML = `
+            <p class="muted">
+                Could not load enquiries: ${escapeHTML(error.message)}
+            </p>
+        `;
+    }
+}
+
+async function sendEnquiryReply(enquiryId) {
+    const textarea = document.getElementById("replyText" + enquiryId);
+    const button = document.getElementById("replyButton" + enquiryId);
+
+    if (!textarea) return;
+
+    const reply = textarea.value.trim();
+
+    if (reply.length < 2) {
+        showMessage("Please type a reply before sending.", true);
+        return;
+    }
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Sending...";
+    }
+
+    try {
+        const result = await apiRequest(
+            `/agents/me/enquiries/${enquiryId}/reply`,
+            {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({reply})
+            }
+        );
+
+        showMessage(result.message || "Your reply has been sent.");
+        await loadAgentEnquiries();
+
+    } catch (error) {
+        showMessage(error.message, true);
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Send Reply";
+        }
+    }
+}
+
+async function updateEnquiryStatus(enquiryId, status) {
+    if (status === "closed" &&
+        !confirm("Close this enquiry? You will not be able to reply to it afterwards.")) {
+        return;
+    }
+
+    try {
+        const result = await apiRequest(
+            `/agents/me/enquiries/${enquiryId}/status`,
+            {
+                method:"PUT",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({status})
+            }
+        );
+
+        showMessage(result.message || "Enquiry status updated.");
+        await loadAgentEnquiries();
+
+    } catch (error) {
+        showMessage(error.message, true);
+    }
+}
+
+/* PROPERTY PHOTO GALLERY */
 function openGallery(images, start = 0) {
     galleryImages = images;
     galleryIndex = start;
+
     if (!galleryImages.length) return;
+
     displayGalleryImage();
     document.getElementById("lightbox").style.display = "flex";
 }
@@ -349,27 +1038,26 @@ function displayGalleryImage() {
 
 function changePhoto(direction) {
     if (!galleryImages.length) return;
-    galleryIndex = (galleryIndex + direction + galleryImages.length) % galleryImages.length;
+
+    galleryIndex =
+        (galleryIndex + direction + galleryImages.length) % galleryImages.length;
+
     displayGalleryImage();
 }
 
 function closeLightbox() {
-    document.getElementById("lightbox").style.display = "none";
+    const lightbox = document.getElementById("lightbox");
+    if (!lightbox) return;
+
+    lightbox.style.display = "none";
     document.getElementById("lightboxImage").src = "";
 }
-
-document.addEventListener("keydown", event => {
-    if (event.key === "Escape") closeLightbox();
-    if (event.key === "ArrowRight") changePhoto(1);
-    if (event.key === "ArrowLeft") changePhoto(-1);
-});
 
 function photoUrl(applicationId, photoId) {
     return `/agents/me/properties/${applicationId}/photos/${photoId}`;
 }
 
 /* MY SUBMITTED PROPERTIES */
-
 async function loadMyProperties() {
     const container = document.getElementById("myProperties");
     container.textContent = "Loading your submitted properties...";
@@ -388,7 +1076,6 @@ async function loadMyProperties() {
 
         const photoUrls = {};
 
-        // Load photographs with the Agent's authentication token.
         await Promise.all(properties.map(async property => {
             photoUrls[property.id] = {};
 
@@ -397,9 +1084,7 @@ async function loadMyProperties() {
                     const photoResponse = await fetch(
                         photoUrl(property.id, photo.id),
                         {
-                            headers: {
-                                "Authorization": "Bearer " + accessToken
-                            }
+                            headers:{"Authorization":"Bearer " + accessToken}
                         }
                     );
 
@@ -440,23 +1125,22 @@ async function loadMyProperties() {
                     <p><b>Room:</b> ${escapeHTML(property.room_type)}</p>
                     <p><b>Rent:</b> ${money(property.price)}</p>
                     <p><b>Phone:</b> ${escapeHTML(property.phone_number)}</p>
+
                     <p><b>Availability:</b> ${
                         Number(property.available) === 1 ||
                         property.available === true
                         ? "Available"
                         : "Not available"
                     }</p>
+
                     <p><b>Status:</b> ${statusBadge(property.status)}</p>
                     <p>${escapeHTML(property.description || "")}</p>
 
                     <div class="photos">
                         ${availablePhotos.map((photo, index) => `
-                            <img
-                                src="${urls[index]}"
-                                alt="Property photo"
+                            <img src="${urls[index]}" alt="Property photo"
                                 data-gallery="${escapeHTML(property.id)}"
-                                data-index="${index}"
-                            >
+                                data-index="${index}">
                         `).join("")}
                     </div>
 
@@ -496,9 +1180,7 @@ async function loadMyProperties() {
     }
 }
 
-
 /* SUBMIT PROPERTY */
-
 document.getElementById("propertyForm").addEventListener("submit", async event => {
     event.preventDefault();
 
@@ -524,6 +1206,7 @@ document.getElementById("propertyForm").addEventListener("submit", async event =
     }
 
     data.delete("photos");
+
     for (const file of photoInput.files) {
         data.append("photos", file);
     }
@@ -534,14 +1217,12 @@ document.getElementById("propertyForm").addEventListener("submit", async event =
 
     try {
         const result = await apiRequest("/agents/me/properties/submit", {
-            method: "POST",
-            body: data
+            method:"POST",
+            body:data
         });
 
         showMessage(result.message || "Property submitted successfully.");
         form.reset();
-
-        // Reload submissions so the new pending property appears immediately.
         await loadMyProperties();
 
     } catch (error) {
@@ -553,17 +1234,21 @@ document.getElementById("propertyForm").addEventListener("submit", async event =
 });
 
 /* PROTECTED OWNER PROPERTY PHOTOS */
-
 async function loadProtectedLandlordPhotos(container) {
-    const images = Array.from(container.querySelectorAll("img[data-landlord-photo]"));
+    const images = Array.from(
+        container.querySelectorAll("img[data-landlord-photo]")
+    );
 
     await Promise.all(images.map(async img => {
         try {
             const roomId = Number(img.dataset.roomId);
             const photoId = Number(img.dataset.photoId);
+
             const response = await fetch(
                 `/agents/landlord-properties/${roomId}/photos/${photoId}`,
-                {headers: {"Authorization": "Bearer " + accessToken}}
+                {
+                    headers:{"Authorization":"Bearer " + accessToken}
+                }
             );
 
             if (!response.ok) {
@@ -572,17 +1257,24 @@ async function loadProtectedLandlordPhotos(container) {
 
             const objectUrl = URL.createObjectURL(await response.blob());
             landlordPhotoObjectUrls.push(objectUrl);
+
             img.dataset.objectUrl = objectUrl;
             img.src = objectUrl;
 
             img.addEventListener("click", () => {
                 const card = img.closest(".card");
+
                 const cardImages = Array.from(
-                    card.querySelectorAll("img[data-landlord-photo][data-object-url]")
+                    card.querySelectorAll(
+                        "img[data-landlord-photo][data-object-url]"
+                    )
                 );
+
                 const urls = cardImages.map(item => item.dataset.objectUrl);
+
                 openGallery(urls, cardImages.indexOf(img));
             });
+
         } catch (error) {
             img.alt = "Property photograph unavailable";
             img.style.display = "none";
@@ -591,7 +1283,6 @@ async function loadProtectedLandlordPhotos(container) {
 }
 
 /* AVAILABLE OWNER PROPERTIES */
-
 async function loadAvailableRooms() {
     const container = document.getElementById("availableRooms");
     container.textContent = "Loading verified owner properties...";
@@ -601,8 +1292,8 @@ async function loadAvailableRooms() {
 
     try {
         const params = new URLSearchParams({
-            available_only: "true",
-            limit: "100"
+            available_only:"true",
+            limit:"100"
         });
 
         const location = document.getElementById("locationFilter").value.trim();
@@ -617,35 +1308,69 @@ async function loadAvailableRooms() {
         ]);
 
         const rooms = Array.isArray(data) ? data : (data.rooms || []);
+
         const myRooms = Array.isArray(myRoomsResponse)
             ? myRoomsResponse
-            : (Array.isArray(myRoomsResponse.rooms) ? myRoomsResponse.rooms : []);
+            : (Array.isArray(myRoomsResponse.rooms)
+                ? myRoomsResponse.rooms
+                : []);
 
         const authorizationByRoom = new Map(
             myRooms.map(item => [
                 Number(item.room_id || item.id),
-                String(item.authorization_status || item.status || "").toLowerCase()
+                {
+                    status:String(
+                        item.authorization_status || item.status || ""
+                    ).toLowerCase(),
+                    advertisingEnabled:Number(item.advertising_enabled) === 1
+                }
             ])
         );
 
         if (!rooms.length) {
-            container.innerHTML = "<p>No available verified owner properties found.</p>";
+            container.innerHTML =
+                "<p>No available verified Owner properties found.</p>";
             return;
         }
 
         container.innerHTML = rooms.map(room => {
-            const requestStatus = authorizationByRoom.get(Number(room.id));
+            const authorization =
+                authorizationByRoom.get(Number(room.id));
+
+            const requestStatus = authorization ? authorization.status : "";
+
             const photos = Array.isArray(room.photos) ? room.photos : [];
 
             let requestButton = "";
+
             if (requestStatus === "pending") {
                 requestButton = `<button disabled class="secondary">Requested</button>`;
-            } else if (requestStatus === "approved") {
-                requestButton = `<button disabled class="success">Approved</button>`;
-            } else if (String(room.ownership_status).toLowerCase() === "assigned") {
-                requestButton = `<button onclick="requestPermission(${Number(room.id)}, this)">Request Advertising Permission</button>`;
+            } else if (
+                requestStatus === "approved" &&
+                authorization.advertisingEnabled
+            ) {
+                requestButton = `<button disabled class="success">Approved and enabled</button>`;
+            } else if (
+                requestStatus === "approved" &&
+                !authorization.advertisingEnabled
+            ) {
+                requestButton = `
+                    <button class="success"
+                        onclick="enableRoom(${Number(room.id)}, this)">
+                        Enable for Students
+                    </button>`;
+            } else if (
+                String(room.ownership_status).toLowerCase() === "assigned"
+            ) {
+                requestButton = `
+                    <button onclick="requestPermission(${Number(room.id)}, this)">
+                        Request Advertising Permission
+                    </button>`;
             } else {
-                requestButton = `<button disabled class="secondary">Not approved for advertising</button>`;
+                requestButton = `
+                    <button disabled class="secondary">
+                        Not approved for advertising
+                    </button>`;
             }
 
             return `
@@ -654,23 +1379,33 @@ async function loadAvailableRooms() {
                     <p><b>Room:</b> ${escapeHTML(room.room_type || "Not specified")}</p>
                     <p><b>Rent:</b> ${money(room.price)}</p>
                     <p><b>Owner:</b> ${escapeHTML(room.landlord_name || "Verified Owner")}</p>
-                    <p><b>Owner phone:</b> ${room.landlord_phone
+
+                    <p><b>Owner phone:</b> ${
+                        room.landlord_phone
                         ? `<a href="tel:${escapeHTML(room.landlord_phone)}">${escapeHTML(room.landlord_phone)}</a>`
-                        : "Not provided"}</p>
+                        : "Not provided"
+                    }</p>
+
                     <p><b>Ownership status:</b> ${statusBadge(room.ownership_status)}</p>
+
                     <div class="photos">
                         ${photos.map(photo => `
-                            <img
-                                src=""
-                                alt="Loading property photograph..."
+                            <img src="" alt="Loading property photograph..."
                                 data-landlord-photo="true"
                                 data-room-id="${Number(room.id)}"
-                                data-photo-id="${Number(photo.id)}"
-                            >
+                                data-photo-id="${Number(photo.id)}">
                         `).join("")}
                     </div>
-                    ${photos.length ? "" : `<p class="muted">No property photographs were uploaded.</p>`}
-                    <p class="muted">These photographs and contact details are available to signed-in Agents for verified properties.</p>
+
+                    ${photos.length
+                        ? ""
+                        : `<p class="muted">No property photographs were uploaded.</p>`}
+
+                    <p class="muted">
+                        These photographs and contact details are available to
+                        signed-in Agents for verified properties.
+                    </p>
+
                     ${requestButton}
                 </div>
             `;
@@ -684,7 +1419,6 @@ async function loadAvailableRooms() {
 }
 
 /* REQUEST ADVERTISING PERMISSION */
-
 async function requestPermission(roomId, button) {
     const note = prompt("Add a message to the Owner (optional):") || "";
 
@@ -695,12 +1429,9 @@ async function requestPermission(roomId, button) {
 
     try {
         const result = await apiRequest("/agents/me/room-requests", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                room_id: roomId,
-                note: note
-            })
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({room_id:roomId,note})
         });
 
         if (button) {
@@ -711,25 +1442,21 @@ async function requestPermission(roomId, button) {
 
         showMessage(result.message || "Advertising request submitted.");
 
-        await Promise.all([
-            loadAvailableRooms(),
-            loadRooms()
-        ]);
+        await Promise.all([loadAvailableRooms(),loadRooms()]);
 
     } catch (error) {
         if (button) {
             button.disabled = false;
             button.textContent = "Request Advertising Permission";
         }
-        showMessage(error.message, true);
 
+        showMessage(error.message, true);
         await loadAvailableRooms();
         await loadRooms();
     }
 }
 
 /* MY ADVERTISING PROPERTIES */
-
 async function loadRooms() {
     const container = document.getElementById("myRooms");
     container.textContent = "Loading advertising properties...";
@@ -742,12 +1469,15 @@ async function loadRooms() {
             : (Array.isArray(response.rooms) ? response.rooms : []);
 
         if (!rooms.length) {
-            container.innerHTML = "<p>You have no advertising properties yet.</p>";
+            container.innerHTML =
+                "<p>You have no advertising properties yet.</p>";
             return;
         }
 
         container.innerHTML = rooms.map(room => {
-            const status = String(room.authorization_status || room.status || "unknown").toLowerCase();
+            const status = String(
+                room.authorization_status || room.status || "unknown"
+            ).toLowerCase();
 
             return `
                 <div class="card">
@@ -755,16 +1485,41 @@ async function loadRooms() {
                     <p><b>Room:</b> ${escapeHTML(room.room_type || "Not specified")}</p>
                     <p><b>Rent:</b> ${money(room.price)}</p>
                     <p><b>Authorization:</b> ${statusBadge(status)}</p>
-                    <p><b>Advertising enabled:</b> ${Number(room.advertising_enabled) === 1 ? "Yes" : "No"}</p>
+
+                    <p><b>Advertising enabled:</b> ${
+                        Number(room.advertising_enabled) === 1 ? "Yes" : "No"
+                    }</p>
+
                     ${
-                        status === "approved" && Number(room.advertising_enabled) === 1
+                        status === "approved" &&
+                        Number(room.advertising_enabled) === 1
                         ? `
                             <div class="actions">
-                                <button class="danger" onclick="removeRoom(${Number(room.room_id || room.id)})">Remove Advertising</button>
-                                <button class="secondary" onclick="submitRentalReport(${Number(room.room_id || room.id)})">Submit Rental Report</button>
+                                <button class="danger"
+                                    onclick="removeRoom(${Number(room.room_id || room.id)})">
+                                    Remove Advertising
+                                </button>
                             </div>
                         `
-                        : `<p class="muted">This permission is not currently active for advertising.</p>`
+                        : status === "approved" &&
+                          Number(room.advertising_enabled) === 0
+                        ? `
+                            <div class="actions">
+                                <button class="success"
+                                    onclick="enableRoom(${Number(room.room_id || room.id)})">
+                                    Enable for Students
+                                </button>
+                            </div>
+                            <p class="muted">
+                                Your Owner approval is still valid.
+                                You do not need to request permission again.
+                            </p>
+                        `
+                        : `
+                            <p class="muted">
+                                This permission is not currently active for advertising.
+                            </p>
+                        `
                     }
                 </div>
             `;
@@ -776,45 +1531,52 @@ async function loadRooms() {
 }
 
 /* REMOVE ADVERTISING */
-
 async function removeRoom(roomId) {
     if (!confirm("Remove this property from your advertising list?")) return;
 
     try {
-        const result = await apiRequest(`/agents/me/rooms/${roomId}/remove`, {
-            method: "POST"
-        });
+        const result = await apiRequest(
+            `/agents/me/rooms/${roomId}/remove`,
+            {method:"POST"}
+        );
 
         showMessage(result.message || "Property removed.");
-        await loadRooms();
+
+        await Promise.all([loadRooms(),loadAvailableRooms()]);
 
     } catch (error) {
         showMessage(error.message, true);
     }
 }
 
-/* RENTAL REPORT */
-
-async function submitRentalReport(roomId) {
-    const note = prompt("Enter rental report details:");
-    if (note === null || !note.trim()) return;
+/* RE-ENABLE AN ALREADY APPROVED PROPERTY */
+async function enableRoom(roomId, button = null) {
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Enabling...";
+    }
 
     try {
-        const result = await apiRequest(`/agents/me/rooms/${roomId}/rental-report`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({note: note.trim()})
-        });
+        const result = await apiRequest(
+            `/agents/me/rooms/${roomId}/enable`,
+            {method:"POST"}
+        );
 
-        showMessage(result.message || "Rental report submitted.");
+        showMessage(result.message || "Property enabled for students.");
+
+        await Promise.all([loadRooms(),loadAvailableRooms()]);
 
     } catch (error) {
         showMessage(error.message, true);
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Enable for Students";
+        }
     }
 }
 
 /* DASHBOARD INITIALIZATION */
-
 async function initializeDashboard() {
     try {
         const account = await apiRequest("/students/me");
@@ -826,6 +1588,8 @@ async function initializeDashboard() {
 
         await Promise.all([
             loadAgentProfile(),
+            loadDiscoveryProfile(),
+            loadAgentEnquiries(),
             loadMyProperties(),
             loadAvailableRooms(),
             loadRooms()
@@ -836,6 +1600,7 @@ async function initializeDashboard() {
     }
 }
 
+/* START DASHBOARD */
 initializeDashboard();
 </script>
 

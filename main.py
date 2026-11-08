@@ -1,4 +1,4 @@
-import os, re, sqlite3, hashlib, secrets, smtplib, ssl
+import os, re, sqlite3, hashlib, secrets, smtplib, ssl, json
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -13,12 +13,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pwdlib import PasswordHash
 
 load_dotenv()
 
-APP_NAME, APP_VERSION, DATABASE_NAME = "RumCHUO", "1.10.0", "rumchuo.db"
+APP_NAME, APP_VERSION, DATABASE_NAME = "RumCHUO", "1.13.0", "rumchuo.db"
 SECRET_KEY = os.getenv("RUMCHUO_SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES, VERIFICATION_TOKEN_MINUTES = 30, 30
@@ -42,28 +42,20 @@ app = FastAPI(
 @app.get("/student/dashboard")
 def student_dashboard():
     dashboard_file = Path(__file__).parent / "student_dashboard.html"
-
     if not dashboard_file.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="Student dashboard file was not found."
-        )
-
+        raise HTTPException(404, "Student dashboard file was not found.")
     return FileResponse(dashboard_file)
 
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://127.0.0.1:3000",
-        "http://localhost:3000",
-        "http://127.0.0.1:3001",
-        "http://localhost:3001",
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "http://127.0.0.1:5501",
-        "http://localhost:5501"
+        "http://127.0.0.1:3000", "http://localhost:3000",
+        "http://127.0.0.1:3001", "http://localhost:3001",
+        "http://127.0.0.1:5500", "http://localhost:5500",
+        "http://127.0.0.1:5501", "http://localhost:5501"
     ],
+    allow_origin_regex=r"^http://(?:localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}):(3000|3001|5500|5501)$",
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"]
@@ -73,27 +65,16 @@ security = HTTPBearer(auto_error=False)
 password_hash = PasswordHash.recommended()
 
 PROFILE_FIELDS = {
-    "full_name",
-    "university",
-    "campus",
-    "faculty",
-    "course",
-    "year_of_study",
-    "gender",
-    "phone",
-    "accommodation_status"
+    "full_name", "university", "campus", "faculty", "course",
+    "year_of_study", "gender", "phone", "accommodation_status"
 }
 
 BASE_DIR = Path(__file__).resolve().parent
-
 PRIVATE_PHOTO_DIR = BASE_DIR / "private_ownership_photos"
 AGENT_PHOTO_DIR = BASE_DIR / "private_agent_property_photos"
 
-# Budgets are no longer part of active student preferences.
 PREFERENCE_FIELDS = (
-    "preferred_location",
-    "preferred_campus",
-    "room_type"
+    "preferred_location", "preferred_campus", "room_type"
 )
 
 ProximityTier = Literal[
@@ -167,8 +148,6 @@ def initialize_database():
             "course": "TEXT",
             "year_of_study": "INTEGER",
             "gender": "TEXT",
-            # Retained for compatibility with existing databases.
-            # These columns are no longer used by preferences or matching.
             "budget_min": "REAL",
             "budget_max": "REAL",
             "preferred_location": "TEXT",
@@ -254,6 +233,84 @@ def initialize_database():
             ON room_rental_reports(status)
         """)
 
+        # ACTIVE AGENT DISCOVERY SETTINGS
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS agent_discovery_profiles (
+                agent_id INTEGER PRIMARY KEY REFERENCES students(id) ON DELETE CASCADE,
+                is_available INTEGER NOT NULL DEFAULT 0,
+                service_areas TEXT NOT NULL DEFAULT '[]',
+                universities_covered TEXT NOT NULL DEFAULT '[]',
+                share_exact_location INTEGER NOT NULL DEFAULT 0,
+                latitude REAL,
+                longitude REAL,
+                subscription_tier TEXT NOT NULL DEFAULT 'free',
+                subscription_status TEXT NOT NULL DEFAULT 'inactive',
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        c.execute("""
+            CREATE INDEX IF NOT EXISTS idx_agent_discovery_available
+            ON agent_discovery_profiles(is_available)
+        """)
+
+        # STUDENT-TO-AGENT ENQUIRIES
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS agent_enquiries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER NOT NULL REFERENCES students(id),
+                agent_id INTEGER NOT NULL REFERENCES students(id),
+                room_id INTEGER REFERENCES rooms(id) ON DELETE SET NULL,
+                message TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'new'
+                    CHECK(status IN ('new','read','replied','closed')),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # ENQUIRY REPLY MIGRATION
+        # Adds the student's contact details (saved with each enquiry)
+        # and the Agent's reply to the existing agent_enquiries table.
+        enquiry_additions = {
+            "contact_phone": "TEXT",
+            "contact_email": "TEXT",
+            "reply_message": "TEXT",
+            "replied_at": "TEXT",
+            "replied_by": "INTEGER REFERENCES students(id)"
+        }
+
+        existing_enquiry_columns = get_columns(c, "agent_enquiries")
+        for col, definition in enquiry_additions.items():
+            if col not in existing_enquiry_columns:
+                c.execute(
+                    f"ALTER TABLE agent_enquiries ADD COLUMN {col} {definition}"
+                )
+
+        # Backfill contact details for enquiries created before this upgrade.
+        c.execute("""
+            UPDATE agent_enquiries
+            SET contact_phone=(
+                    SELECT s.phone FROM students s
+                    WHERE s.id=agent_enquiries.student_id
+                ),
+                contact_email=(
+                    SELECT s.email FROM students s
+                    WHERE s.id=agent_enquiries.student_id
+                )
+            WHERE contact_email IS NULL
+        """)
+
+        c.execute("""
+            CREATE INDEX IF NOT EXISTS idx_agent_enquiries_agent
+            ON agent_enquiries(agent_id, status, created_at)
+        """)
+
+        c.execute("""
+            CREATE INDEX IF NOT EXISTS idx_agent_enquiries_student
+            ON agent_enquiries(student_id, created_at)
+        """)
+
         if c.execute("SELECT COUNT(*) AS n FROM rooms").fetchone()["n"] == 0:
             c.executemany("""
                 INSERT INTO rooms(
@@ -322,18 +379,13 @@ def room_to_dict(room):
         "created_at": room["created_at"],
         "ownership_status": (
             room["ownership_status"]
-            if "ownership_status" in keys
-            else "unassigned"
+            if "ownership_status" in keys else "unassigned"
         ),
         "nearest_campus": (
-            room["nearest_campus"]
-            if "nearest_campus" in keys
-            else None
+            room["nearest_campus"] if "nearest_campus" in keys else None
         ),
         "proximity_tier": (
-            room["proximity_tier"]
-            if "proximity_tier" in keys
-            else None
+            room["proximity_tier"] if "proximity_tier" in keys else None
         )
     }
 
@@ -353,25 +405,20 @@ def create_access_token(student_id):
 
 def send_verification_email(email, full_name, token):
     if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
-        raise RuntimeError(
-            "SMTP_EMAIL or SMTP_APP_PASSWORD is not configured."
-        )
+        raise RuntimeError("SMTP_EMAIL or SMTP_APP_PASSWORD is not configured.")
 
     url = f"{PUBLIC_BASE_URL}/students/verify-email?token={quote(token, safe='')}"
-
     msg = EmailMessage()
     msg["Subject"] = "Verify your RumCHUO email"
     msg["From"] = SMTP_EMAIL
     msg["To"] = email
-
     msg.set_content(
         f"Hello {full_name},\n\n"
         "Thank you for registering with RumCHUO.\n\n"
         "Verify your email using this link:\n\n"
         f"{url}\n\n"
         f"This link expires in {VERIFICATION_TOKEN_MINUTES} minutes.\n\n"
-        "If you did not create this account, ignore this email.\n\n"
-        "RumCHUO"
+        "If you did not create this account, ignore this email.\n\nRumCHUO"
     )
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
@@ -384,26 +431,20 @@ def send_verification_email(email, full_name, token):
 
 def send_password_reset_email(email, full_name, token):
     if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
-        raise RuntimeError(
-            "SMTP_EMAIL or SMTP_APP_PASSWORD is not configured."
-        )
+        raise RuntimeError("SMTP_EMAIL or SMTP_APP_PASSWORD is not configured.")
 
     url = f"{PUBLIC_BASE_URL}/reset-password?token={quote(token, safe='')}"
-
     msg = EmailMessage()
     msg["Subject"] = "Reset your RumCHUO password"
     msg["From"] = SMTP_EMAIL
     msg["To"] = email
-
     msg.set_content(
         f"Hello {full_name},\n\n"
         "We received a request to reset your RumCHUO password.\n\n"
         "Choose a new password using this link:\n\n"
         f"{url}\n\n"
         f"This link expires in {PASSWORD_RESET_TOKEN_MINUTES} minutes.\n\n"
-        "If you did not request this, ignore this email. "
-        "Your password will not change.\n\n"
-        "RumCHUO"
+        "If you did not request this, ignore this email. Your password will not change.\n\nRumCHUO"
     )
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
@@ -437,7 +478,10 @@ def issue_verification_email(student_id, email, full_name):
 class StudentRegister(BaseModel):
     full_name: str = Field(min_length=2, max_length=100)
     email: str
+    phone: str = Field(min_length=5, max_length=25)
     password: str = Field(min_length=8, max_length=128)
+    joining_as: Literal["student", "agent", "owner"] = "student"
+    owner_declaration_confirmed: bool = False
 
     @field_validator("full_name")
     @classmethod
@@ -452,10 +496,29 @@ class StudentRegister(BaseModel):
     def clean_email(cls, v):
         return validate_email_format(v)
 
+    @field_validator("phone")
+    @classmethod
+    def clean_phone(cls, v):
+        v = v.strip()
+        if not re.fullmatch(r"[+0-9()\-\s]{5,25}", v):
+            raise ValueError("Enter a valid phone number.")
+        if not 5 <= len(re.sub(r"\D", "", v)) <= 20:
+            raise ValueError("Enter a valid phone number.")
+        return v
+
+    @model_validator(mode="after")
+    def require_owner_declaration(self):
+        if self.joining_as == "owner" and not self.owner_declaration_confirmed:
+            raise ValueError(
+                "Confirm that you are the property owner before creating an Owner account."
+            )
+        return self
+
 
 class StudentLogin(BaseModel):
     email: str
     password: str
+    login_as: Literal["student", "agent", "owner", "admin"] | None = None
 
     @field_validator("email")
     @classmethod
@@ -501,14 +564,11 @@ class StudentProfileUpdate(BaseModel):
     gender: Literal["male", "female", "other"] | None = None
     phone: str | None = Field(default=None, max_length=25)
     accommodation_status: Literal[
-        "looking_for_room",
-        "has_room_needs_roommate",
-        "not_looking"
+        "looking_for_room", "has_room_needs_roommate", "not_looking"
     ] | None = None
 
     @field_validator(
-        "full_name", "university", "campus", "faculty",
-        "course", "phone",
+        "full_name", "university", "campus", "faculty", "course", "phone",
         mode="before"
     )
     @classmethod
@@ -600,6 +660,77 @@ class OwnerAssignment(BaseModel):
     confirmation_note: str = Field(min_length=5, max_length=500)
 
 
+# ACTIVE AGENT MODELS
+
+class AgentDiscoveryUpdate(BaseModel):
+    is_available: bool = False
+    service_areas: list[str] = Field(default_factory=list, max_length=20)
+    universities_covered: list[str] = Field(default_factory=list, max_length=30)
+    share_exact_location: bool = False
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
+    @field_validator("service_areas", "universities_covered")
+    @classmethod
+    def clean_lists(cls, values):
+        cleaned = []
+        for value in values:
+            value = str(value).strip()
+            if value and value not in cleaned:
+                cleaned.append(value[:150])
+        return cleaned
+
+    @model_validator(mode="after")
+    def validate_location_sharing(self):
+        if self.is_available and not self.service_areas:
+            raise ValueError(
+                "Add at least one service area before making yourself available."
+            )
+
+        if self.share_exact_location:
+            if self.latitude is None or self.longitude is None:
+                raise ValueError(
+                    "Latitude and longitude are required when exact location sharing is enabled."
+                )
+        else:
+            self.latitude = None
+            self.longitude = None
+
+        return self
+
+
+class AgentEnquiryCreate(BaseModel):
+    agent_id: int = Field(gt=0)
+    room_id: int | None = Field(default=None, gt=0)
+    message: str = Field(min_length=5, max_length=2000)
+
+    @field_validator("message")
+    @classmethod
+    def clean_message(cls, value):
+        value = value.strip()
+        if len(value) < 5:
+            raise ValueError("Please enter a longer enquiry message.")
+        return value
+
+
+class AgentEnquiryStatusUpdate(BaseModel):
+    # "replied" is set automatically when the Agent sends a reply,
+    # so it can no longer be chosen manually.
+    status: Literal["read", "closed"]
+
+
+class AgentEnquiryReply(BaseModel):
+    reply: str = Field(min_length=2, max_length=2000)
+
+    @field_validator("reply")
+    @classmethod
+    def clean_reply(cls, value):
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("Please enter a reply message.")
+        return value
+
+
 # AUTHENTICATION AND ROLE CHECKS
 
 def get_current_student(
@@ -615,12 +746,9 @@ def get_current_student(
             algorithms=[ALGORITHM]
         )
         sid = payload.get("sub")
-
         if not sid:
             raise InvalidTokenError("Missing subject")
-
         sid = int(sid)
-
     except (InvalidTokenError, ValueError, TypeError):
         raise HTTPException(
             401,
@@ -652,7 +780,7 @@ def get_current_student(
 
 
 def require_room_manager(student=Depends(get_current_student)):
-    if student["role"] not in {"landlord", "admin"}:
+    if student["role"] not in {"landlord", "admin", "owner"}:
         raise HTTPException(
             403,
             "Only an Owner or administrator can manage original room records."
@@ -664,27 +792,24 @@ def require_admin(student=Depends(get_current_student)):
     if student["role"] != "admin":
         raise HTTPException(
             403,
-            "Only an administrator can create original room records. "
-            "Owners must submit properties for verification."
+            "Only an administrator can create original room records. Owners must submit properties for verification."
         )
     return student
 
 
 def require_landlord(student=Depends(get_current_student)):
-    if student["role"] != "landlord":
-        raise HTTPException(
-            403,
-            "Only an Owner can perform this action."
-        )
+    if student["role"] not in {"landlord", "owner"}:
+        raise HTTPException(403, "Only an Owner can perform this action.")
     return student
 
 
 def require_agent(student=Depends(get_current_student)):
     if student["role"] != "agent":
-        raise HTTPException(
-            403,
-            "Only an approved Agent can perform this action."
-        )
+        raise HTTPException(403, "Only an approved Agent can perform this action.")
+
+    if student["account_status"] != "active":
+        raise HTTPException(403, "Your Agent account is not currently active.")
+
     return student
 
 
@@ -693,26 +818,23 @@ def require_agent(student=Depends(get_current_student)):
 @app.get("/")
 def home():
     file_path = Path(__file__).resolve().parent / "index.html"
-
     if not file_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="RumCHUO homepage (index.html) was not found."
-        )
+        raise HTTPException(404, "RumCHUO homepage (index.html) was not found.")
+    return FileResponse(file_path)
 
-    return FileResponse(
-        file_path,
-        media_type="text/html"
-    )
+
+@app.get("/login", include_in_schema=False)
+@app.get("/login.html", include_in_schema=False)
+def login_page():
+    file_path = Path(__file__).resolve().parent / "login.html"
+    if not file_path.exists():
+        raise HTTPException(404, "RumCHUO login page (login.html) was not found.")
+    return FileResponse(file_path)
 
 
 @app.get("/health")
 def health():
-    return {
-        "status": "ok",
-        "app": APP_NAME,
-        "version": APP_VERSION
-    }
+    return {"status": "ok", "app": APP_NAME, "version": APP_VERSION}
 
 
 # STUDENT REGISTRATION AND AUTHENTICATION
@@ -726,32 +848,61 @@ def register_student(data: StudentRegister):
         with get_connection() as c:
             cur = c.execute("""
                 INSERT INTO students(
-                    full_name, email, password_hash, email_verified
+                    full_name, email, phone, password_hash, email_verified
                 )
-                VALUES(?,?,?,0)
-            """, (data.full_name, email, hashed))
+                VALUES(?,?,?,?,0)
+            """, (data.full_name, email, data.phone, hashed))
             sid = cur.lastrowid
 
+            if data.joining_as == "agent":
+                c.execute("""
+                    INSERT INTO agent_applications(student_id, application_note)
+                    VALUES(?,?)
+                """, (
+                    sid,
+                    "Agent access requested during homepage registration."
+                ))
+
+            elif data.joining_as == "owner":
+                c.execute("""
+                    INSERT INTO landlord_applications(
+                        student_id, relationship_to_property,
+                        application_note, declaration_confirmed
+                    )
+                    VALUES(?,?,?,1)
+                """, (
+                    sid,
+                    "owner",
+                    "Owner access requested during homepage registration. The applicant confirmed property ownership."
+                ))
+
     except sqlite3.IntegrityError:
-        raise HTTPException(
-            409,
-            "An account with this email already exists."
-        )
+        raise HTTPException(409, "An account or application with this email already exists.")
 
     try:
         issue_verification_email(sid, email, data.full_name)
     except Exception:
         raise HTTPException(
             503,
-            "Your account was created but the verification email could not "
-            "be sent. Check server configuration, then request another email."
+            "Your account was created but the verification email could not be sent. Check server configuration, then request another email."
+        )
+
+    response_message = "Registration successful. Check your email and verify before logging in."
+    if data.joining_as in {"agent", "owner"}:
+        response_message += (
+            " Your " + data.joining_as.title()
+            + " application has been submitted and requires administrator approval."
         )
 
     return {
-        "message": "Registration successful. Check your email and verify before logging in.",
+        "message": response_message,
         "email": email,
         "email_verified": False,
-        "role": "student"
+        "role": "student",
+        "joining_as": data.joining_as,
+        "application_status": (
+            "pending" if data.joining_as in {"agent", "owner"} else None
+        )
     }
 
 
@@ -773,10 +924,7 @@ def resend_verification(data: ResendVerification):
     try:
         issue_verification_email(s["id"], s["email"], s["full_name"])
     except Exception:
-        raise HTTPException(
-            503,
-            "The verification email could not be sent. Please try again later."
-        )
+        raise HTTPException(503, "The verification email could not be sent. Please try again later.")
 
     return generic
 
@@ -793,20 +941,13 @@ def verify_email(token: str = Query(min_length=20)):
         """, (token_hash,)).fetchone()
 
     if s is None:
-        raise HTTPException(
-            400,
-            "This verification link is invalid or has already been used."
-        )
+        raise HTTPException(400, "This verification link is invalid or has already been used.")
 
     if s["email_verified"]:
-        return {
-            "message": "Your email address is already verified."
-        }
+        return {"message": "Your email address is already verified."}
 
     try:
-        expiry = datetime.fromisoformat(
-            s["email_verification_expires_at"]
-        )
+        expiry = datetime.fromisoformat(s["email_verification_expires_at"])
         if expiry.tzinfo is None:
             expiry = expiry.replace(tzinfo=timezone.utc)
     except (TypeError, ValueError):
@@ -820,11 +961,7 @@ def verify_email(token: str = Query(min_length=20)):
                     email_verification_expires_at=NULL
                 WHERE id=?
             """, (s["id"],))
-
-        raise HTTPException(
-            400,
-            "This verification link has expired. Request a new link."
-        )
+        raise HTTPException(400, "This verification link has expired. Request a new link.")
 
     with get_connection() as c:
         c.execute("""
@@ -832,14 +969,10 @@ def verify_email(token: str = Query(min_length=20)):
             SET email_verified=1,
                 email_verification_token_hash=NULL,
                 email_verification_expires_at=NULL
-            WHERE id=?
-            AND email_verification_token_hash=?
+            WHERE id=? AND email_verification_token_hash=?
         """, (s["id"], token_hash))
 
-    return {
-        "message": "Email verified successfully. You can now log in.",
-        "email_verified": True
-    }
+    return {"message": "Email verified successfully. You can now log in.", "email_verified": True}
 
 
 @app.post("/students/login")
@@ -850,23 +983,57 @@ def login_student(data: StudentLogin):
             (normalize_email(data.email),)
         ).fetchone()
 
-    if s is None or not password_hash.verify(
-        data.password,
-        s["password_hash"]
-    ):
+    if s is None or not password_hash.verify(data.password, s["password_hash"]):
         raise HTTPException(401, "Invalid email or password.")
 
     if s["account_status"] == "suspended":
-        raise HTTPException(
-            403,
-            "This account is suspended. Contact RumCHUO support."
-        )
+        raise HTTPException(403, "This account is suspended. Contact RumCHUO support.")
 
     if not s["email_verified"]:
-        raise HTTPException(
-            403,
-            "Please verify your email before logging in."
-        )
+        raise HTTPException(403, "Please verify your email before logging in.")
+
+    selected_role = data.login_as
+    actual_role = s["role"]
+
+    if selected_role == "agent" and actual_role != "agent":
+        with get_connection() as c:
+            application = c.execute("""
+                SELECT status, review_reason
+                FROM agent_applications
+                WHERE student_id=?
+            """, (s["id"],)).fetchone()
+
+        if application and application["status"] == "pending":
+            raise HTTPException(403, "Your Agent application is awaiting administrator approval.")
+        if application and application["status"] == "rejected":
+            reason = application["review_reason"] or "No reason was provided."
+            raise HTTPException(403, "Your Agent application was not approved. " + reason)
+        raise HTTPException(403, "This account does not have approved Agent access.")
+
+    if selected_role == "owner" and actual_role not in {"landlord", "owner"}:
+        with get_connection() as c:
+            application = c.execute("""
+                SELECT status, review_reason
+                FROM landlord_applications
+                WHERE student_id=?
+            """, (s["id"],)).fetchone()
+
+        if application and application["status"] == "pending":
+            raise HTTPException(403, "Your Owner application is awaiting administrator approval.")
+        if application and application["status"] == "rejected":
+            reason = application["review_reason"] or "No reason was provided."
+            raise HTTPException(403, "Your Owner application was not approved. " + reason)
+        raise HTTPException(403, "This account does not have approved Owner access.")
+
+    expected_roles = {
+        "student": {"student"},
+        "agent": {"agent"},
+        "owner": {"landlord", "owner"},
+        "admin": {"admin"}
+    }
+
+    if selected_role and actual_role not in expected_roles[selected_role]:
+        raise HTTPException(403, "This account does not have access to the selected sign-in type.")
 
     return {
         "access_token": create_access_token(s["id"]),
@@ -881,14 +1048,9 @@ def login_student(data: StudentLogin):
 @app.get("/reset-password", include_in_schema=False)
 def reset_password_page():
     file_path = Path(__file__).resolve().parent / "reset_password.html"
-
     if not file_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="Password reset page (reset_password.html) was not found."
-        )
-
-    return FileResponse(file_path, media_type="text/html")
+        raise HTTPException(404, "Password reset page (reset_password.html) was not found.")
+    return FileResponse(file_path)
 
 
 @app.post("/students/forgot-password")
@@ -910,9 +1072,7 @@ def forgot_password(data: ForgotPassword):
             return generic
 
         token = secrets.token_urlsafe(32)
-        expiry = (
-            utc_now() + timedelta(minutes=PASSWORD_RESET_TOKEN_MINUTES)
-        ).isoformat()
+        expiry = (utc_now() + timedelta(minutes=PASSWORD_RESET_TOKEN_MINUTES)).isoformat()
 
         c.execute("""
             UPDATE students
@@ -941,22 +1101,16 @@ def reset_password(data: ResetPassword):
         """, (token_hash,)).fetchone()
 
         expiry = None
-
         if s is not None:
             try:
-                expiry = datetime.fromisoformat(
-                    s["password_reset_expires_at"]
-                )
+                expiry = datetime.fromisoformat(s["password_reset_expires_at"])
                 if expiry.tzinfo is None:
                     expiry = expiry.replace(tzinfo=timezone.utc)
             except (TypeError, ValueError):
                 expiry = None
 
         if s is None or expiry is None or expiry <= utc_now():
-            raise HTTPException(
-                400,
-                "This password reset link is invalid or has expired."
-            )
+            raise HTTPException(400, "This password reset link is invalid or has expired.")
 
         c.execute("""
             UPDATE students
@@ -966,27 +1120,15 @@ def reset_password(data: ResetPassword):
             WHERE id=?
         """, (password_hash.hash(data.new_password), s["id"]))
 
-    return {
-        "message": "Password updated successfully. You can now log in."
-    }
+    return {"message": "Password updated successfully. You can now log in."}
 
 
 @app.post("/students/me/change-password")
-def change_password(
-    data: ChangePassword,
-    student=Depends(get_current_student)
-):
-    if not password_hash.verify(
-        data.current_password,
-        student["password_hash"]
-    ):
+def change_password(data: ChangePassword, student=Depends(get_current_student)):
+    if not password_hash.verify(data.current_password, student["password_hash"]):
         raise HTTPException(400, "Current password is incorrect.")
-
     if data.current_password == data.new_password:
-        raise HTTPException(
-            400,
-            "The new password must be different from the current password."
-        )
+        raise HTTPException(400, "The new password must be different from the current password.")
 
     with get_connection() as c:
         c.execute(
@@ -1005,13 +1147,9 @@ def get_my_profile(student=Depends(get_current_student)):
 
 
 @app.put("/students/me/profile")
-def update_my_profile(
-    data: StudentProfileUpdate,
-    student=Depends(get_current_student)
-):
+def update_my_profile(data: StudentProfileUpdate, student=Depends(get_current_student)):
     updates = {
-        k: v
-        for k, v in data.model_dump(exclude_unset=True).items()
+        k: v for k, v in data.model_dump(exclude_unset=True).items()
         if k in PROFILE_FIELDS
     }
 
@@ -1025,10 +1163,7 @@ def update_my_profile(
             )
 
     with get_connection() as c:
-        s = c.execute(
-            "SELECT * FROM students WHERE id=?",
-            (student["id"],)
-        ).fetchone()
+        s = c.execute("SELECT * FROM students WHERE id=?", (student["id"],)).fetchone()
 
     return student_to_dict(s)
 
@@ -1039,15 +1174,9 @@ def get_my_preferences(student=Depends(get_current_student)):
 
 
 @app.put("/students/me/preferences")
-def update_my_preferences(
-    data: StudentPreferencesUpdate,
-    student=Depends(get_current_student)
-):
-    updates = data.model_dump(exclude_unset=True)
-
+def update_my_preferences(data: StudentPreferencesUpdate, student=Depends(get_current_student)):
     updates = {
-        k: v
-        for k, v in updates.items()
+        k: v for k, v in data.model_dump(exclude_unset=True).items()
         if k in PREFERENCE_FIELDS
     }
 
@@ -1061,10 +1190,7 @@ def update_my_preferences(
             )
 
     with get_connection() as c:
-        s = c.execute(
-            "SELECT * FROM students WHERE id=?",
-            (student["id"],)
-        ).fetchone()
+        s = c.execute("SELECT * FROM students WHERE id=?", (student["id"],)).fetchone()
 
     return {k: s[k] for k in PREFERENCE_FIELDS}
 
@@ -1072,13 +1198,6 @@ def update_my_preferences(
 # APPROVED AGENT PROPERTY HELPERS
 
 def get_approved_agent_application(c, room_id):
-    """
-    Find the approved direct Agent property application for a room.
-
-    Direct Agent properties are stored in agent_property_applications.
-    The Admin approval workflow connects the application to the room.
-    """
-
     try:
         return c.execute("""
             SELECT
@@ -1101,25 +1220,17 @@ def get_approved_agent_application(c, room_id):
             ORDER BY a.id DESC
             LIMIT 1
         """, (room_id,)).fetchone()
-
     except sqlite3.OperationalError:
         return None
 
 
 def get_agent_property_photos(c, room_id):
-    """Get photographs belonging to an approved direct Agent property."""
-
     try:
         rows = c.execute("""
-            SELECT
-                p.id,
-                p.original_name,
-                p.content_type
+            SELECT p.id, p.original_name, p.content_type
             FROM agent_property_photos p
-            JOIN agent_property_applications a
-                ON a.id=p.application_id
-            WHERE a.room_id=?
-            AND a.status='approved'
+            JOIN agent_property_applications a ON a.id=p.application_id
+            WHERE a.room_id=? AND a.status='approved'
             ORDER BY p.id
         """, (room_id,)).fetchall()
 
@@ -1131,19 +1242,11 @@ def get_agent_property_photos(c, room_id):
             }
             for row in rows
         ]
-
     except sqlite3.OperationalError:
         return []
 
 
-# PUBLIC ROOM RESPONSES
-
 def add_public_agents(c, room_id):
-    """
-    Return Agent names for direct Agent properties or
-    Owner properties advertised by authorized Agents.
-    """
-
     direct_application = get_approved_agent_application(c, room_id)
 
     if direct_application is not None:
@@ -1164,22 +1267,10 @@ def add_public_agents(c, room_id):
         ORDER BY s.full_name
     """, (room_id,)).fetchall()
 
-    return [
-        {
-            "agent_id": r["id"],
-            "agent_name": r["full_name"]
-        }
-        for r in rows
-    ]
+    return [{"agent_id": r["id"], "agent_name": r["full_name"]} for r in rows]
 
 
 def get_room_photos(c, room_id):
-    """
-    Retrieve photographs from either:
-    - An approved direct Agent property.
-    - The latest approved Owner verification application.
-    """
-
     direct_application = get_approved_agent_application(c, room_id)
 
     if direct_application is not None:
@@ -1193,8 +1284,7 @@ def get_room_photos(c, room_id):
                 ON a.room_id=r.id
                 AND a.landlord_id=r.owner_id
                 AND a.status='approved'
-            JOIN room_ownership_photos p
-                ON p.application_id=a.id
+            JOIN room_ownership_photos p ON p.application_id=a.id
             WHERE r.id=?
             AND a.id=(
                 SELECT MAX(a2.id)
@@ -1205,38 +1295,23 @@ def get_room_photos(c, room_id):
             )
             ORDER BY p.id
         """, (room_id,)).fetchall()
-
     except sqlite3.OperationalError:
         return []
 
     return [
-        {
-            "id": r["id"],
-            "original_name": r["original_name"],
-            "content_type": r["content_type"]
-        }
+        {"id": r["id"], "original_name": r["original_name"], "content_type": r["content_type"]}
         for r in rows
     ]
 
 
 def get_agents_with_contact(c, room_id):
-    """
-    Return verified Agent contact information to logged-in students.
-
-    For direct Agent properties, the phone number submitted with
-    the property takes priority over the Agent account phone number.
-    """
-
     direct_application = get_approved_agent_application(c, room_id)
 
     if direct_application is not None:
         return [{
             "agent_id": direct_application["agent_id"],
             "agent_name": direct_application["agent_name"],
-            "phone": (
-                direct_application["phone_number"]
-                or direct_application["account_phone"]
-            ),
+            "phone": direct_application["phone_number"] or direct_application["account_phone"],
             "university": direct_application["university"]
         }]
 
@@ -1264,6 +1339,8 @@ def get_agents_with_contact(c, room_id):
     ]
 
 
+# ROOM ROUTES
+
 @app.get("/rooms")
 def list_rooms(
     location: str | None = None,
@@ -1281,67 +1358,43 @@ def list_rooms(
     if location and location.strip():
         conditions.append("LOWER(location) LIKE ?")
         params.append(f"%{location.strip().lower()}%")
-
     if campus and campus.strip():
         conditions.append("UPPER(nearest_campus)=?")
         params.append(campus.strip().upper())
-
     if proximity:
         conditions.append("proximity_tier=?")
         params.append(proximity)
-
     if max_price is not None:
         conditions.append("price<=?")
         params.append(max_price)
-
     if room_type:
         conditions.append("room_type=?")
         params.append(room_type)
-
     if available_only:
         conditions.append("available=1")
 
-    conditions.append("ownership_status='assigned'")
-    conditions.append("owner_id IS NOT NULL")
-
+    conditions.extend(["ownership_status='assigned'", "owner_id IS NOT NULL"])
     where = "WHERE " + " AND ".join(conditions)
 
     with get_connection() as c:
         total = c.execute(
-            f"SELECT COUNT(*) n FROM rooms {where}",
-            params
+            f"SELECT COUNT(*) n FROM rooms {where}", params
         ).fetchone()["n"]
 
         rows = c.execute(
-            f"""
-            SELECT *
-            FROM rooms {where}
-            ORDER BY price, id
-            LIMIT ? OFFSET ?
-            """,
+            f"SELECT * FROM rooms {where} ORDER BY price, id LIMIT ? OFFSET ?",
             params + [limit, offset]
         ).fetchall()
 
         rooms = []
-
         for r in rows:
             item = room_to_dict(r)
-
             application = get_approved_agent_application(c, r["id"])
-
             item["agents"] = add_public_agents(c, r["id"])
-
-            item["description"] = (
-                application["description"]
-                if application is not None
-                else None
-            )
-
+            item["description"] = application["description"] if application else None
             photos = get_room_photos(c, r["id"])
-
             item["photo_ids"] = [ph["id"] for ph in photos]
             item["photo_count"] = len(photos)
-
             rooms.append(item)
 
     return {
@@ -1357,62 +1410,29 @@ def list_rooms(
 @app.get("/rooms/{room_id}")
 def get_room(room_id: int):
     with get_connection() as c:
-        r = c.execute(
-            "SELECT * FROM rooms WHERE id=?",
-            (room_id,)
-        ).fetchone()
-
-        if r is None:
-            raise HTTPException(404, "Room not found.")
-
-        if r["ownership_status"] != "assigned" or r["owner_id"] is None:
+        r = c.execute("SELECT * FROM rooms WHERE id=?", (room_id,)).fetchone()
+        if r is None or r["ownership_status"] != "assigned" or r["owner_id"] is None:
             raise HTTPException(404, "Verified room not found.")
 
         result = room_to_dict(r)
-
         application = get_approved_agent_application(c, room_id)
-
         result["agents"] = add_public_agents(c, room_id)
-
-        result["description"] = (
-            application["description"]
-            if application is not None
-            else None
-        )
+        result["description"] = application["description"] if application else None
 
     return result
 
 
 @app.get("/rooms/{room_id}/details")
-def get_room_details(
-    room_id: int,
-    student=Depends(get_current_student)
-):
-    """Full room details for logged-in students."""
-
+def get_room_details(room_id: int, student=Depends(get_current_student)):
     with get_connection() as c:
-        r = c.execute(
-            "SELECT * FROM rooms WHERE id=?",
-            (room_id,)
-        ).fetchone()
+        r = c.execute("SELECT * FROM rooms WHERE id=?", (room_id,)).fetchone()
 
-        if (
-            r is None
-            or r["ownership_status"] != "assigned"
-            or r["owner_id"] is None
-        ):
+        if r is None or r["ownership_status"] != "assigned" or r["owner_id"] is None:
             raise HTTPException(404, "Verified room not found.")
 
         result = room_to_dict(r)
-
         application = get_approved_agent_application(c, room_id)
-
-        result["description"] = (
-            application["description"]
-            if application is not None
-            else None
-        )
-
+        result["description"] = application["description"] if application else None
         result["photos"] = get_room_photos(c, room_id)
         result["agents"] = get_agents_with_contact(c, room_id)
 
@@ -1420,24 +1440,14 @@ def get_room_details(
 
 
 @app.get("/rooms/{room_id}/photos/{photo_id}")
-def get_room_photo(
-    room_id: int,
-    photo_id: int,
-    student=Depends(get_current_student)
-):
-    """Serve verified Owner or Agent photographs to logged-in students."""
-
+def get_room_photo(room_id: int, photo_id: int, student=Depends(get_current_student)):
     with get_connection() as c:
         r = c.execute(
             "SELECT ownership_status, owner_id FROM rooms WHERE id=?",
             (room_id,)
         ).fetchone()
 
-        if (
-            r is None
-            or r["ownership_status"] != "assigned"
-            or r["owner_id"] is None
-        ):
+        if r is None or r["ownership_status"] != "assigned" or r["owner_id"] is None:
             raise HTTPException(404, "Verified room not found.")
 
         direct_application = get_approved_agent_application(c, room_id)
@@ -1446,42 +1456,26 @@ def get_room_photo(
             photo = c.execute("""
                 SELECT stored_name, content_type
                 FROM agent_property_photos
-                WHERE id=?
-                AND application_id=?
-            """, (
-                photo_id,
-                direct_application["application_id"]
-            )).fetchone()
-
+                WHERE id=? AND application_id=?
+            """, (photo_id, direct_application["application_id"])).fetchone()
             photo_directory = AGENT_PHOTO_DIR
-
         else:
-            allowed = {
-                p["id"]
-                for p in get_room_photos(c, room_id)
-            }
-
+            allowed = {p["id"] for p in get_room_photos(c, room_id)}
             photo = None
-
             if photo_id in allowed:
                 photo = c.execute("""
                     SELECT stored_name, content_type
                     FROM room_ownership_photos
                     WHERE id=?
                 """, (photo_id,)).fetchone()
-
             photo_directory = PRIVATE_PHOTO_DIR
 
     if photo is None:
         raise HTTPException(404, "Property photograph not found.")
 
     path = photo_directory / Path(photo["stored_name"]).name
-
     if not path.is_file():
-        raise HTTPException(
-            404,
-            "The stored photograph could not be found."
-        )
+        raise HTTPException(404, "The stored photograph could not be found.")
 
     return FileResponse(
         path,
@@ -1493,129 +1487,66 @@ def get_room_photo(
     )
 
 
-# IMPORTANT SECURITY:
-# Only administrators can create original room records here.
-# Owners must use the property verification workflow.
-
 @app.post("/rooms", status_code=201)
-def create_room(
-    data: RoomCreate,
-    student=Depends(require_admin)
-):
+def create_room(data: RoomCreate, student=Depends(require_admin)):
     with get_connection() as c:
         cur = c.execute("""
             INSERT INTO rooms(
-                location,
-                price,
-                available,
-                room_type,
-                owner_id,
-                ownership_status
+                location, price, available, room_type, owner_id, ownership_status
             )
             VALUES(?,?,?,?,NULL,'unassigned')
-        """, (
-            data.location,
-            data.price,
-            int(data.available),
-            data.room_type
-        ))
-
-        r = c.execute(
-            "SELECT * FROM rooms WHERE id=?",
-            (cur.lastrowid,)
-        ).fetchone()
+        """, (data.location, data.price, int(data.available), data.room_type))
+        r = c.execute("SELECT * FROM rooms WHERE id=?", (cur.lastrowid,)).fetchone()
 
     return room_to_dict(r)
 
 
 @app.put("/rooms/{room_id}")
-def update_room(
-    room_id: int,
-    data: RoomUpdate,
-    student=Depends(require_room_manager)
-):
+def update_room(room_id: int, data: RoomUpdate, student=Depends(require_room_manager)):
     updates = data.model_dump(exclude_unset=True)
-
     if not updates:
-        raise HTTPException(
-            400,
-            "Provide at least one field to update."
-        )
+        raise HTTPException(400, "Provide at least one field to update.")
 
     with get_connection() as c:
-        r = c.execute(
-            "SELECT * FROM rooms WHERE id=?",
-            (room_id,)
-        ).fetchone()
-
+        r = c.execute("SELECT * FROM rooms WHERE id=?", (room_id,)).fetchone()
         if r is None:
             raise HTTPException(404, "Room not found.")
 
-        if (
-            student["role"] != "admin"
-            and (
-                r["owner_id"] != student["id"]
-                or r["ownership_status"] != "assigned"
-            )
+        if student["role"] != "admin" and (
+            r["owner_id"] != student["id"] or r["ownership_status"] != "assigned"
         ):
-            raise HTTPException(
-                403,
-                "You can only edit verified rooms assigned to your Owner account."
-            )
+            raise HTTPException(403, "You can only edit verified rooms assigned to your Owner account.")
 
         values = {
-            k: (
-                int(v)
-                if k == "available" and v is not None
-                else v
-            )
+            k: int(v) if k == "available" and v is not None else v
             for k, v in updates.items()
         }
 
         c.execute(
-            "UPDATE rooms SET "
-            + ", ".join(f"{k}=?" for k in values)
-            + " WHERE id=?",
+            "UPDATE rooms SET " + ", ".join(f"{k}=?" for k in values) + " WHERE id=?",
             list(values.values()) + [room_id]
         )
-
-        updated = c.execute(
-            "SELECT * FROM rooms WHERE id=?",
-            (room_id,)
-        ).fetchone()
+        updated = c.execute("SELECT * FROM rooms WHERE id=?", (room_id,)).fetchone()
 
     return room_to_dict(updated)
 
 
 @app.put("/admin/rooms/{room_id}/proximity")
-def set_room_proximity(
-    room_id: int,
-    data: RoomProximity,
-    admin=Depends(require_admin)
-):
+def set_room_proximity(room_id: int, data: RoomProximity, admin=Depends(require_admin)):
     with get_connection() as c:
-        if c.execute(
-            "SELECT 1 FROM rooms WHERE id=?",
-            (room_id,)
-        ).fetchone() is None:
+        if c.execute("SELECT 1 FROM rooms WHERE id=?", (room_id,)).fetchone() is None:
             raise HTTPException(404, "Room not found.")
 
         c.execute("""
-            UPDATE rooms
-            SET nearest_campus=?, proximity_tier=?
+            UPDATE rooms SET nearest_campus=?, proximity_tier=?
             WHERE id=?
         """, (data.nearest_campus, data.proximity_tier, room_id))
 
         c.execute("""
-            INSERT INTO admin_audit_logs(
-                admin_id, action, target_type, target_id, details
-            )
+            INSERT INTO admin_audit_logs(admin_id, action, target_type, target_id, details)
             VALUES(?,?,?,?,?)
         """, (
-            admin["id"],
-            "room_proximity_set",
-            "room",
-            room_id,
+            admin["id"], "room_proximity_set", "room", room_id,
             f"{data.nearest_campus}/{data.proximity_tier}"
         ))
 
@@ -1628,10 +1559,7 @@ def set_room_proximity(
 
 
 @app.delete("/rooms/{room_id}")
-def delete_room(
-    room_id: int,
-    student=Depends(require_room_manager)
-):
+def delete_room(room_id: int, student=Depends(require_room_manager)):
     with get_connection() as c:
         r = c.execute(
             "SELECT id, owner_id, ownership_status FROM rooms WHERE id=?",
@@ -1641,102 +1569,56 @@ def delete_room(
         if r is None:
             raise HTTPException(404, "Room not found.")
 
-        if (
-            student["role"] != "admin"
-            and (
-                r["owner_id"] != student["id"]
-                or r["ownership_status"] != "assigned"
-            )
+        if student["role"] != "admin" and (
+            r["owner_id"] != student["id"] or r["ownership_status"] != "assigned"
         ):
-            raise HTTPException(
-                403,
-                "You can only delete verified rooms assigned to your Owner account."
-            )
+            raise HTTPException(403, "You can only delete verified rooms assigned to your Owner account.")
 
-        c.execute(
-            "DELETE FROM rooms WHERE id=?",
-            (room_id,)
-        )
+        c.execute("DELETE FROM rooms WHERE id=?", (room_id,))
 
-    return {
-        "message": "Room deleted successfully.",
-        "room_id": room_id
-    }
+    return {"message": "Room deleted successfully.", "room_id": room_id}
 
 
 # AGENT-TO-ROOM PERMISSION WORKFLOW
 
 @app.post("/agents/me/room-requests", status_code=201)
-def request_room_advertising(
-    data: AgentRoomRequest,
-    agent=Depends(require_agent)
-):
+def request_room_advertising(data: AgentRoomRequest, agent=Depends(require_agent)):
     with get_connection() as c:
         room = c.execute("""
             SELECT id, available, ownership_status, owner_id
-            FROM rooms
-            WHERE id=?
+            FROM rooms WHERE id=?
         """, (data.room_id,)).fetchone()
 
         if room is None:
             raise HTTPException(404, "Room not found.")
-
-        if (
-            room["ownership_status"] != "assigned"
-            or room["owner_id"] is None
-        ):
-            raise HTTPException(
-                409,
-                "This room has no confirmed owner yet. "
-                "RumCHUO must verify ownership before an Agent can request permission."
-            )
-
+        if room["ownership_status"] != "assigned" or room["owner_id"] is None:
+            raise HTTPException(409, "This room has no confirmed owner yet. RumCHUO must verify ownership before an Agent can request permission.")
         if room["owner_id"] == agent["id"]:
-            raise HTTPException(
-                400,
-                "You cannot request advertising permission for your own room."
-            )
+            raise HTTPException(400, "You cannot request advertising permission for your own room.")
 
         existing = c.execute("""
-            SELECT id, status
-            FROM agent_room_authorizations
+            SELECT id, status FROM agent_room_authorizations
             WHERE room_id=? AND agent_id=?
         """, (data.room_id, agent["id"])).fetchone()
 
         if existing and existing["status"] in {"pending", "approved"}:
-            raise HTTPException(
-                409,
-                f"A room permission request already exists with status '{existing['status']}'."
-            )
+            raise HTTPException(409, f"A room permission request already exists with status '{existing['status']}'.")
 
         if existing:
             c.execute("""
                 UPDATE agent_room_authorizations
-                SET status='pending',
-                    advertising_enabled=1,
-                    requested_at=CURRENT_TIMESTAMP,
-                    reviewed_at=NULL,
-                    reviewed_by=NULL,
-                    review_note=?
+                SET status='pending', advertising_enabled=1,
+                    requested_at=CURRENT_TIMESTAMP, reviewed_at=NULL,
+                    reviewed_by=NULL, review_note=?
                 WHERE id=?
             """, (data.note.strip(), existing["id"]))
         else:
             c.execute("""
-                INSERT INTO agent_room_authorizations(
-                    room_id, agent_id, review_note
-                )
+                INSERT INTO agent_room_authorizations(room_id, agent_id, review_note)
                 VALUES(?,?,?)
-            """, (
-                data.room_id,
-                agent["id"],
-                data.note.strip()
-            ))
+            """, (data.room_id, agent["id"], data.note.strip()))
 
-    return {
-        "message": "Request sent to the room owner.",
-        "room_id": data.room_id,
-        "status": "pending"
-    }
+    return {"message": "Request sent to the room owner.", "room_id": data.room_id, "status": "pending"}
 
 
 @app.get("/agents/me/rooms")
@@ -1744,12 +1626,8 @@ def my_agent_rooms(agent=Depends(require_agent)):
     with get_connection() as c:
         rows = c.execute("""
             SELECT
-                r.id AS room_id,
-                r.location,
-                r.price,
-                r.available,
-                r.room_type,
-                r.created_at,
+                r.id AS room_id, r.location, r.price, r.available,
+                r.room_type, r.created_at,
                 a.status AS authorization_status,
                 a.advertising_enabled
             FROM agent_room_authorizations a
@@ -1758,70 +1636,76 @@ def my_agent_rooms(agent=Depends(require_agent)):
             ORDER BY a.requested_at DESC
         """, (agent["id"],)).fetchall()
 
-    return {
-        "rooms": [dict(r) for r in rows]
-    }
+    return {"rooms": [dict(r) for r in rows]}
 
 
 @app.post("/agents/me/rooms/{room_id}/remove")
-def remove_room_from_agent_page(
-    room_id: int,
-    agent=Depends(require_agent)
-):
+def remove_room_from_agent_page(room_id: int, agent=Depends(require_agent)):
     with get_connection() as c:
         cur = c.execute("""
             UPDATE agent_room_authorizations
             SET advertising_enabled=0
-            WHERE room_id=?
-            AND agent_id=?
-            AND status='approved'
+            WHERE room_id=? AND agent_id=? AND status='approved'
         """, (room_id, agent["id"]))
 
         if cur.rowcount == 0:
-            raise HTTPException(
-                404,
-                "No approved advertising permission was found for this room."
-            )
+            raise HTTPException(404, "No approved advertising permission was found for this room.")
 
     return {
-        "message": "Room removed from your Agent page. The original room record is unchanged."
+        "message": "Advertising has been paused. Your Owner's approval is still valid; you can enable this property for students again at any time."
+    }
+
+
+@app.post("/agents/me/rooms/{room_id}/enable")
+def enable_room_for_students(room_id: int, agent=Depends(require_agent)):
+    with get_connection() as c:
+        authorization = c.execute("""
+            SELECT a.id, a.status, r.available, r.ownership_status, r.owner_id
+            FROM agent_room_authorizations a
+            JOIN rooms r ON r.id=a.room_id
+            WHERE a.room_id=? AND a.agent_id=?
+        """, (room_id, agent["id"])).fetchone()
+
+        if authorization is None:
+            raise HTTPException(404, "No advertising permission record was found for this property.")
+        if authorization["status"] != "approved":
+            raise HTTPException(409, "This property does not have an active Owner approval.")
+        if authorization["ownership_status"] != "assigned" or authorization["owner_id"] is None:
+            raise HTTPException(409, "This property no longer has verified ownership.")
+        if not authorization["available"]:
+            raise HTTPException(409, "This property is currently unavailable and cannot be enabled for students.")
+
+        c.execute("""
+            UPDATE agent_room_authorizations
+            SET advertising_enabled=1
+            WHERE id=? AND agent_id=? AND status='approved'
+        """, (authorization["id"], agent["id"]))
+
+    return {
+        "message": "Property enabled for students. Your existing Owner approval remains valid.",
+        "room_id": room_id,
+        "status": "approved",
+        "advertising_enabled": True
     }
 
 
 @app.post("/agents/me/rooms/{room_id}/rental-report", status_code=201)
-def report_room_rented(
-    room_id: int,
-    data: RentalReport,
-    agent=Depends(require_agent)
-):
+def report_room_rented(room_id: int, data: RentalReport, agent=Depends(require_agent)):
     with get_connection() as c:
         auth = c.execute("""
-            SELECT id
-            FROM agent_room_authorizations
-            WHERE room_id=?
-            AND agent_id=?
-            AND status='approved'
+            SELECT id FROM agent_room_authorizations
+            WHERE room_id=? AND agent_id=? AND status='approved'
         """, (room_id, agent["id"])).fetchone()
 
         if auth is None:
-            raise HTTPException(
-                403,
-                "You need approved advertising permission to report this room."
-            )
+            raise HTTPException(403, "You need approved advertising permission to report this room.")
 
         c.execute("""
             INSERT INTO room_rental_reports(room_id, agent_id, note)
             VALUES(?,?,?)
-        """, (
-            room_id,
-            agent["id"],
-            data.note.strip()
-        ))
+        """, (room_id, agent["id"], data.note.strip()))
 
-    return {
-        "message": "Rental report sent to the Owner for confirmation.",
-        "status": "pending"
-    }
+    return {"message": "Rental report sent to the Owner for confirmation.", "status": "pending"}
 
 
 # OWNER ROUTES
@@ -1829,16 +1713,37 @@ def report_room_rented(
 @app.get("/landlord/me/rooms")
 def landlord_rooms(owner=Depends(require_landlord)):
     with get_connection() as c:
-        rows = c.execute("""
-            SELECT *
-            FROM rooms
-            WHERE owner_id=?
-            ORDER BY id DESC
-        """, (owner["id"],)).fetchall()
+        rows = c.execute(
+            "SELECT * FROM rooms WHERE owner_id=? ORDER BY id DESC",
+            (owner["id"],)
+        ).fetchall()
 
-    return {
-        "rooms": [room_to_dict(r) for r in rows]
-    }
+        properties = []
+        for row in rows:
+            item = room_to_dict(row)
+            application = c.execute("""
+                SELECT id, status FROM room_ownership_applications
+                WHERE room_id=? AND landlord_id=?
+                ORDER BY id DESC LIMIT 1
+            """, (row["id"], owner["id"])).fetchone()
+
+            if application is None:
+                item["application_id"] = None
+                item["application_status"] = None
+                item["photos"] = []
+            else:
+                item["application_id"] = application["id"]
+                item["application_status"] = application["status"]
+                photo_rows = c.execute("""
+                    SELECT id, original_name, content_type
+                    FROM room_ownership_photos
+                    WHERE application_id=? ORDER BY id
+                """, (application["id"],)).fetchall()
+                item["photos"] = [dict(photo) for photo in photo_rows]
+
+            properties.append(item)
+
+    return {"rooms": properties}
 
 
 @app.get("/landlord/me/authorization-requests")
@@ -1846,28 +1751,21 @@ def landlord_authorization_requests(owner=Depends(require_landlord)):
     with get_connection() as c:
         rows = c.execute("""
             SELECT
-                a.id,
-                a.room_id,
-                a.agent_id,
-                a.status,
-                a.requested_at,
-                a.review_note,
-                r.location,
-                r.price,
+                a.id, a.room_id, a.agent_id, a.status,
+                a.requested_at, a.review_note,
+                r.location, r.price,
                 s.full_name AS agent_name,
-                s.email AS agent_email
+                s.email AS agent_email,
+                s.phone AS agent_phone
             FROM agent_room_authorizations a
             JOIN rooms r ON r.id=a.room_id
             JOIN students s ON s.id=a.agent_id
             WHERE r.owner_id=?
-            ORDER BY
-                CASE WHEN a.status='pending' THEN 0 ELSE 1 END,
-                a.requested_at DESC
+            ORDER BY CASE WHEN a.status='pending' THEN 0 ELSE 1 END,
+                     a.requested_at DESC
         """, (owner["id"],)).fetchall()
 
-    return {
-        "requests": [dict(r) for r in rows]
-    }
+    return {"requests": [dict(r) for r in rows]}
 
 
 @app.post("/landlord/me/authorization-requests/{authorization_id}/decision")
@@ -1885,34 +1783,13 @@ def decide_authorization(
         """, (authorization_id,)).fetchone()
 
         if a is None:
-            raise HTTPException(
-                404,
-                "Authorization request not found."
-            )
-
+            raise HTTPException(404, "Authorization request not found.")
         if a["owner_id"] != owner["id"]:
-            raise HTTPException(
-                403,
-                "You can only decide requests for rooms you own."
-            )
-
-        if (
-            data.decision in {"approve", "reject"}
-            and a["status"] != "pending"
-        ):
-            raise HTTPException(
-                409,
-                "Only pending requests can be approved or rejected."
-            )
-
-        if (
-            data.decision == "revoke"
-            and a["status"] != "approved"
-        ):
-            raise HTTPException(
-                409,
-                "Only approved permissions can be revoked."
-            )
+            raise HTTPException(403, "You can only decide requests for rooms you own.")
+        if data.decision in {"approve", "reject"} and a["status"] != "pending":
+            raise HTTPException(409, "Only pending requests can be approved or rejected.")
+        if data.decision == "revoke" and a["status"] != "approved":
+            raise HTTPException(409, "Only approved permissions can be revoked.")
 
         status = {
             "approve": "approved",
@@ -1922,25 +1799,15 @@ def decide_authorization(
 
         c.execute("""
             UPDATE agent_room_authorizations
-            SET status=?,
-                advertising_enabled=?,
-                reviewed_at=CURRENT_TIMESTAMP,
-                reviewed_by=?,
-                review_note=?
+            SET status=?, advertising_enabled=?,
+                reviewed_at=CURRENT_TIMESTAMP, reviewed_by=?, review_note=?
             WHERE id=?
         """, (
-            status,
-            1 if status == "approved" else 0,
-            owner["id"],
-            data.note.strip(),
-            authorization_id
+            status, 1 if status == "approved" else 0,
+            owner["id"], data.note.strip(), authorization_id
         ))
 
-    return {
-        "authorization_id": authorization_id,
-        "status": status,
-        "message": "Authorization updated."
-    }
+    return {"authorization_id": authorization_id, "status": status, "message": "Authorization updated."}
 
 
 @app.get("/landlord/me/rental-reports")
@@ -1948,14 +1815,8 @@ def landlord_rental_reports(owner=Depends(require_landlord)):
     with get_connection() as c:
         rows = c.execute("""
             SELECT
-                rr.id,
-                rr.room_id,
-                rr.agent_id,
-                rr.note,
-                rr.status,
-                rr.created_at,
-                r.location,
-                s.full_name AS agent_name
+                rr.id, rr.room_id, rr.agent_id, rr.note, rr.status,
+                rr.created_at, r.location, s.full_name AS agent_name
             FROM room_rental_reports rr
             JOIN rooms r ON r.id=rr.room_id
             JOIN students s ON s.id=rr.agent_id
@@ -1963,16 +1824,11 @@ def landlord_rental_reports(owner=Depends(require_landlord)):
             ORDER BY rr.id DESC
         """, (owner["id"],)).fetchall()
 
-    return {
-        "reports": [dict(r) for r in rows]
-    }
+    return {"reports": [dict(r) for r in rows]}
 
 
 @app.post("/landlord/me/rental-reports/{report_id}/confirm")
-def confirm_rented(
-    report_id: int,
-    owner=Depends(require_landlord)
-):
+def confirm_rented(report_id: int, owner=Depends(require_landlord)):
     with get_connection() as c:
         report = c.execute("""
             SELECT rr.*, r.owner_id
@@ -1982,44 +1838,415 @@ def confirm_rented(
         """, (report_id,)).fetchone()
 
         if report is None:
-            raise HTTPException(
-                404,
-                "Rental report not found."
-            )
-
+            raise HTTPException(404, "Rental report not found.")
         if report["owner_id"] != owner["id"]:
-            raise HTTPException(
-                403,
-                "You can only confirm rental reports for your rooms."
-            )
-
+            raise HTTPException(403, "You can only confirm rental reports for your rooms.")
         if report["status"] != "pending":
-            raise HTTPException(
-                409,
-                "This rental report has already been reviewed."
-            )
+            raise HTTPException(409, "This rental report has already been reviewed.")
 
-        c.execute(
-            "UPDATE rooms SET available=0 WHERE id=?",
-            (report["room_id"],)
-        )
-
+        c.execute("UPDATE rooms SET available=0 WHERE id=?", (report["room_id"],))
         c.execute("""
             UPDATE room_rental_reports
-            SET status='confirmed',
-                reviewed_at=CURRENT_TIMESTAMP,
-                reviewed_by=?
+            SET status='confirmed', reviewed_at=CURRENT_TIMESTAMP, reviewed_by=?
             WHERE id=?
         """, (owner["id"], report_id))
-
         c.execute("""
             UPDATE agent_room_authorizations
-            SET advertising_enabled=0
-            WHERE room_id=?
+            SET advertising_enabled=0 WHERE room_id=?
         """, (report["room_id"],))
 
+    return {"message": "Rental confirmed. The room is now marked unavailable and hidden from Agent pages."}
+
+
+# ACTIVE AGENTS MAP AND ENQUIRIES
+
+def parse_json_list(value):
+    try:
+        parsed = json.loads(value or "[]")
+        return parsed if isinstance(parsed, list) else []
+    except (TypeError, ValueError):
+        return []
+
+
+def count_agent_verified_properties(c, agent_id):
+    row = c.execute("""
+        SELECT COUNT(DISTINCT r.id) AS total
+        FROM rooms r
+        WHERE r.available=1
+        AND r.ownership_status='assigned'
+        AND r.owner_id IS NOT NULL
+        AND (
+            EXISTS (
+                SELECT 1
+                FROM agent_property_applications ap
+                WHERE ap.room_id=r.id
+                AND ap.agent_id=?
+                AND ap.status='approved'
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM agent_room_authorizations ara
+                WHERE ara.room_id=r.id
+                AND ara.agent_id=?
+                AND ara.status='approved'
+                AND ara.advertising_enabled=1
+            )
+        )
+    """, (agent_id, agent_id)).fetchone()
+
+    return row["total"] if row else 0
+
+
+def agent_discovery_profile(c, agent_id):
+    profile = c.execute("""
+        SELECT * FROM agent_discovery_profiles WHERE agent_id=?
+    """, (agent_id,)).fetchone()
+
+    if profile is None:
+        return {
+            "is_available": False,
+            "service_areas": [],
+            "universities_covered": [],
+            "share_exact_location": False,
+            "latitude": None,
+            "longitude": None,
+            "subscription_tier": "free",
+            "subscription_status": "inactive"
+        }
+
+    share = bool(profile["share_exact_location"])
+
     return {
-        "message": "Rental confirmed. The room is now marked unavailable and hidden from Agent pages."
+        "is_available": bool(profile["is_available"]),
+        "service_areas": parse_json_list(profile["service_areas"]),
+        "universities_covered": parse_json_list(profile["universities_covered"]),
+        "share_exact_location": share,
+        "latitude": profile["latitude"] if share else None,
+        "longitude": profile["longitude"] if share else None,
+        "subscription_tier": profile["subscription_tier"],
+        "subscription_status": profile["subscription_status"]
+    }
+
+
+@app.get("/agents/me/discovery-profile")
+def get_agent_discovery_profile(agent=Depends(require_agent)):
+    with get_connection() as c:
+        profile = agent_discovery_profile(c, agent["id"])
+
+    return profile
+
+
+@app.put("/agents/me/discovery-profile")
+def update_agent_discovery_profile(
+    data: AgentDiscoveryUpdate,
+    agent=Depends(require_agent)
+):
+    with get_connection() as c:
+        c.execute("""
+            INSERT INTO agent_discovery_profiles(
+                agent_id, is_available, service_areas,
+                universities_covered, share_exact_location,
+                latitude, longitude, subscription_tier,
+                subscription_status, updated_at
+            )
+            VALUES(?,?,?,?,?,?,?,'free','inactive',CURRENT_TIMESTAMP)
+            ON CONFLICT(agent_id) DO UPDATE SET
+                is_available=excluded.is_available,
+                service_areas=excluded.service_areas,
+                universities_covered=excluded.universities_covered,
+                share_exact_location=excluded.share_exact_location,
+                latitude=excluded.latitude,
+                longitude=excluded.longitude,
+                updated_at=CURRENT_TIMESTAMP
+        """, (
+            agent["id"],
+            int(data.is_available),
+            json.dumps(data.service_areas),
+            json.dumps(data.universities_covered),
+            int(data.share_exact_location),
+            data.latitude if data.share_exact_location else None,
+            data.longitude if data.share_exact_location else None
+        ))
+
+        profile = agent_discovery_profile(c, agent["id"])
+
+    return {
+        **profile,
+        "message": "Your Active Agents profile has been updated."
+    }
+
+
+@app.get("/students/active-agents")
+def get_active_agents(student=Depends(get_current_student)):
+    """
+    Return approved, verified, active Agents who have enabled availability.
+    Exact coordinates are returned only when the Agent has opted in.
+    """
+
+    with get_connection() as c:
+        agents = c.execute("""
+            SELECT
+                s.id,
+                s.full_name,
+                s.university,
+                d.service_areas,
+                d.universities_covered,
+                d.share_exact_location,
+                d.latitude,
+                d.longitude
+            FROM agent_discovery_profiles d
+            JOIN students s ON s.id=d.agent_id
+            WHERE d.is_available=1
+            AND s.role='agent'
+            AND s.account_status='active'
+            AND s.email_verified=1
+            ORDER BY s.full_name COLLATE NOCASE
+        """).fetchall()
+
+        results = []
+
+        for agent in agents:
+            profile = agent_discovery_profile(c, agent["id"])
+            property_count = count_agent_verified_properties(c, agent["id"])
+
+            results.append({
+                "agent_id": agent["id"],
+                "full_name": agent["full_name"],
+                "university": agent["university"],
+                "service_areas": profile["service_areas"],
+                "universities_covered": profile["universities_covered"],
+                "available": True,
+                "verified_property_count": property_count,
+                "share_exact_location": profile["share_exact_location"],
+                "latitude": profile["latitude"],
+                "longitude": profile["longitude"]
+            })
+
+    return {
+        "count": len(results),
+        "agents": results
+    }
+
+
+@app.post("/students/agent-enquiries", status_code=201)
+def create_agent_enquiry(
+    data: AgentEnquiryCreate,
+    student=Depends(get_current_student)
+):
+    if student["role"] != "student":
+        raise HTTPException(403, "Only student accounts can send Agent enquiries.")
+
+    with get_connection() as c:
+        agent = c.execute("""
+            SELECT s.id
+            FROM students s
+            JOIN agent_discovery_profiles d ON d.agent_id=s.id
+            WHERE s.id=?
+            AND s.role='agent'
+            AND s.account_status='active'
+            AND s.email_verified=1
+            AND d.is_available=1
+        """, (data.agent_id,)).fetchone()
+
+        if agent is None:
+            raise HTTPException(404, "This Agent is not currently available.")
+
+        if data.agent_id == student["id"]:
+            raise HTTPException(400, "You cannot send an enquiry to yourself.")
+
+        if data.room_id is not None:
+            room = c.execute("""
+                SELECT r.id
+                FROM rooms r
+                WHERE r.id=?
+                AND r.available=1
+                AND r.ownership_status='assigned'
+                AND r.owner_id IS NOT NULL
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM agent_property_applications ap
+                        WHERE ap.room_id=r.id
+                        AND ap.agent_id=?
+                        AND ap.status='approved'
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM agent_room_authorizations ara
+                        WHERE ara.room_id=r.id
+                        AND ara.agent_id=?
+                        AND ara.status='approved'
+                        AND ara.advertising_enabled=1
+                    )
+                )
+            """, (data.room_id, data.agent_id)).fetchone()
+
+            if room is None:
+                raise HTTPException(
+                    404,
+                    "This property is not an available verified property advertised by this Agent."
+                )
+
+        # The student's contact details are saved with the enquiry so the
+        # Agent can reach them. They are only ever shown to the Agent the
+        # enquiry was addressed to.
+        cur = c.execute("""
+            INSERT INTO agent_enquiries(
+                student_id, agent_id, room_id, message,
+                contact_phone, contact_email
+            )
+            VALUES(?,?,?,?,?,?)
+        """, (
+            student["id"],
+            data.agent_id,
+            data.room_id,
+            data.message,
+            student["phone"],
+            student["email"]
+        ))
+
+        enquiry_id = cur.lastrowid
+
+    return {
+        "message": "Your enquiry has been sent to the Agent.",
+        "enquiry_id": enquiry_id,
+        "status": "new"
+    }
+
+
+@app.get("/agents/me/enquiries")
+def get_agent_enquiries(agent=Depends(require_agent)):
+    # Only enquiries addressed to this Agent are returned
+    # (WHERE e.agent_id = the logged-in Agent), so an Agent can never
+    # see contact details of students who did not contact them.
+    with get_connection() as c:
+        rows = c.execute("""
+            SELECT
+                e.id,
+                e.student_id,
+                e.room_id,
+                e.message,
+                e.status,
+                e.created_at,
+                e.updated_at,
+                e.reply_message,
+                e.replied_at,
+                s.full_name AS student_name,
+                s.university AS student_university,
+                s.course AS student_course,
+                COALESCE(e.contact_phone, s.phone) AS student_phone,
+                COALESCE(e.contact_email, s.email) AS student_email,
+                r.location AS property_location
+            FROM agent_enquiries e
+            JOIN students s ON s.id=e.student_id
+            LEFT JOIN rooms r ON r.id=e.room_id
+            WHERE e.agent_id=?
+            ORDER BY e.created_at DESC, e.id DESC
+        """, (agent["id"],)).fetchall()
+
+    return {
+        "count": len(rows),
+        "enquiries": [dict(row) for row in rows]
+    }
+
+
+@app.put("/agents/me/enquiries/{enquiry_id}/status")
+def update_agent_enquiry_status(
+    enquiry_id: int,
+    data: AgentEnquiryStatusUpdate,
+    agent=Depends(require_agent)
+):
+    with get_connection() as c:
+        enquiry = c.execute("""
+            SELECT id, status FROM agent_enquiries
+            WHERE id=? AND agent_id=?
+        """, (enquiry_id, agent["id"])).fetchone()
+
+        if enquiry is None:
+            raise HTTPException(404, "Enquiry not found.")
+
+        if enquiry["status"] == "replied" and data.status == "read":
+            raise HTTPException(
+                409,
+                "This enquiry has already been replied to."
+            )
+
+        c.execute("""
+            UPDATE agent_enquiries
+            SET status=?, updated_at=CURRENT_TIMESTAMP
+            WHERE id=? AND agent_id=?
+        """, (data.status, enquiry_id, agent["id"]))
+
+    return {
+        "message": "Enquiry status updated.",
+        "enquiry_id": enquiry_id,
+        "status": data.status
+    }
+
+
+@app.post("/agents/me/enquiries/{enquiry_id}/reply")
+def reply_to_agent_enquiry(
+    enquiry_id: int,
+    data: AgentEnquiryReply,
+    agent=Depends(require_agent)
+):
+    with get_connection() as c:
+        enquiry = c.execute("""
+            SELECT id, status, reply_message
+            FROM agent_enquiries
+            WHERE id=? AND agent_id=?
+        """, (enquiry_id, agent["id"])).fetchone()
+
+        if enquiry is None:
+            raise HTTPException(404, "Enquiry not found.")
+
+        if enquiry["status"] == "closed":
+            raise HTTPException(409, "This enquiry is closed and can no longer be replied to.")
+
+        if enquiry["reply_message"]:
+            raise HTTPException(409, "You have already replied to this enquiry.")
+
+        c.execute("""
+            UPDATE agent_enquiries
+            SET reply_message=?,
+                replied_at=CURRENT_TIMESTAMP,
+                replied_by=?,
+                status='replied',
+                updated_at=CURRENT_TIMESTAMP
+            WHERE id=? AND agent_id=?
+        """, (data.reply, agent["id"], enquiry_id, agent["id"]))
+
+    return {
+        "message": "Your reply has been sent to the student.",
+        "enquiry_id": enquiry_id,
+        "status": "replied"
+    }
+
+
+@app.get("/students/me/agent-enquiries")
+def get_student_agent_enquiries(student=Depends(get_current_student)):
+    with get_connection() as c:
+        rows = c.execute("""
+            SELECT
+                e.id,
+                e.agent_id,
+                e.room_id,
+                e.message,
+                e.status,
+                e.created_at,
+                e.updated_at,
+                e.reply_message,
+                e.replied_at,
+                s.full_name AS agent_name,
+                r.location AS property_location
+            FROM agent_enquiries e
+            JOIN students s ON s.id=e.agent_id
+            LEFT JOIN rooms r ON r.id=e.room_id
+            WHERE e.student_id=?
+            ORDER BY e.created_at DESC, e.id DESC
+        """, (student["id"],)).fetchall()
+
+    return {
+        "count": len(rows),
+        "enquiries": [dict(row) for row in rows]
     }
 
 
@@ -2028,21 +2255,16 @@ def confirm_rented(
 def normalize_location_words(value):
     if not value:
         return set()
-
     ignored = {"near", "area", "the", "at", "in", "of"}
-
     return {
-        w
-        for w in re.findall(r"[a-z0-9]+", value.lower())
+        w for w in re.findall(r"[a-z0-9]+", value.lower())
         if w not in ignored
     }
 
 
 def normalize_match_text(value):
-    """Normalize text for case-insensitive matching."""
     if not value:
         return ""
-
     return " ".join(value.strip().casefold().split())
 
 
@@ -2051,41 +2273,18 @@ def find_roommate_matches(
     same_year: bool = False,
     student=Depends(get_current_student)
 ):
-    # Both students must be looking for shared accommodation.
     if student["room_type"] != "shared":
-        raise HTTPException(
-            400,
-            "Set your room_type preference to 'shared' to find roommate matches."
-        )
-
-    # University is a mandatory matching requirement.
+        raise HTTPException(400, "Set your room_type preference to 'shared' to find roommate matches.")
     if not student["university"] or not student["university"].strip():
-        raise HTTPException(
-            400,
-            "Add your university to your profile before searching for roommates."
-        )
-
-    # Gender is a mandatory matching requirement.
+        raise HTTPException(400, "Add your university to your profile before searching for roommates.")
     if not student["gender"]:
-        raise HTTPException(
-            400,
-            "Set your gender in your profile before searching for roommates."
-        )
-
-    # Same-year filtering is optional.
+        raise HTTPException(400, "Set your gender in your profile before searching for roommates.")
     if same_year and student["year_of_study"] is None:
-        raise HTTPException(
-            400,
-            "Add your year of study to your profile before using the same-year filter."
-        )
+        raise HTTPException(400, "Add your year of study to your profile before using the same-year filter.")
 
     university = normalize_match_text(student["university"])
     gender = normalize_match_text(student["gender"])
-
-    target_location = normalize_location_words(
-        student["preferred_location"]
-    )
-
+    target_location = normalize_location_words(student["preferred_location"])
     target_faculty = normalize_match_text(student["faculty"])
     target_course = normalize_match_text(student["course"])
     target_year = student["year_of_study"]
@@ -2095,12 +2294,12 @@ def find_roommate_matches(
             SELECT *
             FROM students
             WHERE id != ?
-            AND email_verified = 1
-            AND account_status = 'active'
-            AND role = 'student'
-            AND room_type = 'shared'
-            AND LOWER(TRIM(university)) = LOWER(TRIM(?))
-            AND LOWER(TRIM(gender)) = LOWER(TRIM(?))
+            AND email_verified=1
+            AND account_status='active'
+            AND role='student'
+            AND room_type='shared'
+            AND LOWER(TRIM(university))=LOWER(TRIM(?))
+            AND LOWER(TRIM(gender))=LOWER(TRIM(?))
         """, (
             student["id"],
             student["university"].strip(),
@@ -2110,54 +2309,27 @@ def find_roommate_matches(
     matches = []
 
     for candidate in candidates:
-
-        # Apply the optional same-year filter only when requested.
         if same_year and candidate["year_of_study"] != target_year:
             continue
 
         score = 1
         matching_reasons = []
 
-        # Location increases the score but does not exclude candidates.
-        candidate_location = normalize_location_words(
-            candidate["preferred_location"]
-        )
-
-        if (
-            target_location
-            and candidate_location
-            and target_location.intersection(candidate_location)
-        ):
+        candidate_location = normalize_location_words(candidate["preferred_location"])
+        if target_location and candidate_location and target_location.intersection(candidate_location):
             score += 3
             matching_reasons.append("Similar preferred location")
 
-        # Same faculty increases the score.
-        candidate_faculty = normalize_match_text(
-            candidate["faculty"]
-        )
-
-        if (
-            target_faculty
-            and candidate_faculty
-            and target_faculty == candidate_faculty
-        ):
+        candidate_faculty = normalize_match_text(candidate["faculty"])
+        if target_faculty and candidate_faculty and target_faculty == candidate_faculty:
             score += 2
             matching_reasons.append("Same faculty")
 
-        # Same course increases the score.
-        candidate_course = normalize_match_text(
-            candidate["course"]
-        )
-
-        if (
-            target_course
-            and candidate_course
-            and target_course == candidate_course
-        ):
+        candidate_course = normalize_match_text(candidate["course"])
+        if target_course and candidate_course and target_course == candidate_course:
             score += 2
             matching_reasons.append("Same course")
 
-        # Same year increases the score, whether or not the filter is active.
         if (
             target_year is not None
             and candidate["year_of_study"] is not None
@@ -2169,6 +2341,7 @@ def find_roommate_matches(
         matches.append({
             "student_id": candidate["id"],
             "full_name": candidate["full_name"],
+            "phone": candidate["phone"],
             "university": candidate["university"],
             "faculty": candidate["faculty"],
             "course": candidate["course"],
@@ -2178,13 +2351,7 @@ def find_roommate_matches(
             "matching_reasons": matching_reasons
         })
 
-    # Highest score first; names alphabetically when scores are equal.
-    matches.sort(
-        key=lambda x: (
-            -x["match_score"],
-            x["full_name"].casefold()
-        )
-    )
+    matches.sort(key=lambda x: (-x["match_score"], x["full_name"].casefold()))
 
     return {
         "count": len(matches),
@@ -2217,19 +2384,11 @@ def find_roommate_matches(
 
 from admin_routes import register_admin_routes
 
-register_admin_routes(
-    app,
-    get_connection,
-    get_current_student
-)
+register_admin_routes(app, get_connection, get_current_student)
 
 from agent_property_routes import register_agent_property_routes
 
-register_agent_property_routes(
-    app,
-    get_connection,
-    get_current_student
-)
+register_agent_property_routes(app, get_connection, get_current_student)
 
 
 # AGENT DASHBOARD
@@ -2237,13 +2396,8 @@ register_agent_property_routes(
 @app.get("/agent/dashboard")
 def agent_dashboard():
     file_path = Path(__file__).resolve().parent / "agent_dashboard.html"
-
     if not file_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="Agent dashboard file not found"
-        )
-
+        raise HTTPException(404, "Agent dashboard file not found")
     return FileResponse(file_path)
 
 
@@ -2252,14 +2406,6 @@ def agent_dashboard():
 @app.get("/agent/login")
 def agent_login():
     file_path = Path(__file__).resolve().parent / "agent_login.html"
-
     if not file_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="Agent login page file not found. Create agent_login.html first."
-        )
-
-    return FileResponse(
-        file_path,
-        media_type="text/html"
-    )
+        raise HTTPException(404, "Agent login page file not found. Create agent_login.html first.")
+    return FileResponse(file_path, media_type="text/html")
