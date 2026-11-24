@@ -74,7 +74,10 @@ PRIVATE_PHOTO_DIR = BASE_DIR / "private_ownership_photos"
 AGENT_PHOTO_DIR = BASE_DIR / "private_agent_property_photos"
 
 PREFERENCE_FIELDS = (
-    "preferred_location", "preferred_campus", "room_type"
+    "preferred_location",
+    "preferred_campus",
+    "room_type",
+    "contact_visibility"
 )
 
 ProximityTier = Literal[
@@ -158,6 +161,7 @@ def initialize_database():
             "role": "TEXT NOT NULL DEFAULT 'student'",
             "account_status": "TEXT NOT NULL DEFAULT 'active'",
             "phone": "TEXT",
+            "contact_visibility": "INTEGER NOT NULL DEFAULT 1",
             "campus": "TEXT",
             "accommodation_status": "TEXT",
             "preferred_campus": "TEXT",
@@ -311,6 +315,60 @@ def initialize_database():
             ON agent_enquiries(student_id, created_at)
         """)
 
+
+
+        # STUDENT ROOMMATE REQUESTS
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS roommate_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender_id INTEGER NOT NULL
+                    REFERENCES students(id) ON DELETE CASCADE,
+                recipient_id INTEGER NOT NULL
+                    REFERENCES students(id) ON DELETE CASCADE,
+                status TEXT NOT NULL DEFAULT 'pending'
+                    CHECK(status IN ('pending', 'accepted', 'rejected')),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CHECK(sender_id != recipient_id)
+            )
+        """)
+
+        # Prevent duplicate pending requests in either direction.
+        c.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+            idx_roommate_requests_pending_pair
+            ON roommate_requests (
+                MIN(sender_id, recipient_id),
+                MAX(sender_id, recipient_id)
+            )
+            WHERE status = 'pending'
+        """)
+
+        # Prevent duplicate accepted roommate connections.
+        c.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+            idx_roommate_requests_accepted_pair
+            ON roommate_requests (
+                MIN(sender_id, recipient_id),
+                MAX(sender_id, recipient_id)
+            )
+            WHERE status = 'accepted'
+        """)
+
+        # Index for received requests.
+        c.execute("""
+            CREATE INDEX IF NOT EXISTS idx_roommate_requests_recipient
+            ON roommate_requests(recipient_id, status, created_at)
+        """)
+
+        # Index for sent requests.
+        c.execute("""
+            CREATE INDEX IF NOT EXISTS idx_roommate_requests_sender
+            ON roommate_requests(sender_id, status, created_at)
+        """)
+
+
+
         if c.execute("SELECT COUNT(*) AS n FROM rooms").fetchone()["n"] == 0:
             c.executemany("""
                 INSERT INTO rooms(
@@ -364,6 +422,7 @@ def student_to_dict(s):
         "preferred_location": s["preferred_location"],
         "preferred_campus": s["preferred_campus"],
         "room_type": s["room_type"],
+        "contact_visibility": s["contact_visibility"],
         "created_at": s["created_at"]
     }
 
@@ -585,11 +644,11 @@ class StudentProfileUpdate(BaseModel):
                 raise ValueError("Enter a valid phone number.")
         return v
 
-
 class StudentPreferencesUpdate(BaseModel):
     preferred_location: str | None = Field(default=None, max_length=150)
     preferred_campus: str | None = Field(default=None, max_length=100)
     room_type: Literal["single", "shared", "any"] | None = None
+    contact_visibility: bool | None = None
 
     @field_validator("preferred_location", "preferred_campus")
     @classmethod
@@ -649,6 +708,10 @@ class AgentRoomRequest(BaseModel):
 class AuthorizationDecision(BaseModel):
     decision: Literal["approve", "reject", "revoke"]
     note: str = Field(default="", max_length=500)
+
+
+class RoommateRequestDecision(BaseModel):
+    decision: Literal["accept", "reject"]
 
 
 class RentalReport(BaseModel):
@@ -1209,12 +1272,13 @@ def get_approved_agent_application(c, room_id):
                 a.status,
                 s.full_name AS agent_name,
                 s.university,
-                s.phone AS account_phone
+                s.phone AS account_phone,
+                s.role AS submitter_role
             FROM agent_property_applications a
             JOIN students s ON s.id=a.agent_id
             WHERE a.room_id=?
             AND a.status='approved'
-            AND s.role='agent'
+            AND s.role IN ('agent','landlord','owner')
             AND s.account_status='active'
             AND s.email_verified=1
             ORDER BY a.id DESC
@@ -1250,9 +1314,13 @@ def add_public_agents(c, room_id):
     direct_application = get_approved_agent_application(c, room_id)
 
     if direct_application is not None:
+        submitter_role = (direct_application["submitter_role"] or "agent").lower()
         return [{
             "agent_id": direct_application["agent_id"],
-            "agent_name": direct_application["agent_name"]
+            "agent_name": direct_application["agent_name"],
+            "contact_name": direct_application["agent_name"],
+            "contact_role": submitter_role,
+            "contact_label": "Owner" if submitter_role in {"owner", "landlord"} else "Agent"
         }]
 
     rows = c.execute("""
@@ -1308,9 +1376,13 @@ def get_agents_with_contact(c, room_id):
     direct_application = get_approved_agent_application(c, room_id)
 
     if direct_application is not None:
+        submitter_role = (direct_application["submitter_role"] or "agent").lower()
         return [{
             "agent_id": direct_application["agent_id"],
             "agent_name": direct_application["agent_name"],
+            "contact_name": direct_application["agent_name"],
+            "contact_role": submitter_role,
+            "contact_label": "Owner" if submitter_role in {"owner", "landlord"} else "Agent",
             "phone": direct_application["phone_number"] or direct_application["account_phone"],
             "university": direct_application["university"]
         }]
@@ -1391,6 +1463,7 @@ def list_rooms(
             item = room_to_dict(r)
             application = get_approved_agent_application(c, r["id"])
             item["agents"] = add_public_agents(c, r["id"])
+            item["property_contact"] = get_agents_with_contact(c, r["id"])
             item["description"] = application["description"] if application else None
             photos = get_room_photos(c, r["id"])
             item["photo_ids"] = [ph["id"] for ph in photos]
@@ -1417,6 +1490,7 @@ def get_room(room_id: int):
         result = room_to_dict(r)
         application = get_approved_agent_application(c, room_id)
         result["agents"] = add_public_agents(c, room_id)
+        result["property_contact"] = get_agents_with_contact(c, room_id)
         result["description"] = application["description"] if application else None
 
     return result
@@ -1435,12 +1509,13 @@ def get_room_details(room_id: int, student=Depends(get_current_student)):
         result["description"] = application["description"] if application else None
         result["photos"] = get_room_photos(c, room_id)
         result["agents"] = get_agents_with_contact(c, room_id)
+        result["property_contact"] = result["agents"]
 
     return result
 
 
 @app.get("/rooms/{room_id}/photos/{photo_id}")
-def get_room_photo(room_id: int, photo_id: int, student=Depends(get_current_student)):
+def get_room_photo(room_id: int, photo_id: int):
     with get_connection() as c:
         r = c.execute(
             "SELECT ownership_status, owner_id FROM rooms WHERE id=?",
@@ -1481,7 +1556,7 @@ def get_room_photo(room_id: int, photo_id: int, student=Depends(get_current_stud
         path,
         media_type=photo["content_type"],
         headers={
-            "Cache-Control": "private, max-age=300",
+            "Cache-Control": "public, max-age=300",
             "X-Content-Type-Options": "nosniff"
         }
     )
@@ -1710,40 +1785,101 @@ def report_room_rented(room_id: int, data: RentalReport, agent=Depends(require_a
 
 # OWNER ROUTES
 
+
 @app.get("/landlord/me/rooms")
 def landlord_rooms(owner=Depends(require_landlord)):
     with get_connection() as c:
         rows = c.execute(
-            "SELECT * FROM rooms WHERE owner_id=? ORDER BY id DESC",
+            """
+            SELECT *
+            FROM rooms
+            WHERE owner_id=?
+            ORDER BY id DESC
+            """,
             (owner["id"],)
         ).fetchall()
 
         properties = []
+
         for row in rows:
             item = room_to_dict(row)
-            application = c.execute("""
-                SELECT id, status FROM room_ownership_applications
-                WHERE room_id=? AND landlord_id=?
-                ORDER BY id DESC LIMIT 1
-            """, (row["id"], owner["id"])).fetchone()
+            room_id = row["id"]
 
-            if application is None:
-                item["application_id"] = None
-                item["application_status"] = None
-                item["photos"] = []
-            else:
-                item["application_id"] = application["id"]
-                item["application_status"] = application["status"]
-                photo_rows = c.execute("""
+            # First, look for the property in the shared
+            # Owner/Agent application workflow.
+            shared_application = c.execute(
+                """
+                SELECT id, status
+                FROM agent_property_applications
+                WHERE room_id=?
+                  AND agent_id=?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (room_id, owner["id"])
+            ).fetchone()
+
+            if shared_application is not None:
+                application_id = shared_application["id"]
+
+                photo_rows = c.execute(
+                    """
                     SELECT id, original_name, content_type
-                    FROM room_ownership_photos
-                    WHERE application_id=? ORDER BY id
-                """, (application["id"],)).fetchall()
-                item["photos"] = [dict(photo) for photo in photo_rows]
+                    FROM agent_property_photos
+                    WHERE application_id=?
+                    ORDER BY id
+                    """,
+                    (application_id,)
+                ).fetchall()
+
+                item["application_id"] = application_id
+                item["application_status"] = shared_application["status"]
+                item["photos"] = [
+                    dict(photo) for photo in photo_rows
+                ]
+
+            else:
+                # Preserve support for older properties
+                # that still use the legacy ownership tables.
+                application = c.execute(
+                    """
+                    SELECT id, status
+                    FROM room_ownership_applications
+                    WHERE room_id=?
+                      AND landlord_id=?
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (room_id, owner["id"])
+                ).fetchone()
+
+                if application is None:
+                    item["application_id"] = None
+                    item["application_status"] = None
+                    item["photos"] = []
+
+                else:
+                    item["application_id"] = application["id"]
+                    item["application_status"] = application["status"]
+
+                    photo_rows = c.execute(
+                        """
+                        SELECT id, original_name, content_type
+                        FROM room_ownership_photos
+                        WHERE application_id=?
+                        ORDER BY id
+                        """,
+                        (application["id"],)
+                    ).fetchall()
+
+                    item["photos"] = [
+                        dict(photo) for photo in photo_rows
+                    ]
 
             properties.append(item)
 
     return {"rooms": properties}
+
 
 
 @app.get("/landlord/me/authorization-requests")
@@ -1981,6 +2117,7 @@ def get_active_agents(student=Depends(get_current_student)):
     """
     Return approved, verified, active Agents who have enabled availability.
     Exact coordinates are returned only when the Agent has opted in.
+    Includes the registered agent phone number for student contact.
     """
 
     with get_connection() as c:
@@ -1988,6 +2125,7 @@ def get_active_agents(student=Depends(get_current_student)):
             SELECT
                 s.id,
                 s.full_name,
+                s.phone,
                 s.university,
                 d.service_areas,
                 d.universities_covered,
@@ -2000,6 +2138,11 @@ def get_active_agents(student=Depends(get_current_student)):
             AND s.role='agent'
             AND s.account_status='active'
             AND s.email_verified=1
+            AND EXISTS (
+                SELECT 1 FROM agent_applications aa
+                WHERE aa.student_id=s.id
+                AND aa.status='approved'
+            )
             ORDER BY s.full_name COLLATE NOCASE
         """).fetchall()
 
@@ -2007,11 +2150,14 @@ def get_active_agents(student=Depends(get_current_student)):
 
         for agent in agents:
             profile = agent_discovery_profile(c, agent["id"])
-            property_count = count_agent_verified_properties(c, agent["id"])
+            property_count = count_agent_verified_properties(
+                c, agent["id"]
+            )
 
             results.append({
                 "agent_id": agent["id"],
                 "full_name": agent["full_name"],
+                "phone": agent["phone"],
                 "university": agent["university"],
                 "service_areas": profile["service_areas"],
                 "universities_covered": profile["universities_covered"],
@@ -2026,7 +2172,6 @@ def get_active_agents(student=Depends(get_current_student)):
         "count": len(results),
         "agents": results
     }
-
 
 @app.post("/students/agent-enquiries", status_code=201)
 def create_agent_enquiry(
@@ -2046,6 +2191,11 @@ def create_agent_enquiry(
             AND s.account_status='active'
             AND s.email_verified=1
             AND d.is_available=1
+            AND EXISTS (
+                SELECT 1 FROM agent_applications aa
+                WHERE aa.student_id=s.id
+                AND aa.status='approved'
+            )
         """, (data.agent_id,)).fetchone()
 
         if agent is None:
@@ -2274,13 +2424,28 @@ def find_roommate_matches(
     student=Depends(get_current_student)
 ):
     if student["room_type"] != "shared":
-        raise HTTPException(400, "Set your room_type preference to 'shared' to find roommate matches.")
+        raise HTTPException(
+            400,
+            "Set your room_type preference to 'shared' to find roommate matches."
+        )
+
     if not student["university"] or not student["university"].strip():
-        raise HTTPException(400, "Add your university to your profile before searching for roommates.")
+        raise HTTPException(
+            400,
+            "Add your university to your profile before searching for roommates."
+        )
+
     if not student["gender"]:
-        raise HTTPException(400, "Set your gender in your profile before searching for roommates.")
+        raise HTTPException(
+            400,
+            "Set your gender in your profile before searching for roommates."
+        )
+
     if same_year and student["year_of_study"] is None:
-        raise HTTPException(400, "Add your year of study to your profile before using the same-year filter.")
+        raise HTTPException(
+            400,
+            "Add your year of study to your profile before using the same-year filter."
+        )
 
     university = normalize_match_text(student["university"])
     gender = normalize_match_text(student["gender"])
@@ -2315,18 +2480,35 @@ def find_roommate_matches(
         score = 1
         matching_reasons = []
 
-        candidate_location = normalize_location_words(candidate["preferred_location"])
-        if target_location and candidate_location and target_location.intersection(candidate_location):
+        candidate_location = normalize_location_words(
+            candidate["preferred_location"]
+        )
+
+        if (
+            target_location
+            and candidate_location
+            and target_location.intersection(candidate_location)
+        ):
             score += 3
             matching_reasons.append("Similar preferred location")
 
         candidate_faculty = normalize_match_text(candidate["faculty"])
-        if target_faculty and candidate_faculty and target_faculty == candidate_faculty:
+
+        if (
+            target_faculty
+            and candidate_faculty
+            and target_faculty == candidate_faculty
+        ):
             score += 2
             matching_reasons.append("Same faculty")
 
         candidate_course = normalize_match_text(candidate["course"])
-        if target_course and candidate_course and target_course == candidate_course:
+
+        if (
+            target_course
+            and candidate_course
+            and target_course == candidate_course
+        ):
             score += 2
             matching_reasons.append("Same course")
 
@@ -2338,10 +2520,24 @@ def find_roommate_matches(
             score += 1
             matching_reasons.append("Same year of study")
 
+        # Respect the candidate's contact privacy setting.
+        contact_visible = (
+            int(candidate["contact_visibility"] or 0) == 1
+        )
+
         matches.append({
             "student_id": candidate["id"],
             "full_name": candidate["full_name"],
-            "phone": candidate["phone"],
+
+            # Only share the phone number when visibility is ON.
+            "phone": (
+                candidate["phone"]
+                if contact_visible
+                else None
+            ),
+
+            "contact_visibility": contact_visible,
+
             "university": candidate["university"],
             "faculty": candidate["faculty"],
             "course": candidate["course"],
@@ -2351,7 +2547,12 @@ def find_roommate_matches(
             "matching_reasons": matching_reasons
         })
 
-    matches.sort(key=lambda x: (-x["match_score"], x["full_name"].casefold()))
+    matches.sort(
+        key=lambda x: (
+            -x["match_score"],
+            x["full_name"].casefold()
+        )
+    )
 
     return {
         "count": len(matches),
@@ -2375,9 +2576,387 @@ def find_roommate_matches(
             "Location, faculty, course and year increase the match score "
             "but do not exclude otherwise eligible students. "
             "Location matching compares words, not geographic distance. "
-            "Scores are indicators, not guarantees of compatibility."
+            "Scores are indicators, not guarantees of compatibility. "
+            "Phone numbers are only shared when the student allows "
+            "contact visibility."
         )
     }
+
+
+# ============================================================
+# STUDENT ROOMMATE REQUEST SYSTEM
+# ============================================================
+
+
+def require_student_role(student):
+    if student["role"] != "student":
+        raise HTTPException(
+            403,
+            "Only student accounts can use roommate requests."
+        )
+
+
+# 1. SEND ROOMMATE REQUEST
+
+@app.post("/students/roommate-requests/{student_id}", status_code=201)
+def send_roommate_request(
+    student_id: int,
+    student=Depends(get_current_student)
+):
+    require_student_role(student)
+
+    sender_id = student["id"]
+
+    # Prevent requesting yourself.
+    if sender_id == student_id:
+        raise HTTPException(
+            400,
+            "You cannot send a roommate request to yourself."
+        )
+
+    with get_connection() as c:
+
+        # Confirm recipient exists and is an eligible student.
+        recipient = c.execute("""
+            SELECT id, role, account_status, email_verified
+            FROM students
+            WHERE id = ?
+        """, (student_id,)).fetchone()
+
+        if recipient is None:
+            raise HTTPException(404, "Student not found.")
+
+        if (
+            recipient["role"] != "student"
+            or recipient["account_status"] != "active"
+            or not recipient["email_verified"]
+        ):
+            raise HTTPException(
+                400,
+                "This student is not currently eligible for roommate requests."
+            )
+
+        # Check for an existing pending request or accepted connection
+        # in either direction.
+        existing = c.execute("""
+            SELECT id, status
+            FROM roommate_requests
+            WHERE (
+                (sender_id = ? AND recipient_id = ?)
+                OR
+                (sender_id = ? AND recipient_id = ?)
+            )
+            AND status IN ('pending', 'accepted')
+            LIMIT 1
+        """, (
+            sender_id,
+            student_id,
+            student_id,
+            sender_id
+        )).fetchone()
+
+        if existing:
+            if existing["status"] == "pending":
+                raise HTTPException(
+                    409,
+                    "A pending roommate request already exists between these students."
+                )
+
+            raise HTTPException(
+                409,
+                "You are already connected as roommates."
+            )
+
+        try:
+            cursor = c.execute("""
+                INSERT INTO roommate_requests (
+                    sender_id,
+                    recipient_id,
+                    status
+                )
+                VALUES (?, ?, 'pending')
+            """, (
+                sender_id,
+                student_id
+            ))
+
+            request_id = cursor.lastrowid
+
+        except sqlite3.IntegrityError:
+            raise HTTPException(
+                409,
+                "A duplicate roommate request already exists."
+            )
+
+    return {
+        "success": True,
+        "request_id": request_id,
+        "recipient_id": student_id,
+        "status": "pending",
+        "message": "Roommate request sent successfully."
+    }
+
+
+# 2. VIEW RECEIVED ROOMMATE REQUESTS
+
+@app.get("/students/me/roommate-requests")
+def get_my_roommate_requests(
+    student=Depends(get_current_student)
+):
+    require_student_role(student)
+
+    with get_connection() as c:
+        requests = c.execute("""
+            SELECT
+                r.id AS request_id,
+                r.sender_id AS student_id,
+                s.full_name,
+                s.university,
+                s.faculty,
+                s.course,
+                s.year_of_study,
+                s.preferred_location,
+
+                CASE
+                    WHEN COALESCE(s.contact_visibility, 0) = 1
+                    THEN s.phone
+                    ELSE NULL
+                END AS phone,
+
+                COALESCE(s.contact_visibility, 0)
+                    AS contact_visibility,
+
+                r.status,
+                r.created_at
+
+            FROM roommate_requests r
+
+            JOIN students s
+                ON s.id = r.sender_id
+
+            WHERE r.recipient_id = ?
+            AND r.status = 'pending'
+
+            ORDER BY r.created_at DESC
+        """, (student["id"],)).fetchall()
+
+    return {
+        "count": len(requests),
+        "requests": [dict(r) for r in requests]
+    }
+
+
+# VIEW SENT ROOMMATE REQUESTS
+
+@app.get("/students/me/roommate-sent-requests")
+def get_my_roommate_sent_requests(
+    student=Depends(get_current_student)
+):
+    require_student_role(student)
+
+    with get_connection() as c:
+        requests = c.execute("""
+            SELECT
+                r.id AS request_id,
+                r.recipient_id AS student_id,
+                s.full_name,
+                r.status,
+                r.created_at
+
+            FROM roommate_requests r
+
+            JOIN students s
+                ON s.id = r.recipient_id
+
+            WHERE r.sender_id = ?
+            AND r.status IN ('pending', 'accepted')
+
+            ORDER BY r.created_at DESC
+        """, (student["id"],)).fetchall()
+
+    return {
+        "count": len(requests),
+        "sent_requests": [dict(r) for r in requests]
+    }
+
+
+
+# 3. ACCEPT OR REJECT A ROOMMATE REQUEST
+
+@app.post("/students/roommate-requests/{request_id}/decision")
+def decide_roommate_request(
+    request_id: int,
+    payload: RoommateRequestDecision,
+    student=Depends(get_current_student)
+):
+    require_student_role(student)
+
+    with get_connection() as c:
+
+        request = c.execute("""
+            SELECT *
+            FROM roommate_requests
+            WHERE id = ?
+        """, (request_id,)).fetchone()
+
+        if request is None:
+            raise HTTPException(
+                404,
+                "Roommate request not found."
+            )
+
+        # Only the recipient can decide.
+        if request["recipient_id"] != student["id"]:
+            raise HTTPException(
+                403,
+                "You are not authorized to decide this roommate request."
+            )
+
+        if request["status"] != "pending":
+            raise HTTPException(
+                409,
+                "This roommate request has already been processed."
+            )
+
+        new_status = (
+            "accepted"
+            if payload.decision == "accept"
+            else "rejected"
+        )
+
+        try:
+            cursor = c.execute("""
+                UPDATE roommate_requests
+                SET status = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                AND recipient_id = ?
+                AND status = 'pending'
+            """, (
+                new_status,
+                request_id,
+                student["id"]
+            ))
+
+            if cursor.rowcount != 1:
+                raise HTTPException(
+                    409,
+                    "This roommate request has already been processed."
+                )
+
+        except sqlite3.IntegrityError:
+            raise HTTPException(
+                409,
+                "An accepted roommate connection already exists."
+            )
+
+    return {
+        "success": True,
+        "request_id": request_id,
+        "status": new_status,
+        "message": (
+            "Roommate request accepted. You are now connected!"
+            if new_status == "accepted"
+            else "Roommate request rejected."
+        )
+    }
+
+
+# 4. VIEW ACCEPTED ROOMMATE CONNECTIONS
+
+@app.get("/students/me/roommate-connections")
+def get_my_roommate_connections(
+    student=Depends(get_current_student)
+):
+    require_student_role(student)
+
+    with get_connection() as c:
+        connections = c.execute("""
+            SELECT
+                r.id AS request_id,
+
+                CASE
+                    WHEN r.sender_id = ?
+                    THEN r.recipient_id
+                    ELSE r.sender_id
+                END AS student_id,
+
+                s.full_name,
+                s.university,
+                s.faculty,
+                s.course,
+                s.year_of_study,
+                s.preferred_location,
+
+                CASE
+                    WHEN COALESCE(s.contact_visibility, 0) = 1
+                    THEN s.phone
+                    ELSE NULL
+                END AS phone,
+
+                COALESCE(s.contact_visibility, 0)
+                    AS contact_visibility,
+
+                r.created_at AS connected_at
+
+            FROM roommate_requests r
+
+            JOIN students s
+                ON s.id = CASE
+                    WHEN r.sender_id = ?
+                    THEN r.recipient_id
+                    ELSE r.sender_id
+                END
+
+            WHERE (
+                r.sender_id = ?
+                OR r.recipient_id = ?
+            )
+            AND r.status = 'accepted'
+
+            ORDER BY r.updated_at DESC
+        """, (
+            student["id"],
+            student["id"],
+            student["id"],
+            student["id"]
+        )).fetchall()
+
+    return {
+        "count": len(connections),
+        "connections": [dict(r) for r in connections]
+    }
+
+
+# END OF STUDENT ROOMMATE REQUEST SYSTEM
+
+
+@app.put("/students/contact-visibility")
+def update_contact_visibility(
+    visible: bool,
+    student=Depends(get_current_student)
+):
+    with get_connection() as c:
+        c.execute("""
+            UPDATE students
+            SET contact_visibility = ?
+            WHERE id = ?
+            AND role = 'student'
+        """, (
+            1 if visible else 0,
+            student["id"]
+        ))
+
+    return {
+        "success": True,
+        "contact_visibility": visible,
+        "message": (
+            "Your phone number is now visible to compatible students."
+            if visible
+            else "Your phone number is now hidden from compatible students."
+        )
+    }
+
 
 
 # ADMIN ROUTES
@@ -2409,3 +2988,8 @@ def agent_login():
     if not file_path.exists():
         raise HTTPException(404, "Agent login page file not found. Create agent_login.html first.")
     return FileResponse(file_path, media_type="text/html")
+
+# STUDENT SERVICES CENTRE
+from student_services_routes import register_student_services_routes
+
+register_student_services_routes(app, get_connection, get_current_student)

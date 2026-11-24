@@ -31,15 +31,20 @@
         button { cursor: pointer; }
         a { color: inherit; }
 
-        .navbar {
-            background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 17px 6%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-        }
+      .navbar {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 17px 6%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+}
 
         .brand {
             color: var(--navy);
@@ -198,6 +203,14 @@
             justify-content: center;
             font-size: 60px;
             background: linear-gradient(135deg, #d9eee8, #c8d9ed);
+            overflow: hidden;
+        }
+
+        .room-image img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .room-card:nth-child(3n + 2) .room-image {
@@ -362,13 +375,100 @@
             white-space: nowrap;
         }
 
+        .contact-section {
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            margin-top: 24px;
+        }
+
+        .contact-card {
+            padding: 22px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .contact-card h3 {
+            margin: 0 0 9px;
+            color: var(--navy);
+            font-size: 16px;
+        }
+
+        .contact-card p,
+        .contact-card a {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+
+        .contact-card a {
+            color: var(--green);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .contact-card a:hover {
+            text-decoration: underline;
+        }
+
         footer {
             background: #102c4b;
             color: #dce6f0;
-            text-align: center;
-            padding: 28px 20px;
+            padding: 30px 6% 22px;
             font-size: 13px;
             line-height: 1.8;
+        }
+
+        .footer-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 30px;
+            text-align: left;
+        }
+
+        .footer-brand strong {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: #ffffff;
+            font-size: 21px;
+        }
+
+        .footer-contact h3 {
+            margin: 0 0 9px;
+            color: #ffffff;
+            font-size: 15px;
+        }
+
+        .footer-contact p {
+            margin: 5px 0;
+        }
+
+        .footer-contact a {
+            color: #b8f1d9;
+            text-decoration: none;
+        }
+
+        .footer-contact a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-bottom {
+            max-width: 1100px;
+            margin: 22px auto 0;
+            padding-top: 15px;
+            border-top: 1px solid #ffffff26;
+            text-align: center;
+            color: #dce6f0;
         }
 
         .notice {
@@ -380,6 +480,89 @@
             border-radius: 8px;
             display: none;
             line-height: 1.5;
+        }
+
+
+        /* Sign-in required for room enquiries */
+        .enquiry-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            background: rgba(10, 27, 48, 0.68);
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+
+        .enquiry-overlay.open { display: flex; }
+
+        .enquiry-dialog {
+            width: 100%;
+            max-width: 430px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 30px 26px 26px;
+            box-shadow: 0 20px 60px #0003;
+            position: relative;
+            text-align: center;
+        }
+
+        .enquiry-dialog h2 {
+            color: var(--navy);
+            margin: 0 0 10px;
+        }
+
+        .enquiry-dialog p {
+            color: var(--muted);
+            line-height: 1.6;
+            margin: 0 0 14px;
+        }
+
+        .enquiry-room-id {
+            display: inline-block;
+            padding: 7px 12px;
+            margin-bottom: 20px;
+            border-radius: 20px;
+            background: #eef4f8;
+            color: var(--navy);
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .enquiry-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .enquiry-actions a {
+            display: block;
+            padding: 12px 10px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .enquiry-signin { background: var(--navy); color: #fff; }
+        .enquiry-create { background: var(--green); color: #fff; }
+
+        .enquiry-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            border: 0;
+            background: transparent;
+            color: #667085;
+            font-size: 27px;
+            cursor: pointer;
+            padding: 3px 8px;
+        }
+
+        @media (max-width: 420px) {
+            .enquiry-dialog { padding: 28px 18px 20px; }
+            .enquiry-actions { grid-template-columns: 1fr; }
         }
 
         /* Universal sign-in window */
@@ -503,6 +686,35 @@
             text-decoration: none;
             font-weight: 700;
             white-space: nowrap;
+        }
+
+        /* Registration form is hidden until a Create account link is clicked */
+        .signup-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            background: rgba(10, 27, 48, 0.72);
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px 16px;
+            overflow-y: auto;
+        }
+
+        .signup-overlay.open { display: flex; }
+
+        .signup-modal-close {
+            position: sticky;
+            top: 8px;
+            float: right;
+            margin: -12px -12px 8px 12px;
+            border: 0;
+            background: transparent;
+            color: #667085;
+            font-size: 30px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 5px 9px;
         }
 
         .signup-section {
@@ -635,6 +847,15 @@
 
             .search-button { width: 100%; }
 
+            .contact-grid,
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                gap: 20px;
+            }
+
             .section-heading, .agent-banner {
                 align-items: stretch;
                 flex-direction: column;
@@ -653,7 +874,8 @@
         <nav class="nav-links">
             <a href="#rooms">Find a room</a>
             <a href="#how-it-works">How it works</a>
-            <a href="#create-account">Create account</a>
+            <a href="#contact">Contact us</a>
+            <a href="#create-account" class="signup-open-trigger">Create account</a>
             <a class="nav-button" href="/login.html">Sign in</a>
         </nav>
     </header>
@@ -661,7 +883,7 @@
     <section class="hero">
         <div class="hero-content">
             <div class="eyebrow">Your next room starts here</div>
-            <h1>Find a student room that feels like home.</h1>
+            <h1>Find a room that feels like home.</h1>
 
             <p>
                 Explore accommodation options, compare budgets,
@@ -677,15 +899,9 @@
 
                 <div class="field">
                     <label for="budget">MAXIMUM MONTHLY RENT (TZS)</label>
-                    <select id="budget">
-                        <option value="">Any budget</option>
-                        <option value="100000">TZS 100,000</option>
-                        <option value="150000">TZS 150,000</option>
-                        <option value="200000">TZS 200,000</option>
-                        <option value="300000">TZS 300,000</option>
-                        <option value="500000">TZS 500,000</option>
-                        <option value="1000000">TZS 1,000,000</option>
-                    </select>
+                    <input id="budget" type="number"
+                        min="0" step="1000"
+                        placeholder="e.g. 100000">
                 </div>
 
                 <div class="field">
@@ -703,10 +919,15 @@
         </div>
     </section>
 
+
+
+
     <main>
+        <div class="signup-overlay" id="signupOverlay" role="dialog" aria-modal="true" aria-labelledby="signupDialogTitle">
         <section class="signup-section" id="create-account">
+            <button class="signup-modal-close" id="closeSignupModal" type="button" aria-label="Close create account window">&times;</button>
             <div class="signup-heading">
-                <h2>Create your RumCHUO account</h2>
+                <h2 id="signupDialogTitle">Create your RumCHUO account</h2>
                 <p>Join the RumCHUO community and get started with one account.</p>
             </div>
 
@@ -781,6 +1002,7 @@
 
             <p class="signup-signin">Already have an account? <a href="/login.html">Sign in</a></p>
         </section>
+        </div>
 
         <section class="container" id="rooms">
             <div class="section-heading">
@@ -848,10 +1070,9 @@
 
                     <div class="trust-item">
                         <div class="trust-icon">🤝</div>
-                        <h3>Connect through agents</h3>
+                        <h3>Connect through agents and Owners</h3>
                         <p>
-                            Room enquiries are intended to go through
-                            authorized agents, not directly to Owners.
+                            Students can browse and enquire about rooms listed by both authorized Agents and Owners. Users must sign in or create a RumCHUO account before making an enquiry.
                         </p>
                     </div>
 
@@ -872,23 +1093,97 @@
                 <div>
                     <h2>Are you an Agent?</h2>
                     <p>
-                        RumCHUO helps Agents manage authorized room listings
-                        and connect with students. Agent accounts require
-                        platform approval, and permission from the Owner
-                        is required before advertising an Owner's property.
+                        RumCHUO allows Agents to list available rooms and connect with students searching for accommodation.
+
+To maintain trust and security on the platform, all Agent accounts must be reviewed and approved by the RumCHUO administration before accessing Agent features and managing room listings.
+
+Join RumCHUO and grow your accommodation network.
                     </p>
                 </div>
 
                 <a class="nav-button" href="/login.html?role=agent">Agent sign in</a>
             </div>
         </section>
+
+        <section class="contact-section" id="contact">
+            <div class="container">
+                <div class="section-heading">
+                    <div>
+                        <h2>Contact Us</h2>
+                        <p>Need help or have a question? Get in touch with RumCHUO.</p>
+                    </div>
+                </div>
+
+                <div class="contact-grid">
+                    <div class="contact-card">
+                        <h3>Email address</h3>
+                        <p>
+                            <a href="mailto:mahinyilageorge@gmail.com">
+                                mahinyilageorge@gmail.com
+                            </a>
+                        </p>
+                    </div>
+
+                    <div class="contact-card">
+                        <h3>Phone</h3>
+                        <p>
+                            <a href="tel:+255765696771">
+                                +255 765 696 771
+                            </a>
+                        </p>
+                    </div>
+
+                    <div class="contact-card">
+                        <h3>Office location</h3>
+                        <p>Dar es Salaam, Tanzania</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer>
-        <strong>RumCHUO</strong><br>
-        ProTech Asset01 · HLVision Tech Company<br>
-        © 2026 RumCHUO. Student accommodation made simpler.
+        <div class="footer-content">
+            <div class="footer-brand">
+                <strong>RumCHUO</strong><br>
+                ProTech Asset01 · HLVision Tech Company<br>
+                Student accommodation made simpler.
+            </div>
+
+            <div class="footer-contact">
+                <h3>Contact RumCHUO</h3>
+                <p>Email:
+                    <a href="mailto:mahinyilageorge@gmail.com">
+                        mahinyilageorge@gmail.com
+                    </a>
+                </p>
+                <p>Phone:
+                    <a href="tel:+255765696771">
+                        +255 765 696 771
+                    </a>
+                </p>
+                <p>Office: Dar es Salaam, Tanzania</p>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            © 2026 RumCHUO. All rights reserved.
+        </div>
     </footer>
+
+
+    <div class="enquiry-overlay" id="enquiryOverlay" role="dialog" aria-modal="true" aria-labelledby="enquiryDialogTitle" aria-describedby="enquiryDialogMessage">
+        <div class="enquiry-dialog">
+            <button class="enquiry-close" id="closeEnquiryDialog" type="button" aria-label="Close">&times;</button>
+            <h2 id="enquiryDialogTitle">Sign in to enquire</h2>
+            <p id="enquiryDialogMessage">Please sign in or create a RumCHUO account before making an enquiry about this room.</p>
+            <div class="enquiry-room-id" id="enquiryRoomId">Room ID: —</div>
+            <div class="enquiry-actions">
+                <a class="enquiry-signin" id="enquirySignInLink" href="/login.html">Sign in</a>
+                <a class="enquiry-create" id="enquiryCreateLink" href="#create-account">Create account</a>
+            </div>
+        </div>
+    </div>
 
     <script>
         const API_BASE_URL = ["3000", "3001", "5500", "5501"].includes(window.location.port)
@@ -1025,6 +1320,73 @@
             notice.textContent = "";
         }
 
+
+        /* SIGN-IN PROMPT FOR ROOM ENQUIRIES */
+
+        const enquiryOverlay = document.getElementById("enquiryOverlay");
+        const enquiryRoomId = document.getElementById("enquiryRoomId");
+        const enquirySignInLink = document.getElementById("enquirySignInLink");
+        const enquiryCreateLink = document.getElementById("enquiryCreateLink");
+        const closeEnquiryDialog = document.getElementById("closeEnquiryDialog");
+        const signupOverlay = document.getElementById("signupOverlay");
+        const closeSignupModal = document.getElementById("closeSignupModal");
+        const signupOpenTriggers = document.querySelectorAll(".signup-open-trigger");
+
+        function openSignupModal() {
+            closeEnquiryPrompt();
+            signupOverlay.classList.add("open");
+            document.body.style.overflow = "hidden";
+            closeSignupModal.focus();
+        }
+
+        function closeSignupModalWindow() {
+            signupOverlay.classList.remove("open");
+            document.body.style.overflow = "";
+        }
+
+        signupOpenTriggers.forEach(link => {
+            link.addEventListener("click", event => {
+                event.preventDefault();
+                openSignupModal();
+            });
+        });
+
+        closeSignupModal.addEventListener("click", closeSignupModalWindow);
+        signupOverlay.addEventListener("click", event => {
+            if (event.target === signupOverlay) closeSignupModalWindow();
+        });
+
+        function openEnquiryDialog(roomId) {
+            const id = String(roomId);
+            enquiryRoomId.textContent = "Room ID: " + id;
+            enquirySignInLink.href = "/login.html?room_id=" + encodeURIComponent(id);
+            enquiryCreateLink.href = "#create-account";
+            enquiryOverlay.classList.add("open");
+            closeEnquiryDialog.focus();
+        }
+
+        function closeEnquiryPrompt() {
+            enquiryOverlay.classList.remove("open");
+        }
+
+        closeEnquiryDialog.addEventListener("click", closeEnquiryPrompt);
+        enquiryOverlay.addEventListener("click", event => {
+            if (event.target === enquiryOverlay) closeEnquiryPrompt();
+        });
+        enquiryCreateLink.addEventListener("click", event => {
+            event.preventDefault();
+            openSignupModal();
+        });
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                if (signupOverlay.classList.contains("open")) {
+                    closeSignupModalWindow();
+                } else if (enquiryOverlay.classList.contains("open")) {
+                    closeEnquiryPrompt();
+                }
+            }
+        });
+
         /* ROOM LISTING FUNCTIONS */
 
         function formatPrice(price) {
@@ -1108,7 +1470,10 @@
                 const matchesBudget =
                     Number.isFinite(price) && price <= budget;
 
-                const matchesType = !selectedType || type === selectedType;
+               const matchesType =
+    !selectedType ||
+    selectedType.toLowerCase() === "all" ||
+    type === selectedType.toLowerCase();
 
                 return matchesArea && matchesBudget && matchesType;
             });
@@ -1120,8 +1485,27 @@
 
             const image = document.createElement("div");
             image.className = "room-image";
-            image.setAttribute("aria-label", "Room illustration");
-            image.textContent = roomTypeEmoji(room.room_type);
+            image.setAttribute("aria-label", "Room photograph");
+
+            const photoIds = Array.isArray(room.photo_ids) ? room.photo_ids : [];
+            const firstPhotoId = photoIds.length ? Number(photoIds[0]) : 0;
+
+            if (Number.isInteger(firstPhotoId) && firstPhotoId > 0) {
+                const photo = document.createElement("img");
+                photo.src = `${API_BASE_URL}/rooms/${encodeURIComponent(room.id)}/photos/${encodeURIComponent(firstPhotoId)}`;
+                photo.alt = `Photograph of ${normaliseRoomType(room.room_type)} in ${room.location || "this location"}`;
+                photo.loading = "lazy";
+                photo.decoding = "async";
+                photo.onerror = () => {
+                    photo.remove();
+                    image.textContent = roomTypeEmoji(room.room_type);
+                    image.setAttribute("aria-label", "Room illustration");
+                };
+                image.appendChild(photo);
+            } else {
+                image.textContent = roomTypeEmoji(room.room_type);
+                image.setAttribute("aria-label", "Room illustration");
+            }
 
             const info = document.createElement("div");
             info.className = "room-info";
@@ -1168,12 +1552,7 @@
             detailsButton.disabled = !available;
 
             detailsButton.addEventListener("click", () => {
-                showNotice(
-                    "Room ID: " + room.id +
-                    ". The agent enquiry service is not connected yet. " +
-                    "RumCHUO will route enquiries through an authorized Agent " +
-                    "when that feature is implemented."
-                );
+                openEnquiryDialog(room.id);
             });
 
             info.appendChild(typeBadge);

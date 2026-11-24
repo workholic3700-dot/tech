@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,196 +6,1016 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sign in to your RumCHUO account.">
     <title>RumCHUO | Sign In</title>
+
     <style>
-        :root { --navy:#123b68; --green:#16845b; --muted:#667085; --border:#e5eaf1; }
-        * { box-sizing:border-box; }
-        body { margin:0; min-height:100vh; display:flex; flex-direction:column; font-family:Arial,Helvetica,sans-serif; background:#f5f7fb; color:#172b4d; }
-        header { background:#fff; border-bottom:1px solid var(--border); padding:17px 6%; }
-        .brand { color:var(--navy); font-size:27px; font-weight:800; text-decoration:none; }
-        .brand span { color:var(--green); }
-        main { flex:1; display:flex; align-items:center; justify-content:center; padding:35px 18px; }
-        .login-card { width:100%; max-width:460px; background:#fff; border:1px solid var(--border); border-radius:16px; padding:34px; box-shadow:0 15px 45px rgba(16,44,75,.08); }
-        h1 { margin:0 0 8px; color:var(--navy); font-size:27px; }
-        .intro { margin:0 0 25px; color:var(--muted); line-height:1.6; font-size:14px; }
-        label { display:block; margin:0 0 7px; color:#344054; font-size:13px; font-weight:700; }
-        .field { margin-bottom:18px; }
-        input, select { width:100%; padding:13px 14px; border:1px solid #d0d5dd; border-radius:8px; background:#fff; font:inherit; outline:none; }
-        input:focus, select:focus { border-color:var(--green); box-shadow:0 0 0 3px #16845b20; }
-        button { width:100%; border:0; border-radius:8px; padding:14px; background:var(--navy); color:#fff; font-weight:800; cursor:pointer; }
-        button:disabled { opacity:.65; cursor:wait; }
-        .message { display:none; margin:0 0 16px; padding:12px 14px; border-radius:8px; font-size:13px; line-height:1.5; }
-        .message.error { display:block; color:#b42318; background:#fff0ed; border:1px solid #fecdca; }
-        .message.info { display:block; color:#145c40; background:#e9f5ef; border:1px solid #cde9da; }
-        .links { margin-top:19px; text-align:center; color:var(--muted); font-size:13px; line-height:1.9; }
-        .links a { color:var(--green); font-weight:700; }
-        .admin-link { display:inline-block; margin-top:8px; }
-        .admin-mode { display:none; padding:11px 13px; margin-bottom:17px; border-radius:8px; background:#eef3f8; color:var(--navy); font-size:13px; font-weight:700; }
-        footer { padding:20px; text-align:center; color:var(--muted); font-size:12px; }
-        @media(max-width:520px) { .login-card { padding:25px 20px; } }
+        :root {
+            --navy: #123b68;
+            --green: #16845b;
+            --muted: #667085;
+            --border: #e5eaf1;
+            --background: #f5f7fb;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--background);
+            color: #172b4d;
+        }
+
+        header {
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            padding: 17px 6%;
+        }
+
+        .brand {
+            color: var(--navy);
+            font-size: 27px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .brand span {
+            color: var(--green);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 35px 18px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 480px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 34px;
+            box-shadow: 0 15px 45px rgba(16,44,75,.08);
+        }
+
+        .login-card {
+    position: relative;
+}
+
+.close-login {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #667085;
+    font-size: 27px;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.close-login:hover {
+    background: #f2f4f7;
+    color: #123b68;
+}
+
+        h1 {
+            margin: 0 0 8px;
+            color: var(--navy);
+            font-size: 27px;
+        }
+
+        .intro {
+            margin: 0 0 24px;
+            color: var(--muted);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* ACCOUNT TYPE CARDS */
+
+        .role-label {
+            display: block;
+            margin-bottom: 11px;
+            color: #344054;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .role-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 23px;
+        }
+
+        .role-card {
+            border: 1.5px solid #e0e6ed;
+            border-radius: 12px;
+            background: #fff;
+            padding: 17px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s ease;
+            color: #344054;
+            user-select: none;
+        }
+
+        .role-card:hover {
+            border-color: var(--green);
+            background: #f4fbf7;
+            transform: translateY(-2px);
+        }
+
+        .role-card.active {
+            border: 2px solid var(--green);
+            background: #effaf4;
+            color: var(--green);
+        }
+
+        .role-icon {
+            font-size: 28px;
+            margin-bottom: 9px;
+        }
+
+        .role-name {
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .role-description {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .role-card:focus-visible {
+            outline: 3px solid #16845b55;
+            outline-offset: 3px;
+        }
+
+        /* FORM */
+
+        label {
+            display: block;
+            margin: 0 0 7px;
+            color: #344054;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .field {
+            margin-bottom: 18px;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            background: #fff;
+            font: inherit;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px #16845b20;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 65px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: auto;
+            padding: 5px;
+            background: transparent;
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        button {
+            width: 100%;
+            border: 0;
+            border-radius: 8px;
+            padding: 14px;
+            background: var(--navy);
+            color: #fff;
+            font-weight: 800;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #0d2e53;
+        }
+
+        button:disabled {
+            opacity: .65;
+            cursor: wait;
+        }
+
+        .login-button {
+            margin-top: 3px;
+        }
+
+        /* MESSAGES */
+
+        .message {
+            display: none;
+            margin: 0 0 16px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .message.error {
+            display: block;
+            color: #b42318;
+            background: #fff0ed;
+            border: 1px solid #fecdca;
+        }
+
+        .message.info {
+            display: block;
+            color: #145c40;
+            background: #e9f5ef;
+            border: 1px solid #cde9da;
+        }
+
+        .admin-mode {
+            display: none;
+            padding: 11px 13px;
+            margin-bottom: 17px;
+            border-radius: 8px;
+            background: #eef3f8;
+            color: var(--navy);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .links {
+            margin-top: 19px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.9;
+        }
+
+        .links a {
+            color: var(--green);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .admin-link {
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        footer {
+            padding: 20px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        @media(max-width: 520px) {
+            .login-card {
+                padding: 25px 20px;
+            }
+
+            .role-options {
+                gap: 7px;
+            }
+
+            .role-card {
+                padding: 14px 5px;
+            }
+
+            .role-icon {
+                font-size: 24px;
+            }
+
+            .role-name {
+                font-size: 12px;
+            }
+
+            .role-description {
+                font-size: 9px;
+            }
+        }
     </style>
 </head>
+
 <body>
-    <header><a class="brand" href="/">Rum<span>CHUO</span></a></header>
+
+    <header>
+        <a class="brand" href="/">
+            Rum<span>CHUO</span>
+        </a>
+    </header>
+
     <main>
+
         <section class="login-card">
+            <button
+    type="button"
+    class="close-login"
+    id="closeLogin"
+    aria-label="Close sign in page"
+    title="Close">
+    &times;
+</button>
+
             <h1 id="pageTitle">Welcome back</h1>
-            <p class="intro" id="pageIntro">Choose your account type and sign in to RumCHUO.</p>
-            <div class="message" id="loginMessage" role="alert" aria-live="polite"></div>
-            <div class="admin-mode" id="adminMode">Administrator sign-in selected</div>
-            <form id="loginForm">
-                <div class="field" id="roleField">
-                    <label for="loginRole">SIGN IN AS</label>
-                    <select id="loginRole" required>
-                        <option value="student">Student</option>
-                        <option value="agent">Agent</option>
-                        <option value="owner">Owner</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="email">Email address</label>
-                    <input id="email" type="email" placeholder="Enter your email address" autocomplete="username" required>
-                </div>
-                <div class="field">
-                    <label for="password">Password</label>
-                    <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
-                </div>
-                <button id="loginButton" type="submit">Sign in as Student</button>
-            </form>
-            <div class="links">
-                <div>Don't have an account? <a href="/#create-account">Create account</a></div>
-                <a class="admin-link" href="/login.html?role=admin" id="adminLink">Administrator sign in</a>
-                <a class="admin-link" href="/login.html" id="userLink" style="display:none">Back to Student / Agent / Owner sign in</a>
+
+            <p class="intro" id="pageIntro">
+                Select your account type and sign in to RumCHUO.
+            </p>
+
+            <div
+                class="message"
+                id="loginMessage"
+                role="alert"
+                aria-live="polite">
             </div>
+
+            <div class="admin-mode" id="adminMode">
+                Administrator sign-in selected
+            </div>
+
+            <form id="loginForm">
+
+                <!-- ACCOUNT TYPE SELECTION -->
+
+                <div id="roleField">
+
+                    <span class="role-label">
+                        SELECT YOUR ACCOUNT TYPE
+                    </span>
+
+                    <div class="role-options">
+
+                        <div
+                            class="role-card active"
+                            data-role="student"
+                            role="button"
+                            tabindex="0"
+                            aria-pressed="true">
+
+                            <div class="role-icon">🎓</div>
+
+                            <div class="role-name">Student</div>
+
+                            <div class="role-description">
+                                Find accommodation
+                            </div>
+
+                        </div>
+
+                        <div
+                            class="role-card"
+                            data-role="owner"
+                            role="button"
+                            tabindex="0"
+                            aria-pressed="false">
+
+                            <div class="role-icon">🏠</div>
+
+                            <div class="role-name">Owner</div>
+
+                            <div class="role-description">
+                                Manage properties
+                            </div>
+
+                        </div>
+
+                        <div
+                            class="role-card"
+                            data-role="agent"
+                            role="button"
+                            tabindex="0"
+                            aria-pressed="false">
+
+                            <div class="role-icon">💼</div>
+
+                            <div class="role-name">Agent</div>
+
+                            <div class="role-description">
+                                Manage listings
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <input
+                        type="hidden"
+                        id="loginRole"
+                        value="student">
+
+                </div>
+
+                <!-- EMAIL -->
+
+                <div class="field">
+
+                    <label for="email">
+                        Email address
+                    </label>
+
+                    <input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email address"
+                        autocomplete="username"
+                        required>
+
+                </div>
+
+                <!-- PASSWORD -->
+
+                <div class="field">
+
+                    <label for="password">
+                        Password
+                    </label>
+
+                    <div class="password-wrapper">
+
+                        <input
+                            id="password"
+                            type="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required>
+
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            id="togglePassword">
+                            Show
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <!-- SUBMIT -->
+
+                <button
+                    class="login-button"
+                    id="loginButton"
+                    type="submit">
+
+                    Sign in as Student
+
+                </button>
+
+            </form>
+
+            <div class="links">
+
+                <div>
+                    Don't have an account?
+                    <a href="/#create-account">Create account</a>
+                </div>
+
+
+
+                <a
+                    class="admin-link"
+                    href="/login.html"
+                    id="userLink"
+                    style="display:none">
+
+                    Back to Student / Agent / Owner sign in
+
+                </a>
+
+            </div>
+
         </section>
+
     </main>
-    <footer>© 2026 RumCHUO · Student accommodation made simpler.</footer>
+
+    <footer>
+        © 2026 RumCHUO · Student accommodation made simpler.
+    </footer>
+
     <script>
-        const API_BASE_URL = ["3000", "3001", "5500", "5501"].includes(window.location.port)
-            ? window.location.protocol + "//" + window.location.hostname + ":8000"
+
+        // ==========================================
+        // API CONFIGURATION
+        // ==========================================
+
+        const API_BASE_URL = ["3000", "3001", "5500", "5501"].includes(
+            window.location.port
+        )
+            ? window.location.protocol + "//" +
+              window.location.hostname + ":8000"
             : window.location.origin;
+
+
+        // ==========================================
+        // ELEMENT REFERENCES
+        // ==========================================
+
         const loginForm = document.getElementById("loginForm");
+
         const loginRole = document.getElementById("loginRole");
+
         const loginButton = document.getElementById("loginButton");
+
         const loginMessage = document.getElementById("loginMessage");
+
         const adminMode = document.getElementById("adminMode");
+
         const roleField = document.getElementById("roleField");
+
         const pageTitle = document.getElementById("pageTitle");
+
         const pageIntro = document.getElementById("pageIntro");
-        const requestedRole = new URLSearchParams(window.location.search).get("role");
+
+        const emailInput = document.getElementById("email");
+
+        const passwordInput = document.getElementById("password");
+
+        const togglePassword = document.getElementById("togglePassword");
+
+        const roleCards = document.querySelectorAll(".role-card");
+
+// CLOSE LOGIN PAGE
+document.getElementById("closeLogin").addEventListener("click", () => {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = "/";
+    }
+});
+
+        // ==========================================
+        // ACCOUNT CONFIGURATION
+        // ==========================================
+
+        const requestedRole = new URLSearchParams(
+            window.location.search
+        ).get("role");
+
         let administratorSignIn = requestedRole === "admin";
+
+        const roleLabels = {
+            student: "Student",
+            owner: "Owner",
+            agent: "Agent"
+        };
+
+
+        // ==========================================
+        // INITIAL ACCOUNT TYPE
+        // ==========================================
+
         if (["student", "agent", "owner"].includes(requestedRole)) {
             loginRole.value = requestedRole;
         }
 
-        function updateLoginView() {
-            if (administratorSignIn) {
-                roleField.style.display = "none";
-                adminMode.style.display = "block";
-                pageTitle.textContent = "Administrator sign in";
-                pageIntro.textContent = "Sign in to manage the RumCHUO platform.";
-                loginButton.textContent = "Sign in as Administrator";
-                document.getElementById("adminLink").style.display = "none";
-                document.getElementById("userLink").style.display = "inline-block";
-                return;
-            }
-            const role = loginRole.value;
-            const labels = { student:"Student", agent:"Agent", owner:"Owner" };
-            pageTitle.textContent = labels[role] + " sign in";
-            pageIntro.textContent = "Sign in to your RumCHUO " + labels[role].toLowerCase() + " account.";
-            loginButton.textContent = "Sign in as " + labels[role];
+
+        // ==========================================
+        // UPDATE ACCOUNT SELECTION
+        // ==========================================
+
+        function selectRole(role) {
+
+            if (administratorSignIn) return;
+
+            if (!roleLabels[role]) return;
+
+            loginRole.value = role;
+
+            roleCards.forEach(card => {
+
+                const selected = card.dataset.role === role;
+
+                card.classList.toggle("active", selected);
+
+                card.setAttribute(
+                    "aria-pressed",
+                    String(selected)
+                );
+
+            });
+
+            loginMessage.className = "message";
+
+            loginMessage.textContent = "";
+
+            updateLoginView();
+
         }
 
-        loginRole.addEventListener("change", () => {
-            loginMessage.className = "message";
-            loginMessage.textContent = "";
-            updateLoginView();
+
+        // ==========================================
+        // ROLE CARD CLICK AND KEYBOARD EVENTS
+        // ==========================================
+
+        roleCards.forEach(card => {
+
+            card.addEventListener("click", () => {
+                selectRole(card.dataset.role);
+            });
+
+            card.addEventListener("keydown", event => {
+
+                if (event.key === "Enter" || event.key === " ") {
+
+                    event.preventDefault();
+
+                    selectRole(card.dataset.role);
+
+                }
+
+            });
+
         });
 
-        function showError(message) {
-            loginMessage.className = "message error";
-            loginMessage.textContent = message;
+
+        // ==========================================
+        // UPDATE LOGIN PAGE
+        // ==========================================
+
+        function updateLoginView() {
+
+            if (administratorSignIn) {
+
+                roleField.style.display = "none";
+
+                adminMode.style.display = "block";
+
+                pageTitle.textContent = "Administrator sign in";
+
+                pageIntro.textContent =
+                    "Sign in to manage the RumCHUO platform.";
+
+                loginButton.textContent =
+                    "Sign in as Administrator";
+
+                document.getElementById("adminLink").style.display = "none";
+
+                document.getElementById("userLink").style.display =
+                    "inline-block";
+
+                return;
+
+            }
+
+            const role = loginRole.value;
+
+            const label = roleLabels[role];
+
+            pageTitle.textContent = label + " sign in";
+
+            pageIntro.textContent =
+                "Sign in to your RumCHUO " +
+                label.toLowerCase() +
+                " account.";
+
+            loginButton.textContent = "Sign in as " + label;
+
         }
+
+
+        // ==========================================
+        // PASSWORD VISIBILITY
+        // ==========================================
+
+        togglePassword.addEventListener("click", () => {
+
+            const isPassword =
+                passwordInput.type === "password";
+
+            passwordInput.type = isPassword ? "text" : "password";
+
+            togglePassword.textContent =
+                isPassword ? "Hide" : "Show";
+
+        });
+
+
+        // ==========================================
+        // ERROR HANDLING
+        // ==========================================
+
+        function showError(message) {
+
+            loginMessage.className = "message error";
+
+            loginMessage.textContent = message;
+
+        }
+
+
+        // ==========================================
+        // CLEAR PREVIOUS SESSION
+        // ==========================================
 
         function clearSession() {
-            ["accessToken", "tokenType", "userRole", "userId", "userName"].forEach(key => localStorage.removeItem(key));
+
+            [
+                "accessToken",
+                "tokenType",
+                "userRole",
+                "userId",
+                "userName"
+            ].forEach(key => localStorage.removeItem(key));
+
         }
+
+
+        // ==========================================
+        // DASHBOARD ROUTING
+        // ==========================================
 
         function dashboardForRole(role) {
+
             const destinations = {
-                admin:"/admin/dashboard",
-                agent:"/agent/dashboard",
-                landlord:"/landlord/dashboard",
-                owner:"/landlord/dashboard",
-                student:"/student/dashboard"
+
+                admin: "/admin/dashboard",
+
+                agent: "/agent/dashboard",
+
+                landlord: "/landlord/dashboard",
+
+                owner: "/landlord/dashboard",
+
+                student: "/student/dashboard"
+
             };
-            return destinations[String(role || "").toLowerCase()] || null;
+
+            return destinations[
+                String(role || "").toLowerCase()
+            ] || null;
+
         }
+
+
+        // ==========================================
+        // JSON RESPONSE HANDLING
+        // ==========================================
 
         async function readJson(response) {
-            try { return await response.json(); }
-            catch { throw new Error("The server returned an invalid response. Please try again."); }
+
+            try {
+
+                return await response.json();
+
+            } catch {
+
+                throw new Error(
+                    "The server returned an invalid response. Please try again."
+                );
+
+            }
+
         }
 
+
+        // ==========================================
+        // LOGIN PROCESS
+        // ==========================================
+
         loginForm.addEventListener("submit", async event => {
+
             event.preventDefault();
+
             loginMessage.className = "message";
+
             loginMessage.textContent = "";
+
             if (!loginForm.reportValidity()) return;
 
             loginButton.disabled = true;
+
             loginButton.textContent = "Signing in...";
+
             clearSession();
 
-            const loginAs = administratorSignIn ? "admin" : loginRole.value;
+            const loginAs = administratorSignIn
+                ? "admin"
+                : loginRole.value;
+
             let completed = false;
 
             try {
-                const response = await fetch(API_BASE_URL + "/students/login", {
-                    method:"POST",
-                    headers:{"Content-Type":"application/json"},
-                    body:JSON.stringify({
-                        email:document.getElementById("email").value.trim(),
-                        password:document.getElementById("password").value,
-                        login_as:loginAs
-                    })
-                });
+
+                // STEP 1: AUTHENTICATE
+
+                const response = await fetch(
+                    API_BASE_URL + "/students/login",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            email: emailInput.value.trim(),
+
+                            password: passwordInput.value,
+
+                            login_as: loginAs
+
+                        })
+
+                    }
+                );
+
                 const data = await readJson(response);
+
                 if (!response.ok) {
+
                     const detail = data.detail;
-                    throw new Error(typeof detail === "string" ? detail : "Sign-in failed. Check your details.");
-                }
-                if (!data.access_token) throw new Error("The server did not return an access token.");
 
-                const accountResponse = await fetch(API_BASE_URL + "/students/me", {
-                    headers:{"Authorization":"Bearer " + data.access_token}
-                });
+                    throw new Error(
+                        typeof detail === "string"
+                            ? detail
+                            : "Sign-in failed. Check your details."
+                    );
+
+                }
+
+                if (!data.access_token) {
+
+                    throw new Error(
+                        "The server did not return an access token."
+                    );
+
+                }
+
+
+                // STEP 2: VERIFY ACCOUNT
+
+                const accountResponse = await fetch(
+                    API_BASE_URL + "/students/me",
+                    {
+                        headers: {
+                            "Authorization":
+                                "Bearer " + data.access_token
+                        }
+                    }
+                );
+
                 const account = await readJson(accountResponse);
+
                 if (!accountResponse.ok) {
+
                     const detail = account.detail;
-                    throw new Error(typeof detail === "string" ? detail : "Could not verify your account.");
+
+                    throw new Error(
+                        typeof detail === "string"
+                            ? detail
+                            : "Could not verify your account."
+                    );
+
                 }
 
-                const destination = dashboardForRole(account.role);
-                if (!destination) throw new Error("Your account does not have a configured dashboard.");
 
-                localStorage.setItem("accessToken", data.access_token);
-                localStorage.setItem("tokenType", data.token_type || "bearer");
-                localStorage.setItem("userRole", account.role);
-                if (account.id !== undefined && account.id !== null) localStorage.setItem("userId", String(account.id));
-                if (account.full_name) localStorage.setItem("userName", account.full_name);
+// STEP 3: CHECK ACCOUNT ROLE
+
+const actualRole = String(
+    account.role || ""
+).toLowerCase();
+
+const normalizedActualRole =
+    actualRole === "landlord" ? "owner" : actualRole;
+
+if (normalizedActualRole !== loginAs) {
+    throw new Error(
+        "The authenticated account type does not match the selected account type."
+    );
+}
+
+                // STEP 4: FIND DASHBOARD
+
+                const destination = dashboardForRole(actualRole);
+
+                if (!destination) {
+
+                    throw new Error(
+                        "Your account does not have a configured dashboard."
+                    );
+
+                }
+
+
+                // STEP 5: SAVE SESSION
+
+                localStorage.setItem(
+                    "accessToken",
+                    data.access_token
+                );
+
+                localStorage.setItem(
+                    "tokenType",
+                    data.token_type || "bearer"
+                );
+
+                localStorage.setItem(
+                    "userRole",
+                    actualRole
+                );
+
+                if (account.id !== undefined && account.id !== null) {
+
+                    localStorage.setItem(
+                        "userId",
+                        String(account.id)
+                    );
+
+                }
+
+                if (account.full_name) {
+
+                    localStorage.setItem(
+                        "userName",
+                        account.full_name
+                    );
+
+                }
+
+
+                // STEP 6: REDIRECT
 
                 completed = true;
+
                 window.location.assign(destination);
+
             } catch (error) {
-                if (!completed) clearSession();
-                showError(error.message || "Unable to sign in. Please try again.");
+
+                if (!completed) {
+
+                    clearSession();
+
+                }
+
+                showError(
+                    error.message ||
+                    "Unable to sign in. Please try again."
+                );
+
             } finally {
+
                 loginButton.disabled = false;
+
                 updateLoginView();
+
             }
+
         });
 
+
+        // ==========================================
+        // INITIALIZE PAGE
+        // ==========================================
+
+        if (!administratorSignIn) {
+
+            selectRole(loginRole.value);
+
+        }
+
         updateLoginView();
+
     </script>
+
 </body>
 </html>

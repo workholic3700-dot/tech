@@ -9,400 +9,526 @@
 
 <style>
 :root {
-  --navy: #10233f;
-  --green: #16845b;
-  --background: #f4f7fa;
-  --border: #dce4ec;
-  --text: #1e293b;
-  --muted: #64748b;
+  --navy:#10233f;
+  --green:#16845b;
+  --background:#f4f7fa;
+  --border:#dce4ec;
+  --text:#1e293b;
+  --muted:#64748b;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing:border-box; }
 
 body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: var(--background);
-  color: var(--text);
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--background);
+  color:var(--text);
 }
 
-body.menu-open { overflow: hidden; }
+body.menu-open { overflow:hidden; }
 
 header {
-  background: var(--navy);
-  color: white;
-  padding: 17px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  background:var(--navy);
+  color:white;
+  padding:17px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  position:sticky;
+  top:0;
+  z-index:100;
 }
 
 .header-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  display:flex;
+  align-items:center;
+  gap:14px;
 }
 
-header h1 { margin: 0; font-size: 22px; }
-header p { margin: 5px 0 0; color: #d4deeb; font-size: 13px; }
+header h1 { margin:0;font-size:22px; }
+header p { margin:5px 0 0;color:#d4deeb;font-size:13px; }
 
 .hamburger {
-  background: transparent;
-  border: 1px solid #ffffff55;
-  color: white;
-  font-size: 25px;
-  padding: 5px 11px;
-  border-radius: 7px;
-  line-height: 1.2;
+  background:transparent;
+  border:1px solid #ffffff55;
+  color:white;
+  font-size:25px;
+  padding:5px 11px;
+  border-radius:7px;
+  line-height:1.2;
 }
 
-.hamburger:hover { background: #ffffff18; }
+.hamburger:hover { background:#ffffff18; }
 
 main {
-  width: min(1250px, 95%);
-  margin: 25px auto;
+  width:min(1250px,95%);
+  margin:25px auto;
 }
 
 .panel {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 22px;
-  margin-bottom: 20px;
-  box-shadow: 0 3px 12px #10233f0a;
+  background:white;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:22px;
+  margin-bottom:20px;
+  box-shadow:0 3px 12px #10233f0a;
 }
 
-.login-panel { max-width: 450px; margin: 55px auto; }
+.login-panel { max-width:450px;margin:55px auto; }
 
-h2 { margin-top: 0; font-size: 20px; }
-h3 { font-size: 16px; margin-top: 20px; }
-p { line-height: 1.5; }
+h2 { margin-top:0;font-size:20px; }
+h3 { font-size:16px;margin-top:20px; }
+p { line-height:1.5; }
 
-.muted { color: var(--muted); }
+.muted { color:var(--muted); }
 
 label {
-  display: block;
-  margin: 15px 0 7px;
-  font-size: 14px;
-  font-weight: bold;
+  display:block;
+  margin:15px 0 7px;
+  font-size:14px;
+  font-weight:bold;
 }
 
-input, select, textarea {
-  width: 100%;
-  padding: 11px;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  font: inherit;
+input,select,textarea {
+  width:100%;
+  padding:11px;
+  border:1px solid #cbd5e1;
+  border-radius:7px;
+  font:inherit;
 }
+
+textarea { resize:vertical; }
 
 button {
-  background: var(--green);
-  color: white;
-  border: 0;
-  border-radius: 7px;
-  padding: 10px 14px;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 13px;
+  background:var(--green);
+  color:white;
+  border:0;
+  border-radius:7px;
+  padding:10px 14px;
+  font-weight:bold;
+  cursor:pointer;
+  font-size:13px;
 }
 
-button:hover { filter: brightness(.94); }
-button:disabled { opacity: .5; cursor: not-allowed; }
+button:hover { filter:brightness(.94); }
+button:disabled { opacity:.5;cursor:not-allowed; }
 
-.secondary { background: var(--navy); }
-.danger { background: #b42318; }
-.light { background: #e8eef5; color: var(--navy); }
+.secondary { background:var(--navy); }
+.danger { background:#b42318; }
+.light { background:#e8eef5;color:var(--navy); }
 
 .toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
 }
 
-.hidden { display: none !important; }
+.hidden { display:none !important; }
 
-/* HAMBURGER SIDEBAR */
+/* SIDEBAR */
 
 .menu-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, .55);
-  z-index: 200;
-  opacity: 0;
-  visibility: hidden;
-  transition: .25s ease;
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.55);
+  z-index:200;
+  opacity:0;
+  visibility:hidden;
+  transition:.25s ease;
 }
 
 .menu-overlay.active {
-  opacity: 1;
-  visibility: visible;
+  opacity:1;
+  visibility:visible;
 }
 
 .sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 290px;
-  max-width: 85%;
-  height: 100%;
-  background: white;
-  z-index: 201;
-  transform: translateX(-100%);
-  transition: transform .28s ease;
-  box-shadow: 5px 0 25px #0002;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
+  position:fixed;
+  top:0;
+  left:0;
+  width:290px;
+  max-width:85%;
+  height:100%;
+  background:white;
+  z-index:201;
+  transform:translateX(-100%);
+  transition:transform .28s ease;
+  box-shadow:5px 0 25px #0002;
+  display:flex;
+  flex-direction:column;
+  overflow-y:auto;
 }
 
-.sidebar.open { transform: translateX(0); }
+.sidebar.open { transform:translateX(0); }
 
 .sidebar-header {
-  background: var(--navy);
-  color: white;
-  padding: 22px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  background:var(--navy);
+  color:white;
+  padding:22px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
 }
 
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 19px;
-}
+.sidebar-header h2 { margin:0;font-size:19px; }
 
 .menu-close {
-  background: transparent;
-  color: white;
-  font-size: 25px;
-  padding: 3px 9px;
+  background:transparent;
+  color:white;
+  font-size:25px;
+  padding:3px 9px;
 }
 
 .sidebar-label {
-  padding: 20px 18px 8px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  padding:20px 18px 8px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:bold;
+  text-transform:uppercase;
+  letter-spacing:1px;
 }
 
 .sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  padding: 5px 10px 20px;
-  gap: 5px;
+  display:flex;
+  flex-direction:column;
+  padding:5px 10px 20px;
+  gap:5px;
 }
 
 .sidebar-nav button {
-  background: transparent;
-  color: var(--text);
-  text-align: left;
-  padding: 14px 13px;
-  border-radius: 7px;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  background:transparent;
+  color:var(--text);
+  text-align:left;
+  padding:14px 13px;
+  border-radius:7px;
+  font-size:14px;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 
-.sidebar-nav button:hover {
-  background: #f1f5f9;
-}
+.sidebar-nav button:hover { background:#f1f5f9; }
 
 .sidebar-nav button.active {
-  background: #e8f7ef;
-  color: var(--green);
+  background:#e8f7ef;
+  color:var(--green);
 }
 
 .menu-icon {
-  width: 22px;
-  text-align: center;
-  font-size: 17px;
+  width:22px;
+  text-align:center;
+  font-size:17px;
 }
 
 .sidebar-footer {
-  margin-top: auto;
-  padding: 15px 18px;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 12px;
+  margin-top:auto;
+  padding:15px 18px;
+  border-top:1px solid var(--border);
+  color:var(--muted);
+  font-size:12px;
 }
+
+/* GENERAL */
 
 .message {
-  padding: 12px;
-  border-radius: 7px;
-  margin: 12px 0;
-  overflow-wrap: anywhere;
+  padding:12px;
+  border-radius:7px;
+  margin:12px 0;
+  overflow-wrap:anywhere;
 }
 
-.error { color: #912018; background: #fef0ee; }
-.success { color: #126443; background: #e8f7ef; }
+.error { color:#912018;background:#fef0ee; }
+.success { color:#126443;background:#e8f7ef; }
 
 .stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
 }
 
 .stat {
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  padding: 17px;
-  border-radius: 9px;
+  background:#f8fafc;
+  border:1px solid var(--border);
+  padding:17px;
+  border-radius:9px;
 }
 
 .stat span {
-  color: var(--muted);
-  display: block;
-  font-size: 13px;
+  color:var(--muted);
+  display:block;
+  font-size:13px;
 }
 
 .stat strong {
-  display: block;
-  font-size: 25px;
-  margin-top: 8px;
-  color: var(--navy);
+  display:block;
+  font-size:25px;
+  margin-top:8px;
+  color:var(--navy);
 }
 
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x:auto; }
 
 table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 700px;
+  width:100%;
+  border-collapse:collapse;
+  min-width:700px;
 }
 
-th, td {
-  border-bottom: 1px solid var(--border);
-  padding: 12px;
-  text-align: left;
-  vertical-align: top;
-  font-size: 13px;
-  overflow-wrap: anywhere;
+th,td {
+  border-bottom:1px solid var(--border);
+  padding:12px;
+  text-align:left;
+  vertical-align:top;
+  font-size:13px;
+  overflow-wrap:anywhere;
 }
 
-th { color: var(--muted); background: #f8fafc; }
+th { color:var(--muted);background:#f8fafc; }
 
 .status-pill {
-  display: inline-block;
-  padding: 5px 9px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: bold;
-  text-transform: capitalize;
-  background: #e8eef5;
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:bold;
+  text-transform:capitalize;
+  background:#e8eef5;
 }
 
-.status-pending { background: #fff4d6; color: #805b00; }
-.status-approved { background: #e8f7ef; color: #126443; }
-.status-rejected { background: #fef0ee; color: #912018; }
-.status-suspended { background: #fef0ee; color: #912018; }
+.status-pending,
+.status-open { background:#fff4d6;color:#805b00; }
+
+.status-approved,
+.status-resolved { background:#e8f7ef;color:#126443; }
+
+.status-rejected,
+.status-suspended,
+.status-closed { background:#fef0ee;color:#912018; }
+
+.status-in_progress { background:#e0efff;color:#17538b; }
+
+.status-waiting_for_student { background:#f3e8ff;color:#7136a3; }
 
 .application-card {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px;
-  margin: 15px 0;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:18px;
+  margin:15px 0;
 }
 
 .application-details {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 20px;
-  margin: 15px 0;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px 20px;
+  margin:15px 0;
 }
 
 .detail {
-  background: #f8fafc;
-  padding: 10px;
-  border-radius: 7px;
-  overflow-wrap: anywhere;
+  background:#f8fafc;
+  padding:10px;
+  border-radius:7px;
+  overflow-wrap:anywhere;
 }
 
 .detail small {
-  color: var(--muted);
-  display: block;
-  margin-bottom: 4px;
+  color:var(--muted);
+  display:block;
+  margin-bottom:4px;
 }
 
 .detail a {
-  color: var(--green);
-  font-weight: bold;
-  text-decoration: none;
-  overflow-wrap: anywhere;
+  color:var(--green);
+  font-weight:bold;
+  text-decoration:none;
+  overflow-wrap:anywhere;
 }
 
-.detail a:hover { text-decoration: underline; }
+.detail a:hover { text-decoration:underline; }
 
 .photo-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 12px;
-  margin: 15px 0;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+  gap:12px;
+  margin:15px 0;
 }
 
 .photo-gallery img {
-  width: 100%;
-  height: 165px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #f1f5f9;
+  width:100%;
+  height:165px;
+  object-fit:cover;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#f1f5f9;
 }
 
 .photo-item small {
-  display: block;
-  color: var(--muted);
-  overflow-wrap: anywhere;
-  margin-top: 5px;
+  display:block;
+  color:var(--muted);
+  overflow-wrap:anywhere;
+  margin-top:5px;
 }
 
 .decision-area {
-  border-top: 1px solid var(--border);
-  margin-top: 15px;
-  padding-top: 15px;
+  border-top:1px solid var(--border);
+  margin-top:15px;
+  padding-top:15px;
 }
 
 .decision-area textarea {
-  min-height: 65px;
-  margin-bottom: 10px;
+  min-height:65px;
+  margin-bottom:10px;
 }
 
 .notice {
-  background: #f1f5f9;
-  border-left: 4px solid var(--navy);
-  border-radius: 5px;
-  padding: 12px;
-  font-size: 13px;
-  line-height: 1.6;
+  background:#f1f5f9;
+  border-left:4px solid var(--navy);
+  border-radius:5px;
+  padding:12px;
+  font-size:13px;
+  line-height:1.6;
+}
+
+/* SERVICE TICKETS */
+
+.ticket-filters {
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr auto;
+  gap:10px;
+  align-items:end;
+  margin:18px 0;
+}
+
+.ticket-filters label { margin-top:0; }
+
+.ticket-stat-open { border-left:4px solid #d99b17; }
+.ticket-stat-progress { border-left:4px solid #2878b9; }
+.ticket-stat-waiting { border-left:4px solid #8b5bc1; }
+.ticket-stat-resolved { border-left:4px solid #16845b; }
+.ticket-stat-closed { border-left:4px solid #b42318; }
+
+.ticket-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.ticket-conversation {
+  background:#f8fafc;
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:15px;
+  margin:15px 0;
+  max-height:480px;
+  overflow-y:auto;
+}
+
+.ticket-message {
+  max-width:85%;
+  padding:12px 14px;
+  border-radius:10px;
+  margin:12px 0;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+}
+
+.ticket-message.student {
+  background:#e8eef5;
+  margin-right:auto;
+  border-bottom-left-radius:2px;
+}
+
+.ticket-message.admin {
+  background:#e8f7ef;
+  margin-left:auto;
+  border-bottom-right-radius:2px;
+}
+
+.ticket-message-meta {
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:7px;
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.ticket-message-content {
+  font-size:14px;
+  line-height:1.6;
+}
+
+.ticket-reply-box {
+  border:1px solid var(--border);
+  padding:15px;
+  border-radius:9px;
+  background:#f8fafc;
+  margin-top:15px;
+}
+
+.ticket-reply-box textarea {
+  min-height:110px;
+  margin:10px 0;
+}
+
+.ticket-detail-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.ticket-pagination {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-top:15px;
+}
+
+.ticket-pagination button { min-width:85px; }
+
+.ticket-info-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin:15px 0;
+}
+
+.ticket-empty {
+  text-align:center;
+  padding:35px 15px;
+  color:var(--muted);
 }
 
 footer {
-  text-align: center;
-  color: var(--muted);
-  font-size: 12px;
-  padding: 22px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  padding:22px;
 }
 
-@media (max-width: 750px) {
-  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .application-details { grid-template-columns: 1fr; }
-  header { padding: 14px; }
-  header h1 { font-size: 18px; }
-  header p { font-size: 11px; }
-  main { width: 94%; margin: 17px auto; }
+@media(max-width:750px) {
+  .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .application-details { grid-template-columns:1fr; }
+  .ticket-filters { grid-template-columns:1fr 1fr; }
+  header { padding:14px; }
+  header h1 { font-size:18px; }
+  header p { font-size:11px; }
+  main { width:94%;margin:17px auto; }
 }
 
-@media (max-width: 450px) {
-  .stats { grid-template-columns: 1fr; }
-  .panel { padding: 15px; }
+@media(max-width:450px) {
+  .stats { grid-template-columns:1fr; }
+  .panel { padding:15px; }
+  .ticket-filters { grid-template-columns:1fr; }
+  .ticket-info-grid { grid-template-columns:1fr; }
+  .ticket-message { max-width:95%; }
 }
 </style>
 </head>
@@ -411,186 +537,320 @@ footer {
 
 <header>
   <div class="header-left">
-    <button
-      id="menuToggle"
-      class="hamburger"
-      type="button"
-      aria-label="Open navigation menu"
-      aria-expanded="false"
-    >☰</button>
-
+    <button id="menuToggle" class="hamburger" type="button"
+      aria-label="Open navigation menu" aria-expanded="false">☰</button>
     <div>
       <h1>RumCHUO Administration</h1>
       <p>Platform management and property verification</p>
     </div>
   </div>
-
-  <button id="logoutButton" class="light hidden" type="button">
-    Log out
-  </button>
+  <button id="logoutButton" class="light hidden" type="button">Log out</button>
 </header>
 
-<!-- SIDEBAR OVERLAY -->
 <div id="menuOverlay" class="menu-overlay"></div>
 
-<!-- SIDEBAR -->
 <aside id="adminSidebar" class="sidebar" aria-label="Admin navigation">
-
   <div class="sidebar-header">
     <h2>Admin Menu</h2>
-    <button id="menuClose" class="menu-close" type="button" aria-label="Close menu">
-      &times;
-    </button>
+    <button id="menuClose" class="menu-close" type="button"
+      aria-label="Close menu">&times;</button>
   </div>
 
   <div class="sidebar-label">Dashboard navigation</div>
 
   <nav class="sidebar-nav">
-
-    <button class="active" data-section="propertySection" type="button">
-      <span class="menu-icon">🏠</span>
-      Owner Property Verification
-    </button>
-
-    <button data-section="agentPropertySection" type="button">
-      <span class="menu-icon">🏢</span>
-      Agent Property Submissions
+    <button class="active" data-section="agentPropertySection" type="button">
+      <span class="menu-icon">🏠</span>Property Verification
     </button>
 
     <button data-section="agentSection" type="button">
-      <span class="menu-icon">📋</span>
-      Agent Applications
+      <span class="menu-icon">📋</span>Agent Applications
     </button>
 
     <button data-section="accountsSection" type="button">
-      <span class="menu-icon">👥</span>
-      Accounts
+      <span class="menu-icon">👥</span>Accounts
+    </button>
+
+    <button data-section="ticketsSection" type="button">
+      <span class="menu-icon">🎫</span>Service Tickets
     </button>
 
     <button data-section="auditSection" type="button">
-      <span class="menu-icon">📊</span>
-      Audit Log
+      <span class="menu-icon">📊</span>Audit Log
     </button>
-
   </nav>
 
-  <div class="sidebar-footer">
-    RumCHUO Administration Portal
-  </div>
-
+  <div class="sidebar-footer">RumCHUO Administration Portal</div>
 </aside>
 
 <main>
 
-  <section id="loginPanel" class="panel login-panel">
-    <h2>Administrator sign in</h2>
-    <p class="muted">Sign in using your RumCHUO administrator account.</p>
+<section id="loginPanel" class="panel login-panel">
+  <h2>Administrator sign in</h2>
+  <p class="muted">Sign in using your RumCHUO administrator account.</p>
 
-    <form id="loginForm">
-      <label for="email">Email address</label>
-      <input id="email" type="email" required autocomplete="username">
+  <form id="loginForm">
+    <label for="email">Email address</label>
+    <input id="email" type="email" required autocomplete="username">
 
-      <label for="password">Password</label>
-      <input id="password" type="password" required autocomplete="current-password">
+    <label for="password">Password</label>
+    <input id="password" type="password" required autocomplete="current-password">
 
-      <button id="loginButton" type="submit" style="width:100%;margin-top:18px">
-        Sign in
+    <button id="loginButton" type="submit" style="width:100%;margin-top:18px">
+      Sign in
+    </button>
+  </form>
+
+  <div id="loginMessage" role="status" aria-live="polite"></div>
+</section>
+
+<section id="dashboardPanel" class="hidden">
+
+  <section class="panel">
+    <h2>Administration overview</h2>
+    <p id="welcome" class="muted"></p>
+    <div id="globalMessage" role="status" aria-live="polite"></div>
+
+    <div class="stats">
+      <div class="stat">
+        <span>Total accounts</span>
+        <strong id="totalAccounts">—</strong>
+      </div>
+      <div class="stat">
+        <span>Approved Agents</span>
+        <strong id="approvedAgents">—</strong>
+      </div>
+      <div class="stat">
+        <span>Pending Agent applications</span>
+        <strong id="pendingAgents">—</strong>
+      </div>
+      <div class="stat">
+        <span>Total rooms</span>
+        <strong id="totalRooms">—</strong>
+      </div>
+      <div class="stat">
+        <span>Pending property verification</span>
+        <strong id="pendingProperties">—</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- UNIFIED OWNER AND AGENT PROPERTY VERIFICATION -->
+
+  <section id="agentPropertySection" class="panel dashboard-section">
+    <h2>Property Verification</h2>
+    <p class="muted">
+      Review all property submissions from Owners and Agents in one place.
+      Approved properties are added to the student accommodation listings.
+    </p>
+    <div class="notice">
+      Verify the submitted details and actual property photographs before making a decision.
+      Agent account applications remain a separate review process.
+    </div>
+    <div id="agentPropertyMessage" role="status" aria-live="polite"></div>
+    <div id="agentPropertyApplications"></div>
+  </section>
+
+  <!-- AGENT APPLICATIONS -->
+
+  <section id="agentSection" class="panel dashboard-section hidden">
+    <h2>Agent applications</h2>
+    <div id="agentApplications" class="table-wrap"></div>
+  </section>
+
+  <!-- ACCOUNTS -->
+
+  <section id="accountsSection" class="panel dashboard-section hidden">
+    <h2>Account management</h2>
+    <div id="accountsArea" class="table-wrap"></div>
+  </section>
+
+  <!-- SERVICE TICKETS -->
+
+  <section id="ticketsSection" class="panel dashboard-section hidden">
+
+    <div class="ticket-detail-header">
+      <div>
+        <h2>Student Service Tickets</h2>
+        <p class="muted">
+          Manage student enquiries, technical support requests,
+          accommodation assistance and other service requests.
+        </p>
+      </div>
+      <button type="button" class="secondary" id="refreshTicketsButton">
+        ↻ Refresh tickets
       </button>
-    </form>
+    </div>
 
-    <div id="loginMessage" role="status" aria-live="polite"></div>
+    <div id="ticketMessage" role="status" aria-live="polite"></div>
+
+    <div class="stats">
+      <div class="stat">
+        <span>Total tickets</span>
+        <strong id="ticketTotal">0</strong>
+      </div>
+      <div class="stat ticket-stat-open">
+        <span>Open</span>
+        <strong id="ticketOpen">0</strong>
+      </div>
+      <div class="stat ticket-stat-progress">
+        <span>In progress</span>
+        <strong id="ticketProgress">0</strong>
+      </div>
+      <div class="stat ticket-stat-waiting">
+        <span>Waiting for student</span>
+        <strong id="ticketWaiting">0</strong>
+      </div>
+      <div class="stat ticket-stat-resolved">
+        <span>Resolved</span>
+        <strong id="ticketResolved">0</strong>
+      </div>
+      <div class="stat ticket-stat-closed">
+        <span>Closed</span>
+        <strong id="ticketClosed">0</strong>
+      </div>
+    </div>
+
+    <h3>Find service tickets</h3>
+
+    <div class="ticket-filters">
+      <div>
+        <label for="ticketSearch">Search</label>
+        <input id="ticketSearch" type="search"
+          placeholder="Ticket number, student name, email or subject">
+      </div>
+
+      <div>
+        <label for="ticketStatusFilter">Status</label>
+        <select id="ticketStatusFilter">
+          <option value="">All statuses</option>
+          <option value="open">Open</option>
+          <option value="in_progress">In progress</option>
+          <option value="waiting_for_student">Waiting for student</option>
+          <option value="resolved">Resolved</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="ticketCategoryFilter">Category</label>
+        <select id="ticketCategoryFilter">
+          <option value="">All categories</option>
+          <option value="technical_support">Technical support</option>
+          <option value="accommodation_assistance">Accommodation assistance</option>
+          <option value="account_registration">Account registration</option>
+          <option value="payment_assistance">Payment assistance</option>
+          <option value="general_enquiries">General enquiries</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <button type="button" id="filterTicketsButton">Apply filters</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ticket number</th>
+            <th>Student</th>
+            <th>Subject</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Last updated</th>
+            <th>Messages</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="ticketsTableBody">
+          <tr>
+            <td colspan="8">Sign in to load service tickets.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ticket-pagination">
+      <button type="button" class="light" id="previousTicketsButton">
+        Previous
+      </button>
+      <span id="ticketPageInfo" class="muted">Page 1</span>
+      <button type="button" class="light" id="nextTicketsButton">
+        Next
+      </button>
+    </div>
+
+    <!-- TICKET CONVERSATION -->
+
+    <section id="ticketDetailPanel" class="application-card hidden">
+
+      <div class="ticket-detail-header">
+        <div>
+          <h3 id="ticketDetailHeading">Ticket details</h3>
+          <p id="ticketDetailSubtitle" class="muted"></p>
+        </div>
+        <button type="button" class="light" id="closeTicketDetailButton">
+          Close details
+        </button>
+      </div>
+
+      <div class="ticket-info-grid" id="ticketInfoGrid"></div>
+
+      <h3>Conversation history</h3>
+      <div id="ticketConversation" class="ticket-conversation">
+        <p class="muted">Select a ticket to view its conversation.</p>
+      </div>
+
+      <div class="ticket-reply-box">
+        <h3>Administrator response</h3>
+        <p class="muted">
+          Your response will appear in the student's service ticket conversation.
+        </p>
+
+        <textarea id="ticketReplyInput"
+          placeholder="Write your response to the student..."
+          maxlength="5000"></textarea>
+
+        <div class="toolbar">
+          <button type="button" id="sendTicketReplyButton">
+            Send response
+          </button>
+        </div>
+      </div>
+
+      <div class="decision-area">
+        <h3>Update ticket status</h3>
+
+        <label for="ticketNewStatus">New status</label>
+        <select id="ticketNewStatus">
+          <option value="open">Open</option>
+          <option value="in_progress">In progress</option>
+          <option value="waiting_for_student">Waiting for student</option>
+          <option value="resolved">Resolved</option>
+          <option value="closed">Closed</option>
+        </select>
+
+        <label for="ticketAdminNote">Administrator note (optional)</label>
+        <textarea id="ticketAdminNote" maxlength="1000"
+          placeholder="Add an optional note about this status change..."></textarea>
+
+        <button type="button" id="updateTicketStatusButton">
+          Update ticket status
+        </button>
+      </div>
+
+    </section>
+
   </section>
 
-  <section id="dashboardPanel" class="hidden">
+  <!-- AUDIT LOG -->
 
-    <section class="panel">
-      <h2>Administration overview</h2>
-      <p id="welcome" class="muted"></p>
-
-      <div id="globalMessage" role="status" aria-live="polite"></div>
-
-      <div class="stats">
-        <div class="stat">
-          <span>Total accounts</span>
-          <strong id="totalAccounts">—</strong>
-        </div>
-
-        <div class="stat">
-          <span>Approved Agents</span>
-          <strong id="approvedAgents">—</strong>
-        </div>
-
-        <div class="stat">
-          <span>Pending Agent applications</span>
-          <strong id="pendingAgents">—</strong>
-        </div>
-
-        <div class="stat">
-          <span>Total rooms</span>
-          <strong id="totalRooms">—</strong>
-        </div>
-
-        <div class="stat">
-          <span>Pending property verification</span>
-          <strong id="pendingProperties">—</strong>
-        </div>
-      </div>
-    </section>
-
-    <section id="propertySection" class="panel dashboard-section">
-      <h2>Owner property verification</h2>
-
-      <p class="muted">
-        Review property details and photographs submitted by Owners.
-        Approving an application assigns the property to the Owner.
-        Rejected applications do not receive ownership.
-      </p>
-
-      <div class="notice">
-        Only approve a property after reviewing the actual property photographs
-        and the submitted property information. Approved rooms become eligible
-        for Agent advertising permission requests.
-      </div>
-
-      <div id="propertyMessage" role="status" aria-live="polite"></div>
-      <div id="propertyApplications"></div>
-    </section>
-
-    <section id="agentPropertySection" class="panel dashboard-section hidden">
-      <h2>Agent property submissions</h2>
-
-      <p class="muted">
-        Review properties submitted directly by Agents. These applications
-        are separate from Agent account applications and Owner property
-        verification.
-      </p>
-
-      <div class="notice">
-        Review the Agent's submitted information and property photographs
-        before approving. Approved submissions are added to the room listings.
-      </div>
-
-      <div id="agentPropertyMessage" role="status" aria-live="polite"></div>
-      <div id="agentPropertyApplications"></div>
-    </section>
-
-    <section id="agentSection" class="panel dashboard-section hidden">
-      <h2>Agent applications</h2>
-      <div id="agentApplications" class="table-wrap"></div>
-    </section>
-
-    <section id="accountsSection" class="panel dashboard-section hidden">
-      <h2>Account management</h2>
-      <div id="accountsArea" class="table-wrap"></div>
-    </section>
-
-    <section id="auditSection" class="panel dashboard-section hidden">
-      <h2>Administrator audit log</h2>
-      <div id="auditArea" class="table-wrap"></div>
-    </section>
-
+  <section id="auditSection" class="panel dashboard-section hidden">
+    <h2>Administrator audit log</h2>
+    <div id="auditArea" class="table-wrap"></div>
   </section>
 
+</section>
 </main>
 
 <footer>RumCHUO Administration Portal</footer>
@@ -604,6 +864,12 @@ footer {
 
   let ownerPhotoObjectUrls = [];
   let agentPhotoObjectUrls = [];
+
+  let ticketOffset = 0;
+  const ticketLimit = 20;
+  let ticketHasMore = false;
+  let selectedTicketId = null;
+  let selectedTicket = null;
 
   const $ = (id) => document.getElementById(id);
 
@@ -657,7 +923,6 @@ footer {
     if (value === null || value === undefined || value === "") {
       return "—";
     }
-
     return String(value);
   }
 
@@ -691,24 +956,20 @@ footer {
   function emptyRow(tbody, colspan, message) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-
     cell.colSpan = colspan;
     cell.textContent = message;
-
     row.appendChild(cell);
     tbody.appendChild(row);
   }
 
   function makeButton(label, className, handler) {
     const button = document.createElement("button");
-
     button.type = "button";
     button.textContent = label;
 
     if (className) button.className = className;
 
     button.addEventListener("click", handler);
-
     return button;
   }
 
@@ -724,15 +985,10 @@ footer {
 
   function firstValue(object, keys, fallback = null) {
     for (const key of keys) {
-      if (
-        object &&
-        object[key] !== undefined &&
-        object[key] !== null
-      ) {
+      if (object && object[key] !== undefined && object[key] !== null) {
         return object[key];
       }
     }
-
     return fallback;
   }
 
@@ -748,7 +1004,6 @@ footer {
 
     div.appendChild(small);
     div.appendChild(strong);
-
     container.appendChild(div);
   }
 
@@ -765,16 +1020,13 @@ footer {
 
     if (digits.length >= 5 && digits.length <= 20) {
       const link = document.createElement("a");
-
       link.href = "tel:" + String(phoneNumber).replace(/[^\d+]/g, "");
       link.textContent = String(phoneNumber);
       link.setAttribute("aria-label", "Call " + phoneNumber);
-
       div.appendChild(link);
     } else {
       const value = document.createElement("strong");
       value.textContent = "Not provided";
-
       div.appendChild(value);
     }
 
@@ -787,9 +1039,7 @@ footer {
   }
 
   function getErrorMessage(detail, fallback = "The request failed.") {
-    if (typeof detail === "string") {
-      return detail;
-    }
+    if (typeof detail === "string") return detail;
 
     if (Array.isArray(detail)) {
       return detail.map((item) => {
@@ -803,6 +1053,22 @@ footer {
     }
 
     return fallback;
+  }
+
+  function formatCategory(category) {
+    return String(category || "other")
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  function formatDate(value) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return date.toLocaleString();
   }
 
   // ---------------------------------------------------------
@@ -866,9 +1132,7 @@ footer {
     try {
       const response = await fetch("/students/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: $("email").value.trim(),
           password: $("password").value
@@ -912,12 +1176,7 @@ footer {
 
     } catch (error) {
       accessToken = null;
-
-      showMessage(
-        $("loginMessage"),
-        error.message,
-        "error"
-      );
+      showMessage($("loginMessage"), error.message, "error");
 
     } finally {
       $("loginButton").disabled = false;
@@ -948,6 +1207,10 @@ footer {
       }
 
       closeMenu();
+
+      if (button.dataset.section === "ticketsSection") {
+        loadServiceTickets();
+      }
     });
   });
 
@@ -958,18 +1221,10 @@ footer {
   async function loadOverview() {
     const data = await api("/admin/overview");
 
-    $("totalAccounts").textContent =
-      valueOrDash(data.total_accounts);
-
-    $("approvedAgents").textContent =
-      valueOrDash(data.approved_agents);
-
-    $("pendingAgents").textContent =
-      valueOrDash(data.pending_agent_applications);
-
-    $("totalRooms").textContent =
-      valueOrDash(data.total_rooms);
-
+    $("totalAccounts").textContent = valueOrDash(data.total_accounts);
+    $("approvedAgents").textContent = valueOrDash(data.approved_agents);
+    $("pendingAgents").textContent = valueOrDash(data.pending_agent_applications);
+    $("totalRooms").textContent = valueOrDash(data.total_rooms);
     $("pendingProperties").textContent =
       valueOrDash(data.pending_room_ownership_applications);
   }
@@ -979,10 +1234,7 @@ footer {
   // ---------------------------------------------------------
 
   async function loadPrivatePhoto(applicationId, photo) {
-    const photoId = firstValue(photo, [
-      "id",
-      "photo_id"
-    ]);
+    const photoId = firstValue(photo, ["id", "photo_id"]);
 
     if (!photoId) {
       throw new Error("A property photograph has no photo ID.");
@@ -994,9 +1246,7 @@ footer {
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        "Authorization": "Bearer " + accessToken
-      },
+      headers: { "Authorization": "Bearer " + accessToken },
       cache: "no-store"
     });
 
@@ -1011,7 +1261,6 @@ footer {
 
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
-
     ownerPhotoObjectUrls.push(objectUrl);
 
     return objectUrl;
@@ -1021,62 +1270,23 @@ footer {
     const card = document.createElement("article");
     card.className = "application-card";
 
-    const applicationId = firstValue(application, [
-      "id",
-      "application_id"
-    ]);
-
+    const applicationId = firstValue(application, ["id", "application_id"]);
     const room = application.room || {};
     const landlord = application.landlord || {};
 
-    const roomId = firstValue(application, [
-      "room_id"
-    ], firstValue(room, ["id"]));
-
-    const location = firstValue(application, [
-      "location"
-    ], firstValue(room, ["location"]));
-
-    const price = firstValue(application, [
-      "price"
-    ], firstValue(room, ["price"]));
-
-    const roomType = firstValue(application, [
-      "room_type"
-    ], firstValue(room, ["room_type"]));
-
-    const landlordName = firstValue(application, [
-      "landlord_name",
-      "full_name"
-    ], firstValue(landlord, ["full_name", "name"]));
-
-    const landlordEmail = firstValue(application, [
-      "landlord_email",
-      "email"
-    ], firstValue(landlord, ["email"]));
-
-    const landlordPhone = firstValue(application, [
-      "phone_number",
-      "landlord_phone",
-      "phone"
-    ], firstValue(landlord, [
-      "phone_number",
-      "phone"
-    ]));
-
-    const applicationType = firstValue(application, [
-      "application_type"
-    ]);
-
-    const status = firstValue(application, [
-      "status"
-    ], "pending");
+    const roomId = firstValue(application, ["room_id"], firstValue(room, ["id"]));
+    const location = firstValue(application, ["location"], firstValue(room, ["location"]));
+    const price = firstValue(application, ["price"], firstValue(room, ["price"]));
+    const roomType = firstValue(application, ["room_type"], firstValue(room, ["room_type"]));
+    const landlordName = firstValue(application, ["landlord_name", "full_name"], firstValue(landlord, ["full_name", "name"]));
+    const landlordEmail = firstValue(application, ["landlord_email", "email"], firstValue(landlord, ["email"]));
+    const landlordPhone = firstValue(application, ["phone_number", "landlord_phone", "phone"], firstValue(landlord, ["phone_number", "phone"]));
+    const applicationType = firstValue(application, ["application_type"]);
+    const status = firstValue(application, ["status"], "pending");
 
     const heading = document.createElement("h3");
-
     heading.textContent =
       `Application #${valueOrDash(applicationId)} — Room #${valueOrDash(roomId)}`;
-
     card.appendChild(heading);
 
     const statusLine = document.createElement("p");
@@ -1092,23 +1302,15 @@ footer {
     addDetail(details, "Room ID", roomId);
     addDetail(details, "Location", location);
 
-    addDetail(
-      details,
-      "Monthly rent",
-      price === null ? null : "TZS " + Number(price).toLocaleString()
-    );
+    addDetail(details, "Monthly rent",
+      price === null ? null : "TZS " + Number(price).toLocaleString());
 
     addDetail(details, "Room type", roomType);
 
-    addDetail(
-      details,
-      "Application type",
-      applicationType === "new_room"
-        ? "New property submission"
-        : applicationType === "claim_existing"
-          ? "Claim of existing property"
-          : applicationType
-    );
+    addDetail(details, "Application type",
+      applicationType === "new_room" ? "New property submission" :
+      applicationType === "claim_existing" ? "Claim of existing property" :
+      applicationType);
 
     addDetail(details, "Submitted", firstValue(application, ["created_at"]));
     addDetail(details, "Photographs submitted", (application.photos || []).length);
@@ -1121,7 +1323,6 @@ footer {
 
     const gallery = document.createElement("div");
     gallery.className = "photo-gallery";
-
     card.appendChild(gallery);
 
     const photos = application.photos || [];
@@ -1130,9 +1331,7 @@ footer {
       const noPhotos = document.createElement("p");
       noPhotos.className = "muted";
       noPhotos.textContent = "No photographs were listed for this application.";
-
       gallery.appendChild(noPhotos);
-
     } else {
       for (const photo of photos) {
         const photoItem = document.createElement("div");
@@ -1140,30 +1339,20 @@ footer {
 
         try {
           const imageUrl = await loadPrivatePhoto(applicationId, photo);
-
           const image = document.createElement("img");
-
           image.src = imageUrl;
           image.alt = "Private property verification photograph";
           image.loading = "lazy";
-
           photoItem.appendChild(image);
 
           const caption = document.createElement("small");
-
-          caption.textContent = firstValue(photo, [
-            "original_name",
-            "filename",
-            "name"
-          ], "Property photograph");
-
+          caption.textContent = firstValue(photo,
+            ["original_name", "filename", "name"], "Property photograph");
           photoItem.appendChild(caption);
-
-        } catch (error) {
+        } catch (_) {
           const failed = document.createElement("p");
           failed.className = "muted";
           failed.textContent = "Photograph could not be loaded.";
-
           photoItem.appendChild(failed);
         }
 
@@ -1185,41 +1374,21 @@ footer {
       const buttons = document.createElement("div");
       buttons.className = "toolbar";
 
-      const approveButton = makeButton(
-        "Approve ownership",
-        "",
-        async () => {
-          await decideProperty(
-            applicationId,
-            "approve",
-            reasonInput.value,
-            approveButton,
-            rejectButton
-          );
-        }
-      );
+      const approveButton = makeButton("Approve ownership", "", async () => {
+        await decideProperty(applicationId, "approve", reasonInput.value,
+          approveButton, rejectButton);
+      });
 
-      const rejectButton = makeButton(
-        "Reject application",
-        "danger",
-        async () => {
-          await decideProperty(
-            applicationId,
-            "reject",
-            reasonInput.value,
-            approveButton,
-            rejectButton
-          );
-        }
-      );
+      const rejectButton = makeButton("Reject application", "danger", async () => {
+        await decideProperty(applicationId, "reject", reasonInput.value,
+          approveButton, rejectButton);
+      });
 
       buttons.appendChild(approveButton);
       buttons.appendChild(rejectButton);
-
       decisionArea.appendChild(reasonLabel);
       decisionArea.appendChild(reasonInput);
       decisionArea.appendChild(buttons);
-
       card.appendChild(decisionArea);
 
     } else {
@@ -1236,13 +1405,9 @@ footer {
     return card;
   }
 
-  async function decideProperty(
-    applicationId,
-    decision,
-    reason,
-    approveButton,
-    rejectButton
-  ) {
+  async function decideProperty(applicationId, decision, reason,
+    approveButton, rejectButton) {
+
     const question = decision === "approve"
       ? "Approve this ownership application and assign the room to this Owner?"
       : "Reject this ownership application?";
@@ -1257,25 +1422,19 @@ footer {
         `/admin/room-ownership-applications/${encodeURIComponent(applicationId)}/decision`,
         {
           method: "POST",
-          body: JSON.stringify({
-            decision,
-            reason: reason.trim()
-          })
+          body: JSON.stringify({ decision, reason: reason.trim() })
         }
       );
 
-      showMessage(
-        $("propertyMessage"),
+      showMessage($("propertyMessage"),
         `Property application ${decision === "approve" ? "approved" : "rejected"}.`,
-        "success"
-      );
+        "success");
 
-      await loadPropertyApplications();
+      await loadAgentPropertyApplications();
       await loadOverview();
 
     } catch (error) {
       showMessage($("propertyMessage"), error.message, "error");
-
       approveButton.disabled = false;
       rejectButton.disabled = false;
     }
@@ -1296,7 +1455,6 @@ footer {
       const message = document.createElement("p");
       message.className = "muted";
       message.textContent = "There are no Owner property ownership applications.";
-
       area.appendChild(message);
       return;
     }
@@ -1312,10 +1470,7 @@ footer {
   // ---------------------------------------------------------
 
   async function loadAgentPrivatePhoto(applicationId, photo) {
-    const photoId = firstValue(photo, [
-      "id",
-      "photo_id"
-    ]);
+    const photoId = firstValue(photo, ["id", "photo_id"]);
 
     if (!photoId) {
       throw new Error("An Agent property photograph has no photo ID.");
@@ -1327,9 +1482,7 @@ footer {
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        "Authorization": "Bearer " + accessToken
-      },
+      headers: { "Authorization": "Bearer " + accessToken },
       cache: "no-store"
     });
 
@@ -1344,7 +1497,6 @@ footer {
 
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
-
     agentPhotoObjectUrls.push(objectUrl);
 
     return objectUrl;
@@ -1354,54 +1506,22 @@ footer {
     const card = document.createElement("article");
     card.className = "application-card";
 
-    const applicationId = firstValue(application, [
-      "id",
-      "application_id"
-    ]);
-
-    const status = firstValue(application, [
-      "status"
-    ], "pending");
-
-    const agentName = firstValue(application, [
-      "agent_name"
-    ]);
-
-    const agentEmail = firstValue(application, [
-      "agent_email"
-    ]);
-
-    const phoneNumber = firstValue(application, [
-      "phone_number"
-    ]);
-
-    const location = firstValue(application, [
-      "location"
-    ]);
-
-    const price = firstValue(application, [
-      "price"
-    ]);
-
-    const roomType = firstValue(application, [
-      "room_type"
-    ]);
-
-    const description = firstValue(application, [
-      "description"
-    ]);
-
-    const available = firstValue(application, [
-      "available"
-    ]);
-
+    const applicationId = firstValue(application, ["id", "application_id"]);
+    const status = firstValue(application, ["status"], "pending");
+    const agentName = firstValue(application, ["agent_name"]);
+    const agentEmail = firstValue(application, ["agent_email"]);
+    const submitterRole = String(firstValue(application, ["submitter_role"], "agent")).toLowerCase();
+    const submitterLabel = submitterRole === "landlord" || submitterRole === "owner" ? "Owner" : "Agent";
+    const phoneNumber = firstValue(application, ["phone_number"]);
+    const location = firstValue(application, ["location"]);
+    const price = firstValue(application, ["price"]);
+    const roomType = firstValue(application, ["room_type"]);
+    const description = firstValue(application, ["description"]);
+    const available = firstValue(application, ["available"]);
     const photos = application.photos || [];
 
     const heading = document.createElement("h3");
-
-    heading.textContent =
-      "Agent property application #" + valueOrDash(applicationId);
-
+    heading.textContent = submitterLabel + " property submission #" + valueOrDash(applicationId);
     card.appendChild(heading);
 
     const statusLine = document.createElement("p");
@@ -1411,32 +1531,23 @@ footer {
     const details = document.createElement("div");
     details.className = "application-details";
 
-    addDetail(details, "Agent name", agentName);
-    addDetail(details, "Agent email", agentEmail);
+    addDetail(details, submitterLabel + " name", agentName);
+    addDetail(details, submitterLabel + " email", agentEmail);
     addPhoneDetail(details, phoneNumber, "Submitted contact number");
     addDetail(details, "Location", location);
 
-    addDetail(
-      details,
-      "Monthly rent",
-      price === null ? null : "TZS " + Number(price).toLocaleString()
-    );
+    addDetail(details, "Monthly rent",
+      price === null ? null : "TZS " + Number(price).toLocaleString());
 
     addDetail(details, "Room type", roomType);
 
-    addDetail(
-      details,
-      "Availability",
-      available === null
-        ? null
-        : (available === true || available === 1 || available === "true")
-          ? "Available"
-          : "Not available"
-    );
+    addDetail(details, "Availability",
+      available === null ? null :
+      (available === true || available === 1 || available === "true")
+        ? "Available" : "Not available");
 
     addDetail(details, "Submitted", firstValue(application, ["created_at"]));
     addDetail(details, "Photographs submitted", photos.length);
-
     card.appendChild(details);
 
     if (description) {
@@ -1450,55 +1561,39 @@ footer {
     }
 
     const photoHeading = document.createElement("h3");
-    photoHeading.textContent = "Agent-submitted property photographs";
+    photoHeading.textContent = "Submitted property photographs";
     card.appendChild(photoHeading);
 
     const gallery = document.createElement("div");
     gallery.className = "photo-gallery";
-
     card.appendChild(gallery);
 
     if (!photos.length) {
       const noPhotos = document.createElement("p");
       noPhotos.className = "muted";
       noPhotos.textContent = "No photographs were listed for this submission.";
-
       gallery.appendChild(noPhotos);
-
     } else {
       for (const photo of photos) {
         const photoItem = document.createElement("div");
         photoItem.className = "photo-item";
 
         try {
-          const imageUrl = await loadAgentPrivatePhoto(
-            applicationId,
-            photo
-          );
-
+          const imageUrl = await loadAgentPrivatePhoto(applicationId, photo);
           const image = document.createElement("img");
-
           image.src = imageUrl;
           image.alt = "Agent-submitted property photograph";
           image.loading = "lazy";
-
           photoItem.appendChild(image);
 
           const caption = document.createElement("small");
-
-          caption.textContent = firstValue(photo, [
-            "original_name",
-            "filename",
-            "name"
-          ], "Property photograph");
-
+          caption.textContent = firstValue(photo,
+            ["original_name", "filename", "name"], "Property photograph");
           photoItem.appendChild(caption);
-
-        } catch (error) {
+        } catch (_) {
           const failed = document.createElement("p");
           failed.className = "muted";
           failed.textContent = "Photograph could not be loaded.";
-
           photoItem.appendChild(failed);
         }
 
@@ -1520,48 +1615,25 @@ footer {
       const buttons = document.createElement("div");
       buttons.className = "toolbar";
 
-      const approveButton = makeButton(
-        "Approve Agent property",
-        "",
-        async () => {
-          await decideAgentProperty(
-            applicationId,
-            "approve",
-            reasonInput.value,
-            approveButton,
-            rejectButton
-          );
-        }
-      );
+      const approveButton = makeButton("Approve Property", "", async () => {
+        await decideAgentProperty(applicationId, "approve", reasonInput.value,
+          approveButton, rejectButton);
+      });
 
-      const rejectButton = makeButton(
-        "Reject Agent property",
-        "danger",
-        async () => {
-          await decideAgentProperty(
-            applicationId,
-            "reject",
-            reasonInput.value,
-            approveButton,
-            rejectButton
-          );
-        }
-      );
+      const rejectButton = makeButton("Reject Property", "danger", async () => {
+        await decideAgentProperty(applicationId, "reject", reasonInput.value,
+          approveButton, rejectButton);
+      });
 
       buttons.appendChild(approveButton);
       buttons.appendChild(rejectButton);
-
       decisionArea.appendChild(reasonLabel);
       decisionArea.appendChild(reasonInput);
       decisionArea.appendChild(buttons);
-
       card.appendChild(decisionArea);
 
     } else {
-      const reviewReason = firstValue(application, [
-        "review_reason",
-        "reason"
-      ]);
+      const reviewReason = firstValue(application, ["review_reason", "reason"]);
 
       if (reviewReason) {
         const note = document.createElement("p");
@@ -1572,21 +1644,15 @@ footer {
 
       const roomId = firstValue(application, ["room_id"]);
 
-      if (roomId) {
-        addDetail(card, "Created room ID", roomId);
-      }
+      if (roomId) addDetail(card, "Created room ID", roomId);
     }
 
     return card;
   }
 
-  async function decideAgentProperty(
-    applicationId,
-    decision,
-    reason,
-    approveButton,
-    rejectButton
-  ) {
+  async function decideAgentProperty(applicationId, decision, reason,
+    approveButton, rejectButton) {
+
     const question = decision === "approve"
       ? "Approve this Agent property submission and add the property to room listings?"
       : "Reject this Agent property submission?";
@@ -1598,34 +1664,23 @@ footer {
 
     try {
       const formData = new FormData();
-
       formData.append("decision", decision);
       formData.append("reason", reason.trim());
 
       await api(
         `/admin/agent-property-applications/${encodeURIComponent(applicationId)}/decision`,
-        {
-          method: "POST",
-          body: formData
-        }
+        { method: "POST", body: formData }
       );
 
-      showMessage(
-        $("agentPropertyMessage"),
+      showMessage($("agentPropertyMessage"),
         `Agent property application ${decision === "approve" ? "approved" : "rejected"}.`,
-        "success"
-      );
+        "success");
 
       await loadAgentPropertyApplications();
       await loadOverview();
 
     } catch (error) {
-      showMessage(
-        $("agentPropertyMessage"),
-        error.message,
-        "error"
-      );
-
+      showMessage($("agentPropertyMessage"), error.message, "error");
       approveButton.disabled = false;
       rejectButton.disabled = false;
     }
@@ -1635,8 +1690,7 @@ footer {
     clearObjectUrls(agentPhotoObjectUrls);
 
     const area = $("agentPropertyApplications");
-
-    area.textContent = "Loading Agent property submissions…";
+    area.textContent = "Loading property submissions…";
 
     const data = await api("/admin/agent-property-applications");
     const applications = data.applications || [];
@@ -1646,10 +1700,7 @@ footer {
     if (!applications.length) {
       const message = document.createElement("p");
       message.className = "muted";
-
-      message.textContent =
-        "There are no Agent property submissions.";
-
+      message.textContent = "There are no pending or reviewed property submissions.";
       area.appendChild(message);
       return;
     }
@@ -1672,12 +1723,7 @@ footer {
     const applications = data.applications || [];
 
     const { table, tbody } = makeTable([
-      "Application ID",
-      "Applicant",
-      "Email",
-      "Status",
-      "Submitted",
-      "Decision"
+      "Application ID", "Applicant", "Email", "Status", "Submitted", "Decision"
     ]);
 
     applications.forEach((application) => {
@@ -1699,20 +1745,13 @@ footer {
         const toolbar = document.createElement("div");
         toolbar.className = "toolbar";
 
-        toolbar.appendChild(
-          makeButton("Approve", "", () =>
-            decideAgentApplication(application.id, "approve")
-          )
-        );
+        toolbar.appendChild(makeButton("Approve", "", () =>
+          decideAgentApplication(application.id, "approve")));
 
-        toolbar.appendChild(
-          makeButton("Reject", "danger", () =>
-            decideAgentApplication(application.id, "reject")
-          )
-        );
+        toolbar.appendChild(makeButton("Reject", "danger", () =>
+          decideAgentApplication(application.id, "reject")));
 
         actionCell.appendChild(toolbar);
-
       } else {
         actionCell.textContent =
           application.reason || application.review_reason || "Reviewed";
@@ -1730,24 +1769,14 @@ footer {
   }
 
   async function decideAgentApplication(id, decision) {
-    const reason = window.prompt(
-      "Enter a reason or review note:",
-      ""
-    );
-
+    const reason = window.prompt("Enter a reason or review note:", "");
     if (reason === null) return;
 
     try {
-      await api(
-        `/admin/agent-applications/${id}/decision`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            decision,
-            reason
-          })
-        }
-      );
+      await api(`/admin/agent-applications/${id}/decision`, {
+        method: "POST",
+        body: JSON.stringify({ decision, reason })
+      });
 
       setGlobalMessage(
         `Agent application ${decision === "approve" ? "approved" : "rejected"}.`,
@@ -1767,81 +1796,61 @@ footer {
   // ---------------------------------------------------------
 
   async function loadAccounts() {
-  const area = $("accountsArea");
-  area.textContent = "Loading accounts…";
+    const area = $("accountsArea");
+    area.textContent = "Loading accounts…";
 
-  try {
-    const data = await api("/admin/accounts");
-    const accounts = data.accounts || [];
+    try {
+      const data = await api("/admin/accounts");
+      const accounts = data.accounts || [];
 
-    const { table, tbody } = makeTable([
-      "Account ID",
-      "Name",
-      "Email",
-      "Phone Number",
-      "Role",
-      "Email verified",
-      "Account status",
-      "Action"
-    ]);
+      const { table, tbody } = makeTable([
+        "Account ID", "Name", "Email", "Phone Number", "Role",
+        "Email verified", "Account status", "Action"
+      ]);
 
-    accounts.forEach((account) => {
-      const row = document.createElement("tr");
+      accounts.forEach((account) => {
+        const row = document.createElement("tr");
 
-      addCell(row, account.id);
-      addCell(row, account.full_name);
-      addCell(row, account.email);
-      addCell(row, account.phone || "Not provided");
-      addCell(row, account.role);
+        addCell(row, account.id);
+        addCell(row, account.full_name);
+        addCell(row, account.email);
+        addCell(row, account.phone || "Not provided");
+        addCell(row, account.role);
+        addCell(row, account.email_verified ? "Yes" : "No");
 
-      addCell(
-        row,
-        account.email_verified ? "Yes" : "No"
-      );
+        const suspended = account.account_status === "suspended";
+        const statusCell = document.createElement("td");
+        statusCell.appendChild(statusPill(suspended ? "suspended" : "active"));
+        row.appendChild(statusCell);
 
-      const suspended =
-        account.account_status === "suspended";
+        const actionCell = document.createElement("td");
 
-      const statusCell = document.createElement("td");
-
-      statusCell.appendChild(
-        statusPill(suspended ? "suspended" : "active")
-      );
-
-      row.appendChild(statusCell);
-
-      const actionCell = document.createElement("td");
-
-      if (account.role !== "admin") {
-        actionCell.appendChild(
-          makeButton(
+        if (account.role !== "admin") {
+          actionCell.appendChild(makeButton(
             suspended ? "Unsuspend" : "Suspend",
             suspended ? "" : "danger",
-            () => changeAccountStatus(
-              account.id,
-              !suspended
-            )
-          )
-        );
-      } else {
-        actionCell.textContent = "Administrator";
+            () => changeAccountStatus(account.id, !suspended)
+          ));
+        } else {
+          actionCell.textContent = "Administrator";
+        }
+
+        row.appendChild(actionCell);
+        tbody.appendChild(row);
+      });
+
+      if (!accounts.length) {
+        emptyRow(tbody, 8, "No accounts were returned.");
       }
 
-      row.appendChild(actionCell);
-      tbody.appendChild(row);
-    });
+      area.replaceChildren(table);
 
-    if (!accounts.length) {
-      emptyRow(tbody, 8, "No accounts were returned.");
+    } catch (error) {
+      area.textContent = "Unable to load accounts: " + error.message;
+      throw error;
     }
-
-    area.replaceChildren(table);
-
-  } catch (error) {
-    area.textContent = "Unable to load accounts: " + error.message;
-    throw error;
   }
-}
+
   // ---------------------------------------------------------
   // AUDIT LOG
   // ---------------------------------------------------------
@@ -1854,12 +1863,7 @@ footer {
     const logs = data.audit_logs || [];
 
     const { table, tbody } = makeTable([
-      "ID",
-      "Administrator",
-      "Action",
-      "Target",
-      "Details",
-      "Date"
+      "ID", "Administrator", "Action", "Target", "Details", "Date"
     ]);
 
     logs.forEach((log) => {
@@ -1882,6 +1886,445 @@ footer {
     area.replaceChildren(table);
   }
 
+  // =========================================================
+  // SERVICE TICKET MANAGEMENT
+  // =========================================================
+
+  // ---------------------------------------------------------
+  // LOAD AND DISPLAY TICKET STATISTICS
+  // ---------------------------------------------------------
+
+  function updateTicketStatistics(summary = {}) {
+    $("ticketTotal").textContent = summary.total ?? 0;
+    $("ticketOpen").textContent = summary.open ?? 0;
+    $("ticketProgress").textContent = summary.in_progress ?? 0;
+    $("ticketWaiting").textContent = summary.waiting_for_student ?? 0;
+    $("ticketResolved").textContent = summary.resolved ?? 0;
+    $("ticketClosed").textContent = summary.closed ?? 0;
+  }
+
+  // ---------------------------------------------------------
+  // LOAD ALL SERVICE TICKETS
+  // ---------------------------------------------------------
+
+  async function loadServiceTickets() {
+    const tbody = $("ticketsTableBody");
+
+    tbody.replaceChildren();
+
+    const loadingRow = document.createElement("tr");
+    const loadingCell = document.createElement("td");
+    loadingCell.colSpan = 8;
+    loadingCell.textContent = "Loading service tickets…";
+    loadingRow.appendChild(loadingCell);
+    tbody.appendChild(loadingRow);
+
+    $("ticketMessage").textContent = "";
+
+    try {
+      const params = new URLSearchParams();
+
+      const status = $("ticketStatusFilter").value;
+      const category = $("ticketCategoryFilter").value;
+      const search = $("ticketSearch").value.trim();
+
+      params.set("limit", ticketLimit);
+      params.set("offset", ticketOffset);
+
+      if (status) params.set("status", status);
+      if (category) params.set("category", category);
+      if (search) params.set("search", search);
+
+      const data = await api(
+        "/admin/service-tickets?" + params.toString()
+      );
+
+      updateTicketStatistics(data.summary || {});
+
+      ticketHasMore = Boolean(data.has_more);
+
+      $("ticketPageInfo").textContent =
+        `Showing ${data.returned || 0} of ${data.count || 0} matching tickets`;
+
+      $("previousTicketsButton").disabled = ticketOffset === 0;
+      $("nextTicketsButton").disabled = !ticketHasMore;
+
+      tbody.replaceChildren();
+
+      const tickets = data.tickets || [];
+
+      if (!tickets.length) {
+        emptyRow(tbody, 8, "No service tickets match your search.");
+        return;
+      }
+
+      tickets.forEach((ticket) => {
+        const row = document.createElement("tr");
+
+        addCell(row, ticket.ticket_number);
+        addCell(row, ticket.student_name);
+        addCell(row, ticket.subject);
+        addCell(row, formatCategory(ticket.category));
+
+        const statusCell = document.createElement("td");
+        statusCell.appendChild(statusPill(ticket.status));
+        row.appendChild(statusCell);
+
+        addCell(row, formatDate(ticket.updated_at));
+        addCell(row, ticket.message_count);
+
+        const actionCell = document.createElement("td");
+
+        const viewButton = makeButton("View conversation", "secondary", () => {
+          openTicketDetails(ticket.id);
+        });
+
+        actionCell.appendChild(viewButton);
+        row.appendChild(actionCell);
+
+        tbody.appendChild(row);
+      });
+
+    } catch (error) {
+      tbody.replaceChildren();
+      emptyRow(tbody, 8, "Unable to load tickets: " + error.message);
+      showMessage($("ticketMessage"), error.message, "error");
+    }
+  }
+
+  // ---------------------------------------------------------
+  // VIEW A PARTICULAR TICKET
+  // ---------------------------------------------------------
+
+  async function openTicketDetails(ticketId) {
+    selectedTicketId = ticketId;
+    selectedTicket = null;
+
+    $("ticketDetailPanel").classList.remove("hidden");
+    $("ticketDetailHeading").textContent = "Loading ticket…";
+    $("ticketDetailSubtitle").textContent = "";
+    $("ticketInfoGrid").replaceChildren();
+    $("ticketConversation").textContent = "Loading conversation…";
+
+    $("ticketReplyInput").value = "";
+    $("ticketAdminNote").value = "";
+
+    $("sendTicketReplyButton").disabled = true;
+    $("updateTicketStatusButton").disabled = true;
+
+    try {
+      const ticket = await api(
+        `/admin/service-tickets/${encodeURIComponent(ticketId)}`
+      );
+
+      if (selectedTicketId !== ticketId) return;
+
+      selectedTicket = ticket;
+
+      $("ticketDetailHeading").textContent =
+        ticket.ticket_number || ("Ticket #" + ticket.id);
+
+      $("ticketDetailSubtitle").textContent =
+        ticket.subject || "Service request";
+
+      const info = $("ticketInfoGrid");
+      info.replaceChildren();
+
+      addDetail(info, "Student", ticket.student_name);
+      addDetail(info, "Student email", ticket.student_email);
+      addPhoneDetail(info, ticket.student_phone, "Student phone");
+      addDetail(info, "Category", formatCategory(ticket.category));
+      addDetail(info, "Created", formatDate(ticket.created_at));
+      addDetail(info, "Last updated", formatDate(ticket.updated_at));
+      addDetail(info, "Current status", ticket.status.replaceAll("_", " "));
+      addDetail(info, "Message count", ticket.message_count);
+
+      renderTicketConversation(ticket.messages || []);
+
+      $("ticketNewStatus").value = ticket.status;
+
+      const isClosed = ticket.status === "closed";
+
+      $("ticketReplyInput").disabled = isClosed;
+      $("sendTicketReplyButton").disabled = isClosed;
+      $("ticketNewStatus").disabled = isClosed;
+      $("ticketAdminNote").disabled = isClosed;
+      $("updateTicketStatusButton").disabled = isClosed;
+
+      if (isClosed) {
+        showMessage(
+          $("ticketMessage"),
+          "This ticket is closed. It cannot receive new replies or status changes.",
+          "error"
+        );
+      } else {
+        $("ticketMessage").textContent = "";
+      }
+
+      $("ticketDetailPanel").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+
+    } catch (error) {
+      $("ticketConversation").textContent =
+        "Unable to load ticket conversation: " + error.message;
+
+      showMessage($("ticketMessage"), error.message, "error");
+    }
+  }
+
+  // ---------------------------------------------------------
+  // RENDER TICKET MESSAGES
+  // ---------------------------------------------------------
+
+  function renderTicketConversation(messages) {
+    const area = $("ticketConversation");
+    area.replaceChildren();
+
+    if (!messages.length) {
+      const empty = document.createElement("p");
+      empty.className = "ticket-empty";
+      empty.textContent = "There are no messages in this conversation.";
+      area.appendChild(empty);
+      return;
+    }
+
+    messages.forEach((message) => {
+      const messageBox = document.createElement("div");
+
+      messageBox.className =
+        "ticket-message " +
+        (message.sender_role === "admin" ? "admin" : "student");
+
+      const meta = document.createElement("div");
+      meta.className = "ticket-message-meta";
+
+      const sender = document.createElement("strong");
+
+      sender.textContent =
+        message.sender_role === "admin"
+          ? "Administrator"
+          : (message.sender_name || "Student");
+
+      const date = document.createElement("span");
+      date.textContent = formatDate(message.created_at);
+
+      meta.appendChild(sender);
+      meta.appendChild(date);
+
+      const content = document.createElement("div");
+      content.className = "ticket-message-content";
+
+      // textContent prevents HTML/script injection from messages.
+      content.textContent = message.message;
+
+      messageBox.appendChild(meta);
+      messageBox.appendChild(content);
+
+      area.appendChild(messageBox);
+    });
+
+    area.scrollTop = area.scrollHeight;
+  }
+
+  // ---------------------------------------------------------
+  // SEND ADMINISTRATOR REPLY
+  // ---------------------------------------------------------
+
+  async function sendTicketReply() {
+    if (!selectedTicketId || !selectedTicket) {
+      showMessage($("ticketMessage"), "Select a ticket first.", "error");
+      return;
+    }
+
+    if (selectedTicket.status === "closed") {
+      showMessage($("ticketMessage"), "This ticket is closed.", "error");
+      return;
+    }
+
+    const message = $("ticketReplyInput").value.trim();
+
+    if (message.length < 2) {
+      showMessage(
+        $("ticketMessage"),
+        "Please enter a response of at least 2 characters.",
+        "error"
+      );
+      return;
+    }
+
+    const button = $("sendTicketReplyButton");
+    button.disabled = true;
+    button.textContent = "Sending…";
+
+    try {
+      await api(
+        `/admin/service-tickets/${encodeURIComponent(selectedTicketId)}/messages`,
+        {
+          method: "POST",
+          body: JSON.stringify({ message })
+        }
+      );
+
+      $("ticketReplyInput").value = "";
+
+      showMessage(
+        $("ticketMessage"),
+        "Administrator response sent successfully.",
+        "success"
+      );
+
+      await openTicketDetails(selectedTicketId);
+      await loadServiceTickets();
+
+    } catch (error) {
+      showMessage($("ticketMessage"), error.message, "error");
+    } finally {
+      button.textContent = "Send response";
+
+      if (selectedTicket && selectedTicket.status !== "closed") {
+        button.disabled = false;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------
+  // UPDATE TICKET STATUS
+  // ---------------------------------------------------------
+
+  async function updateTicketStatus() {
+    if (!selectedTicketId || !selectedTicket) {
+      showMessage($("ticketMessage"), "Select a ticket first.", "error");
+      return;
+    }
+
+    if (selectedTicket.status === "closed") {
+      showMessage($("ticketMessage"), "This ticket is closed.", "error");
+      return;
+    }
+
+    const status = $("ticketNewStatus").value;
+    const adminNote = $("ticketAdminNote").value.trim();
+
+    if (!status) {
+      showMessage($("ticketMessage"), "Select a ticket status.", "error");
+      return;
+    }
+
+    if (status === selectedTicket.status && !adminNote) {
+      showMessage(
+        $("ticketMessage"),
+        "No status change or administrator note was provided.",
+        "error"
+      );
+      return;
+    }
+
+    if (!window.confirm(
+      `Change ticket ${selectedTicket.ticket_number} status to ${formatCategory(status)}?`
+    )) {
+      return;
+    }
+
+    const button = $("updateTicketStatusButton");
+    button.disabled = true;
+    button.textContent = "Updating…";
+
+    try {
+      await api(
+        `/admin/service-tickets/${encodeURIComponent(selectedTicketId)}/status`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            status,
+            admin_note: adminNote
+          })
+        }
+      );
+
+      $("ticketAdminNote").value = "";
+
+      showMessage(
+        $("ticketMessage"),
+        "Ticket status updated successfully.",
+        "success"
+      );
+
+      await openTicketDetails(selectedTicketId);
+      await loadServiceTickets();
+
+    } catch (error) {
+      showMessage($("ticketMessage"), error.message, "error");
+    } finally {
+      button.textContent = "Update ticket status";
+
+      if (selectedTicket && selectedTicket.status !== "closed") {
+        button.disabled = false;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------
+  // TICKET EVENT LISTENERS
+  // ---------------------------------------------------------
+
+  $("refreshTicketsButton").addEventListener("click", () => {
+    loadServiceTickets();
+  });
+
+  $("filterTicketsButton").addEventListener("click", () => {
+    ticketOffset = 0;
+    loadServiceTickets();
+  });
+
+  $("ticketSearch").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      ticketOffset = 0;
+      loadServiceTickets();
+    }
+  });
+
+  $("ticketStatusFilter").addEventListener("change", () => {
+    ticketOffset = 0;
+    loadServiceTickets();
+  });
+
+  $("ticketCategoryFilter").addEventListener("change", () => {
+    ticketOffset = 0;
+    loadServiceTickets();
+  });
+
+  $("previousTicketsButton").addEventListener("click", () => {
+    if (ticketOffset === 0) return;
+
+    ticketOffset = Math.max(0, ticketOffset - ticketLimit);
+    loadServiceTickets();
+  });
+
+  $("nextTicketsButton").addEventListener("click", () => {
+    if (!ticketHasMore) return;
+
+    ticketOffset += ticketLimit;
+    loadServiceTickets();
+  });
+
+  $("sendTicketReplyButton").addEventListener(
+    "click",
+    sendTicketReply
+  );
+
+  $("updateTicketStatusButton").addEventListener(
+    "click",
+    updateTicketStatus
+  );
+
+  $("closeTicketDetailButton").addEventListener("click", () => {
+    $("ticketDetailPanel").classList.add("hidden");
+    selectedTicketId = null;
+    selectedTicket = null;
+  });
+
   // ---------------------------------------------------------
   // LOAD ALL DASHBOARD INFORMATION AFTER LOGIN
   // ---------------------------------------------------------
@@ -1891,16 +2334,16 @@ footer {
 
     const tasks = await Promise.allSettled([
       loadOverview(),
-      loadPropertyApplications(),
       loadAgentPropertyApplications(),
       loadAgentApplications(),
       loadAccounts(),
-      loadAuditLogs()
+      loadAuditLogs(),
+      loadServiceTickets()
     ]);
 
     const errors = tasks
-      .filter((item) => item.status === "rejected")
-      .map((item) => item.reason.message);
+      .filter(item => item.status === "rejected")
+      .map(item => item.reason.message);
 
     if (errors.length) {
       setGlobalMessage(
@@ -1908,7 +2351,10 @@ footer {
         "error"
       );
     } else {
-      setGlobalMessage("Administration information loaded successfully.", "success");
+      setGlobalMessage(
+        "Administration information loaded successfully.",
+        "success"
+      );
     }
   }
 
@@ -1923,19 +2369,35 @@ footer {
     clearObjectUrls(agentPhotoObjectUrls);
 
     closeMenu();
-
     $("loginForm").reset();
 
     $("dashboardPanel").classList.add("hidden");
     $("loginPanel").classList.remove("hidden");
-
     $("logoutButton").classList.add("hidden");
 
-    $("propertyApplications").replaceChildren();
-    $("agentPropertyApplications").replaceChildren();
+    const legacyOwnerApplications = $("propertyApplications");
+    if (legacyOwnerApplications) legacyOwnerApplications.replaceChildren();
+    const unifiedPropertyApplications = $("agentPropertyApplications");
+    if (unifiedPropertyApplications) unifiedPropertyApplications.replaceChildren();
     $("agentApplications").replaceChildren();
     $("accountsArea").replaceChildren();
     $("auditArea").replaceChildren();
+
+    $("ticketsTableBody").replaceChildren();
+
+    $("ticketDetailPanel").classList.add("hidden");
+    $("ticketConversation").replaceChildren();
+    $("ticketInfoGrid").replaceChildren();
+
+    $("ticketReplyInput").value = "";
+    $("ticketAdminNote").value = "";
+
+    selectedTicketId = null;
+    selectedTicket = null;
+    ticketOffset = 0;
+    ticketHasMore = false;
+
+    updateTicketStatistics({});
 
     showMessage(
       $("loginMessage"),
@@ -1944,12 +2406,10 @@ footer {
     );
 
     setGlobalMessage("");
+    $("ticketMessage").textContent = "";
   }
 
-  $("logoutButton").addEventListener(
-    "click",
-    () => logout()
-  );
+  $("logoutButton").addEventListener("click", () => logout());
 
 })();
 </script>

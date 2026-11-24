@@ -158,16 +158,46 @@ body.no-scroll { overflow: hidden; }
     background: white; flex: 1; min-width: 0;
 }
 
-.cards-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
 
-.room-card, .match-card { padding: 0; overflow: hidden; }
-.card-body { padding: 20px 22px 22px; }
-.match-card { padding: 22px; }
-.room-card h3, .match-card h3 { margin: 0 0 8px; }
-.match-card h3 { margin: 12px 0 8px; }
+.room-card, .match-card {
+    padding: 0;
+    overflow: hidden;
+}
 
-.room-location { color: var(--muted); font-size: 13px; }
-.room-price { color: var(--primary); font-size: 21px; font-weight: bold; margin: 14px 0; }
+.card-body {
+    padding: 12px 14px 14px;
+}
+
+.match-card {
+    padding: 14px;
+}
+
+.room-card h3, .match-card h3 {
+    font-size: 15px;
+    margin: 0 0 6px;
+}
+
+.match-card h3 {
+    margin: 10px 0 6px;
+}
+
+.room-location {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.room-price {
+    color: var(--primary);
+    font-size: 17px;
+    font-weight: bold;
+    margin: 9px 0;
+}
+
 
 .tag {
     display: inline-block; background: #eaf1ff; color: #2864e8;
@@ -518,6 +548,147 @@ body.no-scroll { overflow: hidden; }
     .modal { border-radius: 0; min-height: 100vh; }
     #agentsMap { height: 300px; }
 }
+
+/* SERVICE TICKETS */
+
+.tk-form-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 17px; }
+.tk-counter { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: right; }
+
+.tk-filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.tk-filters select {
+    padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: white; flex: 1; min-width: 180px;
+}
+
+.tk-list { display: flex; flex-direction: column; gap: 15px; }
+
+.tk-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+}
+.tk-card-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.tk-number { font-size: 12px; font-weight: bold; color: var(--primary); letter-spacing: .3px; }
+.tk-subject { font-size: 16px; font-weight: bold; margin: 4px 0 5px; overflow-wrap: anywhere; }
+.tk-meta { color: var(--muted); font-size: 12px; line-height: 1.6; display: flex; gap: 14px; flex-wrap: wrap; }
+.tk-preview {
+    background: #f4f6fa; border-radius: 9px; padding: 12px 14px; margin: 12px 0;
+    font-size: 13px; line-height: 1.6; color: #405574;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.tk-attention {
+    background: #fff8e6; border-radius: 9px; padding: 12px 14px; margin: 12px 0;
+    font-size: 13px; line-height: 1.6; color: #966300;
+}
+
+.tk-status {
+    display: inline-block; padding: 6px 11px; border-radius: 20px;
+    font-size: 11px; font-weight: bold; white-space: nowrap;
+}
+.tk-status.open { background: #eaf1ff; color: #2864e8; }
+.tk-status.in_progress { background: #fff8e6; color: #966300; }
+.tk-status.waiting_for_student { background: #ffeedd; color: #b45309; }
+.tk-status.resolved { background: #e7f8f0; color: #08764c; }
+.tk-status.closed { background: #eef0f4; color: #5d6a7e; }
+
+.tk-pager {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-top: 18px;
+}
+
+.tk-detail-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px; flex-wrap: wrap;
+}
+.tk-detail-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px; margin: 16px 0 6px;
+}
+.tk-detail-label {
+    font-size: 11px; font-weight: bold; letter-spacing: .5px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+}
+.tk-detail-value { font-size: 13px; line-height: 1.5; }
+
+.tk-thread { display: flex; flex-direction: column; gap: 12px; margin: 18px 0 4px; }
+.tk-msg {
+    max-width: 85%; border-radius: 12px; padding: 12px 14px;
+    font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.tk-msg.student { align-self: flex-end; background: #eaf1ff; border: 1px solid #d5e3ff; }
+.tk-msg.admin { align-self: flex-start; background: #e7f8f0; border-left: 4px solid var(--green); }
+.tk-msg-head { font-size: 12px; font-weight: bold; margin-bottom: 6px; white-space: normal; }
+.tk-msg-time { display: block; margin-top: 8px; font-size: 11px; color: var(--muted); white-space: normal; }
+
+.tk-closed-note {
+    background: #eef0f4; border-radius: 9px; padding: 14px;
+    font-size: 13px; line-height: 1.6; color: #5d6a7e;
+}
+
+@media(max-width: 650px) {
+    .tk-form-grid { grid-template-columns: 1fr; }
+    .tk-msg { max-width: 100%; }
+}
+
+
+/* Compact accommodation cards */
+.cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.room-card {
+    border-radius: 10px;
+}
+
+.room-photo {
+    height: 150px;
+    overflow: hidden;
+}
+
+.room-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-body {
+    padding: 12px 14px;
+}
+
+.room-card h3 {
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+
+.room-price {
+    font-size: 17px;
+    margin: 8px 0;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+    .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .room-photo {
+        height: 170px;
+    }
+}
+
+
+
+
 </style>
 </head>
 
@@ -535,6 +706,7 @@ body.no-scroll { overflow: hidden; }
 
     <div class="side-label">MY ACCOUNT</div>
     <button class="nav-link" data-page="enquiries">✉   My Enquiries</button>
+    <button class="nav-link" data-page="tickets">✎   Service Tickets</button>
     <button class="nav-link" data-page="profile">◉   My Profile</button>
     <button class="nav-link" data-page="preferences">⚙   Preferences</button>
 
@@ -618,6 +790,12 @@ body.no-scroll { overflow: hidden; }
             <h3>Track your enquiries</h3>
             <p class="muted">Check the messages you have sent to agents and read their replies.</p>
             <br><button class="btn" data-go="enquiries">View My Enquiries</button>
+        </div>
+
+        <div class="panel">
+            <h3>Need help from RumCHUO?</h3>
+            <p class="muted">Send a service request to the RumCHUO support team and follow their replies.</p>
+            <br><button class="btn" data-go="tickets">Open Service Tickets</button>
         </div>
     </div>
 </section>
@@ -783,6 +961,133 @@ body.no-scroll { overflow: hidden; }
 
     <div class="enquiries-list" id="enquiriesList">
         <div class="loading">Loading your enquiries...</div>
+    </div>
+</section>
+
+<!-- SERVICE TICKETS -->
+
+<section class="page" id="tickets">
+    <div class="section-heading">
+        <div>
+            <h2>Service Tickets</h2>
+            <p class="muted">
+                Request help from the RumCHUO support team and follow the conversation
+                until your request is resolved.
+            </p>
+        </div>
+        <button class="btn btn-outline" id="refreshTickets" type="button">
+            ↻ Refresh
+        </button>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="ticketListView">
+
+        <div class="panel">
+            <h3>New service request</h3>
+            <p class="muted">
+                Choose the category that fits best and describe what you need.
+                Please do not include your password in a request.
+            </p>
+            <br>
+
+            <div class="notice" id="ticketCreateNotice"></div>
+
+            <form id="ticketCreateForm" novalidate>
+                <div class="tk-form-grid">
+                    <div class="field">
+                        <label for="ticketCategory">Category</label>
+                        <select id="ticketCategory">
+                            <option value="">Select a category</option>
+                            <option value="technical_support">Technical Support</option>
+                            <option value="accommodation_assistance">Accommodation Assistance</option>
+                            <option value="account_registration">Account Registration</option>
+                            <option value="payment_assistance">Payment Assistance</option>
+                            <option value="general_enquiries">General Enquiries</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="field">
+                    <label for="ticketMessage">Message</label>
+                    <textarea id="ticketMessage" maxlength="5000"
+                        placeholder="Explain what you need help with..."></textarea>
+                    <div class="tk-counter" id="ticketMessageCount">0 / 5000</div>
+                </div>
+
+                <button class="btn" id="ticketSubmit" type="submit">Submit request</button>
+            </form>
+        </div>
+
+        <div class="section-heading">
+            <h2>My service tickets</h2>
+        </div>
+
+        <div class="tk-filters">
+            <select id="ticketStatusFilter" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In progress</option>
+                <option value="waiting_for_student">Waiting for your reply</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+            </select>
+
+            <select id="ticketCategoryFilter" aria-label="Filter by category">
+                <option value="">All categories</option>
+                <option value="technical_support">Technical Support</option>
+                <option value="accommodation_assistance">Accommodation Assistance</option>
+                <option value="account_registration">Account Registration</option>
+                <option value="payment_assistance">Payment Assistance</option>
+                <option value="general_enquiries">General Enquiries</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="tk-list" id="ticketsList">
+            <div class="loading">Loading your tickets...</div>
+        </div>
+
+        <div class="tk-pager" id="ticketsPager" style="display:none">
+            <button class="btn btn-outline btn-small" id="ticketsPrev" type="button">Previous</button>
+            <span class="muted" id="ticketsPagerInfo"></span>
+            <button class="btn btn-outline btn-small" id="ticketsNext" type="button">Next</button>
+        </div>
+    </div>
+
+    <!-- DETAIL VIEW -->
+    <div id="ticketDetailView" style="display:none">
+        <button class="btn btn-outline btn-small" id="ticketBack" type="button">
+            ← Back to my tickets
+        </button>
+        <br><br>
+
+        <div class="panel" id="ticketDetailPanel">
+            <div class="loading">Loading ticket...</div>
+        </div>
+
+        <div class="panel" id="ticketReplyPanel">
+            <h3>Send a message</h3>
+
+            <div class="notice" id="ticketReplyNotice"></div>
+            <p class="muted" id="ticketReplyHint" style="margin-bottom:14px"></p>
+
+            <form id="ticketReplyForm" novalidate>
+                <div class="field">
+                    <label for="ticketReplyText">Your message</label>
+                    <textarea id="ticketReplyText" maxlength="5000"
+                        placeholder="Write your message to RumCHUO support..."></textarea>
+                </div>
+                <button class="btn" id="ticketReplySubmit" type="submit">Send message</button>
+            </form>
+
+            <div class="tk-closed-note" id="ticketClosedNote" style="display:none">
+                This ticket is closed and can no longer receive messages.
+                If you still need help, please create a new service request.
+            </div>
+        </div>
     </div>
 </section>
 
@@ -991,6 +1296,7 @@ const pageTitles = {
     matches: "Roommate Matching",
     agents: "Active Agents",
     enquiries: "My Enquiries",
+    tickets: "Service Tickets",
     profile: "My Profile",
     preferences: "Accommodation Preferences"
 };
@@ -1057,6 +1363,7 @@ function showPage(page) {
     if (page === "profile") loadProfile();
     if (page === "preferences") loadPreferences();
     if (page === "enquiries") loadStudentEnquiries();
+    if (page === "tickets") showTicketListView();
 
     if (page === "agents") {
         loadActiveAgents();
@@ -2679,6 +2986,373 @@ document.getElementById("agentEnquiryForm").addEventListener(
         }
     }
 );
+
+/* SERVICE TICKETS */
+
+const TICKET_CATEGORY_LABELS = {
+    technical_support: "Technical Support",
+    accommodation_assistance: "Accommodation Assistance",
+    account_registration: "Account Registration",
+    payment_assistance: "Payment Assistance",
+    general_enquiries: "General Enquiries",
+    other: "Other"
+};
+
+const TICKET_STATUS_LABELS = {
+    open: "Open",
+    in_progress: "In progress",
+    waiting_for_student: "Waiting for your reply",
+    resolved: "Resolved",
+    closed: "Closed"
+};
+
+const ticketState = { offset: 0, limit: 10, openId: null };
+
+function tkEl(tag, className, text) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+}
+
+function ticketErrorMessage(error) {
+    const message = error && error.message ? String(error.message) : "";
+    if (!message || message.includes("[object Object]")) {
+        return "Please check what you entered and try again.";
+    }
+    return message;
+}
+
+function hideTicketNotice(id) {
+    const element = document.getElementById(id);
+    element.style.display = "none";
+    element.textContent = "";
+}
+
+function ticketStatusBadge(status) {
+    return tkEl(
+        "span",
+        "tk-status " + status,
+        TICKET_STATUS_LABELS[status] || status
+    );
+}
+
+function ticketDetailItem(label, value) {
+    const item = tkEl("div");
+    item.append(
+        tkEl("div", "tk-detail-label", label),
+        tkEl("div", "tk-detail-value", value)
+    );
+    return item;
+}
+
+function renderTicketCard(ticket) {
+    const card = tkEl("div", "tk-card");
+
+    const top = tkEl("div", "tk-card-top");
+    const heading = tkEl("div");
+    heading.append(
+        tkEl("div", "tk-number", ticket.ticket_number || ("Ticket #" + ticket.id)),
+        tkEl("div", "tk-subject", TICKET_CATEGORY_LABELS[ticket.category] || ticket.category)
+    );
+    top.append(heading, ticketStatusBadge(ticket.status));
+    card.appendChild(top);
+
+    const meta = tkEl("div", "tk-meta");
+    meta.append(
+        tkEl("span", "", TICKET_CATEGORY_LABELS[ticket.category] || ticket.category),
+        tkEl("span", "", "Updated: " + formatEnquiryDate(ticket.updated_at)),
+        tkEl(
+            "span", "",
+            ticket.message_count + (ticket.message_count === 1 ? " message" : " messages")
+        )
+    );
+    card.appendChild(meta);
+
+    if (ticket.latest_message && ticket.latest_message.message) {
+        const who = ticket.latest_message.sender_role === "admin"
+            ? "RumCHUO Support"
+            : "You";
+        let text = ticket.latest_message.message;
+        if (text.length > 160) text = text.slice(0, 160) + "…";
+        card.appendChild(tkEl("div", "tk-preview", who + ": " + text));
+    }
+
+    if (ticket.status === "waiting_for_student") {
+        card.appendChild(tkEl(
+            "div", "tk-attention",
+            "RumCHUO support has replied and is waiting for your response."
+        ));
+    }
+
+    const actions = tkEl("div", "card-actions");
+    const viewButton = tkEl("button", "btn btn-small", "View conversation");
+    viewButton.type = "button";
+    viewButton.addEventListener("click", () => openTicket(ticket.id));
+    actions.appendChild(viewButton);
+    card.appendChild(actions);
+
+    return card;
+}
+
+async function loadTickets() {
+    const list = document.getElementById("ticketsList");
+    const pager = document.getElementById("ticketsPager");
+
+    list.replaceChildren(tkEl("div", "loading", "Loading your tickets..."));
+    pager.style.display = "none";
+
+    const status = document.getElementById("ticketStatusFilter").value;
+    const category = document.getElementById("ticketCategoryFilter").value;
+
+    const params = new URLSearchParams({
+        limit: ticketState.limit,
+        offset: ticketState.offset
+    });
+    if (status) params.set("status", status);
+    if (category) params.set("category", category);
+
+    try {
+        const data = await api("/students/me/service-tickets?" + params.toString());
+        const tickets = data.tickets || [];
+
+        list.replaceChildren();
+
+        if (!tickets.length) {
+            list.appendChild(tkEl(
+                "div", "empty",
+                (status || category)
+                    ? "No tickets match the selected filters."
+                    : "You have not submitted any service requests yet. Use the form above to send your first request."
+            ));
+            return;
+        }
+
+        tickets.forEach(ticket => list.appendChild(renderTicketCard(ticket)));
+
+        const first = ticketState.offset + 1;
+        const last = ticketState.offset + tickets.length;
+        document.getElementById("ticketsPagerInfo").textContent =
+            "Showing " + first + "–" + last + " of " + data.count;
+        document.getElementById("ticketsPrev").disabled = ticketState.offset === 0;
+        document.getElementById("ticketsNext").disabled = !data.has_more;
+        pager.style.display = "flex";
+
+    } catch (error) {
+        list.replaceChildren(tkEl(
+            "div", "empty",
+            "Unable to load your tickets. " + ticketErrorMessage(error)
+        ));
+    }
+}
+
+function showTicketListView() {
+    ticketState.openId = null;
+    document.getElementById("ticketDetailView").style.display = "none";
+    document.getElementById("ticketListView").style.display = "block";
+    loadTickets();
+}
+
+function renderTicketDetail(ticket) {
+    const panel = document.getElementById("ticketDetailPanel");
+    panel.replaceChildren();
+
+    const head = tkEl("div", "tk-detail-head");
+    const title = tkEl("div");
+    title.append(
+        tkEl("div", "tk-number", ticket.ticket_number || ("Ticket #" + ticket.id)),
+        tkEl("div", "tk-subject", TICKET_CATEGORY_LABELS[ticket.category] || ticket.category)
+    );
+    head.append(title, ticketStatusBadge(ticket.status));
+    panel.appendChild(head);
+
+    const grid = tkEl("div", "tk-detail-grid");
+    grid.append(
+        ticketDetailItem(
+            "Category",
+            TICKET_CATEGORY_LABELS[ticket.category] || ticket.category
+        ),
+        ticketDetailItem("Created", formatEnquiryDate(ticket.created_at)),
+        ticketDetailItem("Last updated", formatEnquiryDate(ticket.updated_at)),
+        ticketDetailItem("Messages", String(ticket.message_count ?? (ticket.messages || []).length))
+    );
+    panel.appendChild(grid);
+
+    const thread = tkEl("div", "tk-thread");
+    (ticket.messages || []).forEach(message => {
+        const isAdmin = message.sender_role === "admin";
+        const bubble = tkEl("div", "tk-msg " + (isAdmin ? "admin" : "student"));
+        bubble.appendChild(tkEl(
+            "div", "tk-msg-head",
+            isAdmin ? "RumCHUO Support" : "You"
+        ));
+        bubble.appendChild(document.createTextNode(message.message));
+        bubble.appendChild(tkEl(
+            "span", "tk-msg-time",
+            formatEnquiryDate(message.created_at)
+        ));
+        thread.appendChild(bubble);
+    });
+    panel.appendChild(thread);
+
+    // Reply area depends on the ticket status.
+    const form = document.getElementById("ticketReplyForm");
+    const closedNote = document.getElementById("ticketClosedNote");
+    const hint = document.getElementById("ticketReplyHint");
+
+    const isClosed = ticket.status === "closed";
+    form.style.display = isClosed ? "none" : "block";
+    closedNote.style.display = isClosed ? "block" : "none";
+
+    if (ticket.status === "resolved") {
+        hint.textContent =
+            "This ticket is marked as resolved. Sending a message will reopen it.";
+    } else if (ticket.status === "waiting_for_student") {
+        hint.textContent = "RumCHUO support is waiting for your reply.";
+    } else {
+        hint.textContent = "";
+    }
+    hint.style.display = hint.textContent ? "block" : "none";
+}
+
+async function openTicket(ticketId) {
+    ticketState.openId = ticketId;
+
+    document.getElementById("ticketListView").style.display = "none";
+    document.getElementById("ticketDetailView").style.display = "block";
+
+    document.getElementById("ticketDetailPanel").replaceChildren(
+        tkEl("div", "loading", "Loading ticket...")
+    );
+
+    try {
+        const ticket = await api("/students/me/service-tickets/" + ticketId);
+        renderTicketDetail(ticket);
+    } catch (error) {
+        document.getElementById("ticketDetailPanel").replaceChildren(tkEl(
+            "div", "empty",
+            "Unable to load this ticket. " + ticketErrorMessage(error)
+        ));
+    }
+}
+
+document.getElementById("ticketMessage").addEventListener("input", event => {
+    document.getElementById("ticketMessageCount").textContent =
+        event.target.value.length + " / 5000";
+});
+
+document.getElementById("ticketCreateForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    hideTicketNotice("ticketCreateNotice");
+
+    const category = document.getElementById("ticketCategory").value;
+    const message = document.getElementById("ticketMessage").value.trim();
+
+    if (!category) {
+        showNotice("ticketCreateNotice", "Please select a category.", "error");
+        return;
+    }
+    if (message.length < 5 || message.length > 5000) {
+        showNotice("ticketCreateNotice", "The message must be between 5 and 5000 characters.", "error");
+        return;
+    }
+
+    const button = document.getElementById("ticketSubmit");
+    button.disabled = true;
+
+    try {
+        const data = await api("/students/me/service-tickets", {
+            method: "POST",
+            body: JSON.stringify({ category, message })
+        });
+
+        const number = data.ticket && data.ticket.ticket_number;
+        showNotice(
+            "ticketCreateNotice",
+            (data.message || "Your service request has been submitted.") +
+                (number ? " Your ticket number is " + number + "." : ""),
+            "success"
+        );
+
+        event.target.reset();
+        document.getElementById("ticketMessageCount").textContent = "0 / 5000";
+
+        ticketState.offset = 0;
+        loadTickets();
+
+    } catch (error) {
+        showNotice("ticketCreateNotice", ticketErrorMessage(error), "error");
+    } finally {
+        button.disabled = false;
+    }
+});
+
+document.getElementById("ticketReplyForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    hideTicketNotice("ticketReplyNotice");
+
+    const ticketId = ticketState.openId;
+    const textarea = document.getElementById("ticketReplyText");
+    const message = textarea.value.trim();
+
+    if (!ticketId) return;
+
+    if (message.length < 2 || message.length > 5000) {
+        showNotice("ticketReplyNotice", "Your message must be between 2 and 5000 characters.", "error");
+        return;
+    }
+
+    const button = document.getElementById("ticketReplySubmit");
+    button.disabled = true;
+
+    try {
+        const data = await api(
+            "/students/me/service-tickets/" + ticketId + "/messages",
+            { method: "POST", body: JSON.stringify({ message }) }
+        );
+
+        textarea.value = "";
+        showNotice(
+            "ticketReplyNotice",
+            data.message || "Your message has been added to the ticket.",
+            "success"
+        );
+
+        await openTicket(ticketId);
+
+    } catch (error) {
+        showNotice("ticketReplyNotice", ticketErrorMessage(error), "error");
+
+        // If the ticket was closed in the meantime, refresh so the form is hidden.
+        if (/closed/i.test(String(error.message))) openTicket(ticketId);
+    } finally {
+        button.disabled = false;
+    }
+});
+
+document.getElementById("ticketBack").addEventListener("click", showTicketListView);
+
+document.getElementById("refreshTickets").addEventListener("click", () => {
+    if (ticketState.openId) openTicket(ticketState.openId);
+    else loadTickets();
+});
+
+["ticketStatusFilter", "ticketCategoryFilter"].forEach(id => {
+    document.getElementById(id).addEventListener("change", () => {
+        ticketState.offset = 0;
+        loadTickets();
+    });
+});
+
+document.getElementById("ticketsPrev").addEventListener("click", () => {
+    ticketState.offset = Math.max(0, ticketState.offset - ticketState.limit);
+    loadTickets();
+});
+
+document.getElementById("ticketsNext").addEventListener("click", () => {
+    ticketState.offset += ticketState.limit;
+    loadTickets();
+});
 
 /* DASHBOARD INITIALIZATION */
 

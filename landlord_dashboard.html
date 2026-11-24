@@ -26,16 +26,22 @@
       color: var(--text);
     }
 
-    header {
-      background: var(--navy);
-      color: white;
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
+
+header {
+    background: var(--navy);
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
 
     header h1 { margin: 0; font-size: 22px; }
     header p { margin: 5px 0 0; color: #d4deeb; font-size: 13px; }
@@ -371,7 +377,7 @@
 <header>
   <div>
     <h1>RumCHUO Owner Portal</h1>
-    <p>Manage your properties and Agent advertising permissions</p>
+    <p>Submit and manage your properties in one place</p>
   </div>
 
   <button id="logoutButton" class="light hidden" type="button">Log out</button>
@@ -416,7 +422,7 @@
           <strong id="totalRooms">—</strong>
         </div>
         <div class="stat">
-          <span>Ownership applications</span>
+          <span>Property submissions</span>
           <strong id="totalApplications">—</strong>
         </div>
       </div>
@@ -425,8 +431,8 @@
     <nav class="tabs" aria-label="Owner sections">
       <button class="active" data-section="roomsSection" type="button">My properties</button>
       <button data-section="submitSection" type="button">Submit property</button>
-      <button data-section="applicationsSection" type="button">Ownership applications</button>
-      <button data-section="agentsSection" type="button">Agent requests</button>
+      <button data-section="applicationsSection" type="button">My property submissions</button>
+
     </nav>
 
     <section id="roomsSection" class="panel dashboard-section">
@@ -471,8 +477,13 @@
               <option value="">Select room type</option>
               <option value="shared">Shared</option>
               <option value="single">Single</option>
-              <option value="self_contained">Self-contained</option>
+              <option value="self-contained">Self-contained</option>
             </select>
+          </div>
+
+          <div class="full">
+            <label for="propertyDescription">Property description</label>
+            <textarea id="propertyDescription" rows="3" maxlength="2000" placeholder="Describe the property and nearby facilities"></textarea>
           </div>
 
           <div class="full">
@@ -495,7 +506,7 @@
     </section>
 
     <section id="applicationsSection" class="panel dashboard-section hidden">
-      <h2>My ownership applications</h2>
+      <h2>My property submissions</h2>
       <div class="toolbar">
         <button id="refreshApplicationsButton" type="button">Refresh applications</button>
       </div>
@@ -506,16 +517,7 @@
       <div id="applicationsArea"></div>
     </section>
 
-    <section id="agentsSection" class="panel dashboard-section hidden">
-      <h2>Agent advertising permission requests</h2>
-      <p class="muted">
-        Review requests from Agents who want permission to advertise your approved properties.
-      </p>
-      <div class="toolbar">
-        <button id="refreshAgentsButton" type="button">Refresh Agent requests</button>
-      </div>
-      <div id="agentsArea"></div>
-    </section>
+
 
   </section>
 </main>
@@ -917,7 +919,7 @@
 
       const url =
         API_BASE_URL +
-        "/landlord/me/ownership-applications/" +
+        "/agents/me/properties/" +
         encodeURIComponent(applicationId) +
         "/photos/" +
         encodeURIComponent(photoId);
@@ -979,7 +981,7 @@
       item.replaceChildren(thumbnailButton, name);
 
     } catch (error) {
-      if (error.message === "Your session has expired.") return;
+      if (error.message === "Your session has expired.") return item;
 
       const errorBox = document.createElement("div");
       errorBox.className = "photo-error";
@@ -987,6 +989,7 @@
 
       item.replaceChildren(errorBox);
     }
+    return item;
   }
 
   // -------------------------------------------------------
@@ -1081,9 +1084,77 @@
     const area = $("roomsArea");
     area.textContent = "Loading your properties…";
 
-    const data = await api("/landlord/me/rooms");
-    const rooms = getList(data, ["rooms", "properties"]);
+   const data = await api("/landlord/me/rooms");
+const rooms = getList(data, ["rooms", "properties"]);
 
+// Also load properties submitted through the shared Owner/Agent workflow.
+try {
+    const applicationsData = await api("/agents/me/properties");
+    const applications = getList(
+        applicationsData,
+        ["applications", "properties"]
+    );
+
+    const existingRoomIds = new Set(
+        rooms.map(room => String(room.id ?? room.room_id))
+    );
+
+    const existingApplicationIds = new Set(
+        rooms
+            .map(room => room.application_id)
+            .filter(id => id !== null && id !== undefined)
+            .map(String)
+    );
+
+    applications.forEach(application => {
+        const applicationId = application.id;
+        const roomId = application.room_id;
+
+        // Do not display an application already represented by a room.
+        if (
+            existingApplicationIds.has(String(applicationId)) ||
+            (
+                roomId !== null &&
+                roomId !== undefined &&
+                existingRoomIds.has(String(roomId))
+            )
+        ) {
+            return;
+        }
+
+        const status = String(
+            application.status ||
+            application.ownership_status ||
+            "pending"
+        ).toLowerCase();
+
+        let ownershipStatus = "pending";
+
+        if (status === "approved" || status === "assigned") {
+            ownershipStatus = "assigned";
+        } else if (status === "rejected") {
+            ownershipStatus = "rejected";
+        }
+
+        rooms.push({
+      id: roomId || "Not assigned",
+            application_id: applicationId,
+            location: application.location,
+            room_type: application.room_type,
+            price: application.price ??
+                   application.monthly_rent ??
+                   application.rent,
+            available: application.available,
+            ownership_status: ownershipStatus,
+            photos: Array.isArray(application.photos)
+                ? application.photos
+                : []
+        });
+    });
+
+} catch (error) {
+    console.error("Could not load property applications:", error);
+}
     $("totalRooms").textContent = rooms.length;
 
     if (!rooms.length) {
@@ -1204,6 +1275,7 @@
     formData.append("location", $("propertyLocation").value.trim());
     formData.append("price", $("propertyPrice").value);
     formData.append("phone_number", $("propertyPhone").value.trim());
+    formData.append("description", $("propertyDescription").value.trim());
     formData.append("available", $("propertyAvailable").checked ? "true" : "false");
     formData.append("room_type", $("propertyType").value);
 
@@ -1215,7 +1287,7 @@
     showMessage($("propertyFormMessage"), "Submitting property…");
 
     try {
-      const result = await api("/landlord/me/rooms/submit", {
+      const result = await api("/agents/me/properties/submit", {
         method: "POST",
         body: formData
       });
@@ -1391,15 +1463,15 @@
     area.textContent = "Loading your applications…";
 
     try {
-      const data = await api("/landlord/me/ownership-applications");
-      const applications = getList(data, ["applications", "ownership_applications"]);
+      const data = await api("/agents/me/properties");
+      const applications = getList(data, ["applications"]);
 
       area.replaceChildren();
 
       $("totalApplications").textContent = applications.length;
 
       if (!applications.length) {
-        emptyMessage(area, "You have not submitted any ownership applications.");
+        emptyMessage(area, "You have not submitted any properties yet.");
         return;
       }
 
@@ -1438,9 +1510,9 @@
 
         card.appendChild(details);
 
-        if (application.review_reason) {
+        if (application.review_note) {
           const note = document.createElement("p");
-          note.textContent = "Administrator response: " + application.review_reason;
+          note.textContent = "Administrator response: " + application.review_note;
           card.appendChild(note);
         }
 
@@ -1463,9 +1535,97 @@
           card.appendChild(gallery);
 
           for (const photo of photos) {
-            loadApplicationPhoto(applicationId, photo, gallery);
+            const photoItem = await loadApplicationPhoto(applicationId, photo, gallery);
+            if (photoItem && application.status !== "approved") {
+              const removePhotoButton = makeButton("Remove photo", "danger", async () => {
+                if (!window.confirm("Remove this property photograph?")) return;
+                removePhotoButton.disabled = true;
+                try {
+                  await api(`/agents/me/properties/${encodeURIComponent(applicationId)}/photos/${encodeURIComponent(photo.id)}`, { method: "DELETE" });
+                  await loadApplications();
+                } catch (error) {
+                  showMessage($("globalMessage"), error.message, "error");
+                  removePhotoButton.disabled = false;
+                }
+              });
+              photoItem.appendChild(removePhotoButton);
+            }
           }
         }
+
+        if (application.status !== "approved") {
+          const photoUploadLabel = document.createElement("label");
+          photoUploadLabel.textContent = "Add photographs (up to 6 total)";
+          const photoUpload = document.createElement("input");
+          photoUpload.type = "file";
+          photoUpload.accept = "image/jpeg,image/png,image/webp";
+          photoUpload.multiple = true;
+          photoUploadLabel.appendChild(photoUpload);
+          card.appendChild(photoUploadLabel);
+          const uploadPhotosButton = makeButton("Upload selected photos", "", async () => {
+            const selected = Array.from(photoUpload.files || []);
+            if (!selected.length) {
+              showMessage($("globalMessage"), "Select at least one photograph.", "error");
+              return;
+            }
+            const formData = new FormData();
+            selected.forEach(file => formData.append("photos", file));
+            uploadPhotosButton.disabled = true;
+            try {
+              const result = await api(`/agents/me/properties/${encodeURIComponent(applicationId)}/photos`, { method: "POST", body: formData });
+              showMessage($("globalMessage"), result.message || "Photographs uploaded.", "success");
+              await loadApplications();
+            } catch (error) {
+              showMessage($("globalMessage"), error.message, "error");
+              uploadPhotosButton.disabled = false;
+            }
+          });
+          card.appendChild(uploadPhotosButton);
+
+          const editButton = makeButton("Edit property", "", async () => {
+            const nextLocation = window.prompt("Property location", application.location || "");
+            if (nextLocation === null) return;
+            const nextType = window.prompt("Room type: single, shared, or self-contained", application.room_type || "single");
+            if (nextType === null) return;
+            const nextPrice = window.prompt("Monthly rent (TZS)", String(application.price || ""));
+            if (nextPrice === null) return;
+            const nextPhone = window.prompt("Contact phone number", application.phone_number || "");
+            if (nextPhone === null) return;
+            const nextDescription = window.prompt("Property description", application.description || "");
+            if (nextDescription === null) return;
+            const formData = new FormData();
+            formData.append("location", nextLocation.trim());
+            formData.append("room_type", nextType.trim());
+            formData.append("price", nextPrice.trim());
+            formData.append("phone_number", nextPhone.trim());
+            formData.append("description", nextDescription.trim());
+            editButton.disabled = true;
+            try {
+              const result = await api(`/agents/me/properties/${encodeURIComponent(applicationId)}`, { method: "PUT", body: formData });
+              showMessage($("globalMessage"), result.message || "Property updated.", "success");
+              await loadApplications();
+            } catch (error) {
+              showMessage($("globalMessage"), error.message, "error");
+              editButton.disabled = false;
+            }
+          });
+          card.appendChild(editButton);
+        }
+
+        const deleteButton = makeButton("Delete property", "danger", async () => {
+          if (!window.confirm("Delete this property submission? If approved, its room will be deactivated and hidden from students.")) return;
+          deleteButton.disabled = true;
+          try {
+            const result = await api(`/agents/me/properties/${encodeURIComponent(applicationId)}`, { method: "DELETE" });
+            showMessage($("globalMessage"), result.message || "Property deleted.", "success");
+            await loadApplications();
+            await loadRooms();
+          } catch (error) {
+            showMessage($("globalMessage"), error.message, "error");
+            deleteButton.disabled = false;
+          }
+        });
+        card.appendChild(deleteButton);
 
         area.appendChild(card);
       }
@@ -1479,8 +1639,8 @@
 
   async function updateApplicationCount() {
     try {
-      const data = await api("/landlord/me/ownership-applications");
-      const applications = getList(data, ["applications", "ownership_applications"]);
+      const data = await api("/agents/me/properties");
+      const applications = getList(data, ["applications"]);
       $("totalApplications").textContent = applications.length;
     } catch (_) {}
   }
@@ -1489,134 +1649,6 @@
   // AGENT AUTHORIZATION REQUESTS
   // -------------------------------------------------------
 
-  async function loadAgentRequests() {
-    const area = $("agentsArea");
-    area.textContent = "Loading Agent requests…";
-
-    const data = await api("/landlord/me/authorization-requests");
-    const requests = getList(data, ["requests", "authorization_requests", "applications"]);
-
-    if (!requests.length) {
-      emptyMessage(area, "There are no Agent advertising permission requests.");
-      return;
-    }
-
-    area.replaceChildren();
-
-    requests.forEach((request) => {
-      const card = document.createElement("article");
-      card.className = "application-card";
-
-      const requestId = getValue(request, ["id", "authorization_id"]);
-      const heading = document.createElement("h3");
-
-      heading.textContent = "Agent request #" + valueOrDash(requestId);
-      card.appendChild(heading);
-
-      const statusLine = document.createElement("p");
-      statusLine.appendChild(statusPill(request.status));
-      card.appendChild(statusLine);
-
-      const details = document.createElement("div");
-      details.className = "details";
-
-      addDetail(details, "Agent", getValue(request, ["agent_name", "full_name"]));
-      addDetail(details, "Agent email", getValue(request, ["agent_email", "email"]));
-
-      const phoneDetail = document.createElement("div");
-      phoneDetail.className = "detail";
-      const phoneLabel = document.createElement("small");
-      phoneLabel.textContent = "Agent phone number";
-      const phoneValue = document.createElement("strong");
-      const agentPhone = getValue(request, ["agent_phone", "phone"]);
-      if (agentPhone) {
-        const phoneLink = document.createElement("a");
-        phoneLink.href = "tel:" + String(agentPhone).replace(/[^0-9+]/g, "");
-        phoneLink.textContent = String(agentPhone);
-        phoneValue.appendChild(phoneLink);
-      } else {
-        phoneValue.textContent = "Not provided";
-      }
-      phoneDetail.append(phoneLabel, phoneValue);
-      details.appendChild(phoneDetail);
-
-      addDetail(details, "Room ID", request.room_id);
-      addDetail(details, "Property location", request.location);
-      addDetail(details, "Requested", getValue(request, ["requested_at", "created_at"]));
-
-      card.appendChild(details);
-
-      if (request.note || request.message) {
-        const note = document.createElement("p");
-        note.textContent = "Agent note: " + (request.note || request.message);
-        card.appendChild(note);
-      }
-
-      if (request.status === "pending" || request.status === "approved") {
-        const decisionArea = document.createElement("div");
-        decisionArea.className = "toolbar";
-
-        const noteInput = document.createElement("input");
-        noteInput.placeholder = "Optional note";
-        noteInput.style.maxWidth = "300px";
-
-        const approve = makeButton("Approve", "", async () => {
-          await decideAgentRequest(requestId, "approve", noteInput.value, approve, reject, revoke);
-        });
-
-        const reject = makeButton("Reject", "danger", async () => {
-          await decideAgentRequest(requestId, "reject", noteInput.value, approve, reject, revoke);
-        });
-
-        const revoke = makeButton("Revoke permission", "danger", async () => {
-          await decideAgentRequest(requestId, "revoke", noteInput.value, approve, reject, revoke);
-        });
-
-        if (request.status === "pending") {
-          decisionArea.append(approve, reject);
-        } else {
-          decisionArea.append(revoke);
-        }
-
-        decisionArea.prepend(noteInput);
-        card.appendChild(decisionArea);
-      }
-
-      area.appendChild(card);
-    });
-  }
-
-  async function decideAgentRequest(id, decision, note, ...buttons) {
-    const question = {
-      approve: "Approve this Agent's request to advertise your property?",
-      reject: "Reject this Agent's request?",
-      revoke: "Revoke this Agent's advertising permission?"
-    }[decision];
-
-    if (!window.confirm(question)) return;
-
-    buttons.forEach((button) => button.disabled = true);
-
-    try {
-      await api(
-        `/landlord/me/authorization-requests/${encodeURIComponent(id)}/decision`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            decision,
-            note: note.trim()
-          })
-        }
-      );
-
-      showMessage($("globalMessage"), "Agent request updated successfully.", "success");
-      await loadAgentRequests();
-
-    } catch (error) {
-      showMessage($("globalMessage"), error.message, "error");
-      buttons.forEach((button) => button.disabled = false);
-    }
-  }
 
   // -------------------------------------------------------
   // RENTAL REPORTS
@@ -1711,8 +1743,7 @@
 
     const tasks = await Promise.allSettled([
       loadRooms(),
-      loadApplications(),
-      loadAgentRequests()
+      loadApplications()
     ]);
 
     const errors = tasks
@@ -1753,13 +1784,7 @@
     }
   });
 
-  $("refreshAgentsButton").addEventListener("click", async () => {
-    try {
-      await loadAgentRequests();
-    } catch (error) {
-      showMessage($("agentsArea"), error.message, "error");
-    }
-  });
+
 
   // -------------------------------------------------------
   // LOGOUT
