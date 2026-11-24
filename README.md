@@ -13,6 +13,7 @@ RumCHUO aims to make this process easier by providing a platform where students 
 ## 2. Key Features
 
 ### Student Features
+
 - Student registration and authentication.
 - Personal profile management.
 - Accommodation search and room listings.
@@ -21,6 +22,7 @@ RumCHUO aims to make this process easier by providing a platform where students 
 - Student accommodation support services.
 
 ### Property Owner Features
+
 - Property and room submission.
 - Property management dashboard.
 - Property photograph management.
@@ -28,6 +30,7 @@ RumCHUO aims to make this process easier by providing a platform where students 
 - Property approval status tracking.
 
 ### Agent Features
+
 - Agent registration and management.
 - Property submission and management.
 - Multiple property photograph uploads.
@@ -35,6 +38,7 @@ RumCHUO aims to make this process easier by providing a platform where students 
 - Accommodation enquiry management.
 
 ### Administrator Features
+
 - Centralized administration dashboard.
 - User and account management.
 - Property verification and approval.
@@ -44,16 +48,16 @@ RumCHUO aims to make this process easier by providing a platform where students 
 
 ## 3. Technology Stack
 
-| Component | Technology |
-|---|---|
-| Backend Language | Python |
-| Backend Framework | FastAPI |
-| Frontend | HTML, CSS, JavaScript |
-| Database | SQLite |
-| API Documentation | Swagger UI / OpenAPI |
-| Authentication | JWT |
-| Password Security | Argon2 |
-| Version Control | Git and GitHub |
+| Component         | Technology            |
+| ----------------- | --------------------- |
+| Backend Language  | Python                |
+| Backend Framework | FastAPI               |
+| Frontend          | HTML, CSS, JavaScript |
+| Database          | SQLite                |
+| API Documentation | Swagger UI / OpenAPI  |
+| Authentication    | JWT                   |
+| Password Security | Argon2                |
+| Version Control   | Git and GitHub        |
 
 ## 4. System Architecture
 
@@ -69,28 +73,28 @@ The frontend communicates with the backend through API requests.
 
 The project contains several frontend pages and backend modules.
 
-```text
 rumchuo/
 │
 ├── main.py
-├── admin_routes.py
-├── agent_property_routes.py
+├── admin\*routes.py
 ├── agent_dashboard_routes.py
+├── agent_property_routes.py
 ├── student_services_routes.py
+├── admin_setup.py
 │
 ├── index.html
 ├── login.html
+├── agent_login.html
+├── reset_password.html
+│
+├── admin_dashboard.html
 ├── student_dashboard.html
 ├── agent_dashboard.html
 ├── landlord_dashboard.html
-├── admin_dashboard.html
 │
 ├── requirements.txt
 ├── README.md
 └── .gitignore
-```
-
-*Note: This is a simplified overview of the main project files.*
 
 ## 6. Installation and Setup
 
@@ -153,12 +157,12 @@ Open your browser:
 
 RumCHUO supports four main user roles:
 
-| Role | Responsibility |
-|---|---|
-| Student | Find accommodation and roommates |
-| Owner | Submit and manage properties |
-| Agent | Facilitate accommodation services |
-| Administrator | Manage and oversee the platform |
+| Role          | Responsibility                    |
+| ------------- | --------------------------------- |
+| Student       | Find accommodation and roommates  |
+| Owner         | Submit and manage properties      |
+| Agent         | Facilitate accommodation services |
+| Administrator | Manage and oversee the platform   |
 
 ## 8. Project Goals
 
@@ -190,4 +194,4 @@ Potential areas for further development include:
 
 ---
 
-*RumCHUO – Making student accommodation easier, safer and more accessible.*
+_RumCHUO – Making student accommodation easier, safer and more accessible._
